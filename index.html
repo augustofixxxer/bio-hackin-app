@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Explorador por problemática</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #1C1B17; font-family: 'IBM Plex Sans', sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+const TOKENS = {
+  ink: "#1C1B17", card: "#262420", cardBorder: "#39362E",
+  paper: "#EDE8DE", paperDim: "#B8B2A2",
+  ochre: "#C9832E", sage: "#7A9471", mustard: "#C9A227", clay: "#9C7350",
+};
+
+const EVIDENCE_STYLES = {
+  Alto: { color: TOKENS.sage, label: "ALTO" },
+  Medio: { color: TOKENS.mustard, label: "MEDIO" },
+  Especulativo: { color: TOKENS.clay, label: "ESPECULATIVO" },
+};
+
+function EvidenceStamp({ level }) {
+  if (!level) return null;
+  const style = EVIDENCE_STYLES[level] || { color: TOKENS.paperDim, label: level.toUpperCase() };
+  return (
+    <div style={{
+      border: `1.5px solid ${style.color}`, color: style.color,
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
+      letterSpacing: "0.08em", padding: "3px 8px", borderRadius: "3px",
+      display: "inline-block", transform: "rotate(-1.5deg)", whiteSpace: "nowrap",
+    }}>{style.label}</div>
+  );
+}
+
+function groupByCategoria(entradas) {
+  const grupos = {};
+  entradas.forEach((e) => {
+    let claves = e.categorias && e.categorias.length ? e.categorias : null;
+    if (!claves) {
+      claves = [e.tipo === "protocolo" ? "Hábitos y Rutinas" : "Sin categorizar (pendiente)"];
+    }
+    claves.forEach((cat) => {
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(e);
+    });
+  });
+  return grupos;
+}
+
+function App() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [view, setView] = useState({ screen: "categories" });
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    fetch("/api/data")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) { setError(json.error); return; }
+        setData(json);
+      })
+      .catch((e) => setError(String(e)));
+  }, []);
+
+  if (error) {
+    return (
+      <div style={{ padding: 24, color: TOKENS.paper, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+        <p style={{ color: TOKENS.clay }}>Error cargando datos: {error}</p>
+        <p style={{ color: TOKENS.paperDim, fontSize: 13 }}>
+          Revisá que la variable de entorno AIRTABLE_API_KEY esté configurada en Vercel.
+        </p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div style={{ padding: 24, color: TOKENS.paperDim, fontFamily: "'IBM Plex Sans', sans-serif" }}>Cargando...</div>;
+  }
+
+  const grupos = groupByCategoria(data.entradas);
+  const categorias = Object.keys(grupos).sort();
+
+  const filteredCats = categorias
+    .map((cat) => ({
+      name: cat,
+      entries: grupos[cat].filter((e) => e.combinacion.toLowerCase().includes(query.toLowerCase())),
+    }))
+    .filter((c) => query === "" || c.entries.length > 0);
+
+  return (
+    <div style={{ minHeight: "100vh", background: TOKENS.ink }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "28px 20px 60px" }}>
+        <header style={{ marginBottom: 28 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.ochre, letterSpacing: "0.1em", marginBottom: 6 }}>
+            COMIDA REAL · DATO VERIFICABLE · SINCRONIZADO {new Date(data.actualizado).toLocaleString("es-AR")}
+          </p>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 30, color: TOKENS.paper, lineHeight: 1.15 }}>
+            Explorador por problemática
+          </h1>
+        </header>
+
+        {view.screen === "categories" && (
+          <React.Fragment>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, background: TOKENS.card, border: `1px solid ${TOKENS.cardBorder}`, borderRadius: 8, padding: "10px 14px" }}>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar un alimento o combinación..."
+                style={{ background: "transparent", border: "none", outline: "none", color: TOKENS.paper, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, width: "100%" }}
+              />
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              {filteredCats.map((cat) => (
+                <button key={cat.name} onClick={() => setView({ screen: "category", name: cat.name })}
+                  style={{ textAlign: "left", width: "100%", background: TOKENS.card, border: `1px solid ${TOKENS.cardBorder}`, borderRadius: 10, padding: 20, cursor: "pointer" }}>
+                  <span style={{ fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 600, color: TOKENS.paper }}>{cat.name}</span>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.paperDim, marginTop: 8 }}>
+                    {cat.entries.length} {cat.entries.length === 1 ? "entrada" : "entradas"}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </React.Fragment>
+        )}
+
+        {view.screen === "category" && (() => {
+          const cat = grupos[view.name] || [];
+          return (
+            <div>
+              <button onClick={() => setView({ screen: "categories" })} style={{ background: "none", border: "none", color: TOKENS.paperDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer" }}>
+                ← Categorías
+              </button>
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 24, color: TOKENS.paper, marginBottom: 20 }}>{view.name}</h2>
+              <div style={{ display: "grid", gap: 12 }}>
+                {cat.map((entry) => (
+                  <button key={entry.id} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })}
+                    style={{ textAlign: "left", width: "100%", display: "flex", justifyContent: "space-between", gap: 12, background: TOKENS.card, border: `1px solid ${TOKENS.cardBorder}`, borderRadius: 8, padding: 16, cursor: "pointer" }}>
+                    <span style={{ color: TOKENS.paper, fontSize: 14 }}>{entry.combinacion}</span>
+                    <EvidenceStamp level={entry.evidencia} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {view.screen === "entry" && (() => {
+          const cat = grupos[view.catName] || [];
+          const entry = cat.find((e) => e.id === view.id);
+          if (!entry) return null;
+          return (
+            <div>
+              <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: TOKENS.paperDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 24, cursor: "pointer" }}>
+                ← Volver
+              </button>
+              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 26, color: TOKENS.paper, lineHeight: 1.2, marginBottom: 14 }}>{entry.combinacion}</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                <EvidenceStamp level={entry.evidencia} />
+                {entry.mecanismo && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.paperDim }}>{entry.mecanismo}</span>}
+              </div>
+              <div style={{ borderTop: `1px solid ${TOKENS.cardBorder}`, paddingTop: 18 }}>
+                <p style={{ color: TOKENS.paperDim, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+              </div>
+              {entry.frecuencia && (
+                <div style={{ borderTop: `1px solid ${TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.ochre, marginBottom: 6 }}>FRECUENCIA</p>
+                  <p style={{ color: TOKENS.paper, fontSize: 14 }}>{entry.frecuencia}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
