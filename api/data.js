@@ -22,6 +22,7 @@ const F_ALT = {
   frecuencia: "fldbVH0gwdk6ppifF",
   nutriente: "fldgAm7SHAW3KrDLX",
   tipo: "fldQK99XpHgyUeG4W",
+  categoriaReal: "fldEnkUYesPYe5fpQ",
 };
 
 async function fetchAllRecords(tableId, apiKey) {
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
         mecanismo: f[F_ALT.categoria] || null,
         frecuencia: f[F_ALT.frecuencia] || null,
         nutriente: f[F_ALT.nutriente] || null,
-        categorias: [], // pendiente: Alternativas todavía no tiene categoría real cargada
+        categorias: f[F_ALT.categoriaReal] || [],
         evidencia: null, // pendiente: falta el campo Nivel de Evidencia en esta tabla
       };
     });
