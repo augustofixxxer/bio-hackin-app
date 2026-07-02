@@ -68,16 +68,16 @@ export default async function handler(req, res) {
         tipo: "regla",
         combinacion: f[F_REGLAS.combinacion] || "",
         resultado: f[F_REGLAS.resultado] || "",
-        categorias: (f[F_REGLAS.objetivo] || []).map((c) => c.name),
-        evidencia: f[F_REGLAS.evidencia]?.name || null,
-        mecanismo: f[F_REGLAS.mecanismo]?.name || null,
-        acceso: f[F_REGLAS.acceso]?.name || null,
+        categorias: f[F_REGLAS.objetivo] || [],
+        evidencia: f[F_REGLAS.evidencia] || null,
+        mecanismo: f[F_REGLAS.mecanismo] || null,
+        acceso: f[F_REGLAS.acceso] || null,
       };
     });
 
     const entradasAlternativas = alternativas.map((r) => {
       const f = r.fields;
-      const esProtocolo = f[F_ALT.tipo]?.name === "Protocolo";
+      const esProtocolo = f[F_ALT.tipo] === "Protocolo";
       return {
         id: r.id,
         tipo: esProtocolo ? "protocolo" : "alternativa",
@@ -86,8 +86,8 @@ export default async function handler(req, res) {
         mecanismo: f[F_ALT.categoria] || null,
         frecuencia: f[F_ALT.frecuencia] || null,
         nutriente: f[F_ALT.nutriente] || null,
-        categorias: [],
-        evidencia: null,
+        categorias: [], // pendiente: Alternativas todavía no tiene categoría real cargada
+        evidencia: null, // pendiente: falta el campo Nivel de Evidencia en esta tabla
       };
     });
 
