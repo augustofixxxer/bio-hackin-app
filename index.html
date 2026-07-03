@@ -73,6 +73,105 @@ function groupByCategoria(entradas) {
   return grupos;
 }
 
+function LogMealScreen({ onBack }) {
+  const [texto, setTexto] = useState("");
+  const [momento, setMomento] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState(null);
+
+  const enviar = async () => {
+    if (!texto.trim()) return;
+    setEnviando(true);
+    setError(null);
+    try {
+      const resp = await fetch("/api/registrar-comida", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto, momento: momento || undefined }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setResultado(data);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (resultado) {
+    return (
+      <div>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.paperDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer" }}>
+          ← Categorías
+        </button>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 22, color: TOKENS.paper, marginBottom: 16 }}>
+          {resultado.bloqueos.length === 0 ? "Sin bloqueos detectados" : `${resultado.bloqueos.length} bloqueo${resultado.bloqueos.length > 1 ? "s" : ""} detectado${resultado.bloqueos.length > 1 ? "s" : ""}`}
+        </h2>
+        {resultado.bloqueos.length === 0 && (
+          <p style={{ color: TOKENS.paperDim, fontSize: 14 }}>No encontramos combinaciones conflictivas conocidas en lo que registraste. Igual quedó guardado en tu historial.</p>
+        )}
+        <div style={{ display: "grid", gap: 12 }}>
+          {resultado.bloqueos.map((b, i) => (
+            <div key={i} style={{ background: TOKENS.card, border: `1px solid ${TOKENS.cardBorder}`, borderRadius: 10, padding: 18 }}>
+              <p style={{ color: TOKENS.paper, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{b.combinacion}</p>
+              <p style={{ color: TOKENS.paperDim, fontSize: 13, lineHeight: 1.6, marginBottom: b.solucion ? 12 : 0 }}>{b.resultado}</p>
+              {b.solucion && (
+                <div style={{ borderTop: `1px solid ${TOKENS.cardBorder}`, paddingTop: 12 }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: TOKENS.ochre, marginBottom: 4, letterSpacing: "0.05em" }}>SOLUCIÓN</p>
+                  <p style={{ color: TOKENS.paper, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <button onClick={() => { setResultado(null); setTexto(""); setMomento(""); }}
+          style={{ marginTop: 20, width: "100%", background: TOKENS.ochre, border: "none", borderRadius: 8, padding: "12px", color: TOKENS.ink, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+          Registrar otra comida
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.paperDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer" }}>
+        ← Categorías
+      </button>
+      <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 24, color: TOKENS.paper, marginBottom: 8 }}>
+        Cargar comida
+      </h2>
+      <p style={{ color: TOKENS.paperDim, fontSize: 13, marginBottom: 20 }}>
+        Contanos qué comiste, en tus palabras. Buscamos combinaciones conocidas automáticamente.
+      </p>
+      <textarea
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        placeholder="Ej: fideos con salsa de carne y queso rallado"
+        rows={4}
+        style={{ width: "100%", background: TOKENS.card, border: `1px solid ${TOKENS.cardBorder}`, borderRadius: 8, padding: 14, color: TOKENS.paper, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, marginBottom: 14, resize: "vertical" }}
+      />
+      <select
+        value={momento}
+        onChange={(e) => setMomento(e.target.value)}
+        style={{ width: "100%", background: TOKENS.card, border: `1px solid ${TOKENS.cardBorder}`, borderRadius: 8, padding: 12, color: TOKENS.paper, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, marginBottom: 16 }}
+      >
+        <option value="">Momento del día (opcional)</option>
+        <option value="Desayuno">Desayuno</option>
+        <option value="Almuerzo">Almuerzo</option>
+        <option value="Cena">Cena</option>
+        <option value="Snack">Snack</option>
+      </select>
+      {error && <p style={{ color: TOKENS.clay, fontSize: 13, marginBottom: 12 }}>{error}</p>}
+      <button onClick={enviar} disabled={enviando || !texto.trim()}
+        style={{ width: "100%", background: enviando || !texto.trim() ? TOKENS.cardBorder : TOKENS.ochre, border: "none", borderRadius: 8, padding: "12px", color: TOKENS.ink, fontWeight: 600, fontSize: 14, cursor: enviando ? "default" : "pointer" }}>
+        {enviando ? "Buscando bloqueos..." : "Registrar comida"}
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -117,13 +216,21 @@ function App() {
   return (
     <div style={{ minHeight: "100vh", background: TOKENS.ink }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "28px 20px 60px" }}>
-        <header style={{ marginBottom: 28 }}>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.ochre, letterSpacing: "0.1em", marginBottom: 6 }}>
-            COMIDA REAL · DATO VERIFICABLE · SINCRONIZADO {new Date(data.actualizado).toLocaleString("es-AR")}
-          </p>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 30, color: TOKENS.paper, lineHeight: 1.15 }}>
-            Explorador por problemática
-          </h1>
+        <header style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div>
+            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.ochre, letterSpacing: "0.1em", marginBottom: 6 }}>
+              COMIDA REAL · DATO VERIFICABLE · SINCRONIZADO {new Date(data.actualizado).toLocaleString("es-AR")}
+            </p>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 30, color: TOKENS.paper, lineHeight: 1.15 }}>
+              Explorador por problemática
+            </h1>
+          </div>
+          {view.screen === "categories" && (
+            <button onClick={() => setView({ screen: "log" })}
+              style={{ background: TOKENS.ochre, border: "none", borderRadius: 8, padding: "10px 14px", color: TOKENS.ink, fontWeight: 600, fontSize: 12, whiteSpace: "nowrap", cursor: "pointer", flexShrink: 0 }}>
+              + Cargar comida
+            </button>
+          )}
         </header>
 
         {view.screen === "categories" && (
@@ -148,6 +255,10 @@ function App() {
               ))}
             </div>
           </React.Fragment>
+        )}
+
+        {view.screen === "log" && (
+          <LogMealScreen onBack={() => setView({ screen: "categories" })} />
         )}
 
         {view.screen === "category" && (() => {
