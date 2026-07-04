@@ -1,4 +1,4 @@
-       <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
@@ -408,4 +408,47 @@ function App() {
               <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 24, cursor: "pointer", padding: 0 }}>
                 ← Volver
               </button>
-              <h2 style={{ fontFam
+              <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 25, color: TOKENS.ink, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+                <EvidenceStamp level={entry.evidencia} />
+                {entry.mecanismo && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim }}>{entry.mecanismo}</span>}
+              </div>
+              <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
+                <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+              </div>
+              {entry.frecuencia && (
+                <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18, marginTop: 18 }}>
+                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Frecuencia</p>
+                  <p style={{ color: TOKENS.ink, fontSize: 14 }}>{entry.frecuencia}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(ErrorBoundary, null, React.createElement(App)));
+document.getElementById("diagnostico").style.display = "none";
+
+</script>
+
+<script>
+(function () {
+  try {
+    var source = document.getElementById("app-source").textContent;
+    var output = Babel.transform(source, { presets: ["react"] }).code;
+    var run = new Function("React", "ReactDOM", output);
+    run(React, ReactDOM);
+  } catch (err) {
+    var d = document.getElementById("diagnostico");
+    d.style.display = "block";
+    d.innerText = "ERROR REAL DETECTADO:\n" + ((err && (err.stack || err.message)) || err) +
+      "\n\nMandale esta captura completa a Claude para resolverlo.";
+  }
+})();
+</script>
+</body>
+</html>
