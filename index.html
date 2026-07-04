@@ -255,6 +255,33 @@ function LogMealScreen({ onBack }) {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    console.error("Error atrapado por ErrorBoundary:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 24, fontFamily: "'IBM Plex Sans', sans-serif" }}>
+          <p style={{ color: "#B3453D", fontWeight: 700, fontSize: 15, marginBottom: 10 }}>Error real en la app:</p>
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, color: "#101826", background: "#FFFFFF", border: "1px solid #E2E6EB", borderRadius: 8, padding: 14, lineHeight: 1.5 }}>
+            {String((this.state.error && (this.state.error.stack || this.state.error.message)) || this.state.error)}
+          </pre>
+          <p style={{ fontSize: 12, color: "#5B6472", marginTop: 12 }}>Mandale este texto completo a Claude para resolverlo.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -381,15 +408,4 @@ function App() {
               <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 24, cursor: "pointer", padding: 0 }}>
                 ← Volver
               </button>
-              <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 25, color: TOKENS.ink, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-                <EvidenceStamp level={entry.evidencia} />
-                {entry.mecanismo && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim }}>{entry.mecanismo}</span>}
-              </div>
-              <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
-                <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
-              </div>
-              {entry.frecuencia && (
-                <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18, marginTop: 18 }}>
-                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Frecuencia</p>
-                  <p style={{
+              <h2 style={{ fo
