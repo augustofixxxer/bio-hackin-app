@@ -184,16 +184,32 @@ function LogMealScreen({ onBack }) {
   };
 
   if (resultado) {
+    const resueltos = resultado.resueltos || [];
     return (
       <div className="fade-in">
         <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
           ← Categorías
         </button>
         <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 21, color: TOKENS.ink, marginBottom: 16, letterSpacing: "-0.01em" }}>
-          {resultado.bloqueos.length === 0 ? "Sin bloqueos detectados" : `${resultado.bloqueos.length} bloqueo${resultado.bloqueos.length > 1 ? "s" : ""} detectado${resultado.bloqueos.length > 1 ? "s" : ""}`}
+          {resultado.bloqueos.length > 0
+            ? `${resultado.bloqueos.length} bloqueo${resultado.bloqueos.length > 1 ? "s" : ""} detectado${resultado.bloqueos.length > 1 ? "s" : ""}`
+            : resueltos.length > 0
+            ? "Buena elección"
+            : "Sin bloqueos detectados"}
         </h2>
-        {resultado.bloqueos.length === 0 && (
+        {resultado.bloqueos.length === 0 && resueltos.length === 0 && (
           <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.6 }}>No encontramos combinaciones conflictivas conocidas en lo que registraste. Igual quedó guardado en tu historial.</p>
+        )}
+        {resueltos.length > 0 && (
+          <div style={{ display: "grid", gap: 12, marginBottom: resultado.bloqueos.length ? 16 : 0 }}>
+            {resueltos.map((r, i) => (
+              <div key={"resuelto-" + i} style={{ background: TOKENS.alto + "0D", border: `1px solid ${TOKENS.alto}55`, borderRadius: 8, padding: 18 }}>
+                <p style={{ color: TOKENS.alto, fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 6 }}>✓ Hackeo ya aplicado</p>
+                <p style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{r.combinacion}</p>
+                <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6 }}>{r.mensaje}</p>
+              </div>
+            ))}
+          </div>
         )}
         <div style={{ display: "grid", gap: 12 }}>
           {resultado.bloqueos.map((b, i) => (
