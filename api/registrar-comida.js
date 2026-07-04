@@ -41,6 +41,12 @@ function normalizar(texto) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+const PALABRAS_CASERO = ["casera", "caseras", "casero", "caseros", "en casa", "hecho en casa", "hecha en casa"];
+
+function esVersionCasera(textoNormalizado) {
+  return PALABRAS_CASERO.some((p) => textoNormalizado.includes(normalizar(p)));
+}
+
 async function airtableFetch(path, apiKey, options = {}) {
   const resp = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${path}`, {
     ...options,
@@ -95,6 +101,7 @@ export default async function handler(req, res) {
 
   try {
     const textoNormalizado = normalizar(texto);
+    const versionCasera = esVersionCasera(textoNormalizado);
 
     // 1. Traer las Reglas con sus palabras clave
     const reglas = await fetchAllRecords(TABLE_REGLAS, apiKey);
@@ -108,6 +115,11 @@ export default async function handler(req, res) {
         .filter(Boolean)
         .some((clave) => textoNormalizado.includes(clave));
     });
+
+    // 2b. Si el texto indica versión casera, esas coincidencias quedan "resueltas"
+    // (ya se aplicó el hackeo) y no se tratan como bloqueo real.
+    const bloqueosReales = versionCasera ? [] : coincidencias;
+    const resueltos = versionCasera ? coincidencias : [];
 
     // 3. Crear el Registro Diario
     const fechaHoy = new Date().toISOString().split("T")[0];
@@ -128,35 +140,32 @@ export default async function handler(req, res) {
     });
     const registroId = registroCreado.records[0].id;
 
-    // 4. Si no hay coincidencias, devolver directo
-    if (coincidencias.length === 0) {
-      res.status(200).json({ registroId, bloqueos: [] });
-      return;
-    }
-
-    // 5. Traer Soluciones para poder mostrar la recomendación de cada bloqueo
+    // 4. Traer Soluciones (las necesitamos tanto para bloqueos reales como para resueltos)
     const soluciones = await fetchAllRecords(TABLE_SOLUCIONES, apiKey);
     const solucionesPorId = Object.fromEntries(soluciones.map((s) => [s.id, s.fields]));
 
-    // 6. Crear un Bloqueo por cada Regla que matcheó
-    const bloqueosCreados = await airtableFetch(TABLE_BLOQUEOS, apiKey, {
-      method: "POST",
-      body: JSON.stringify({
-        records: coincidencias.map((r) => ({
-          fields: {
-            [F_BLOQUEOS.nombre]: r.fields[F_REGLAS.combinacion] || "Bloqueo detectado",
-            [F_BLOQUEOS.comida]: texto,
-            [F_BLOQUEOS.fecha]: fechaHoy,
-            [F_BLOQUEOS.regla]: r.fields[F_REGLAS.combinacion] || "",
-            [F_BLOQUEOS.registro]: [registroId],
-          },
-        })),
-        typecast: true,
-      }),
-    });
+    // 5. Si no hay coincidencias reales, no se crean Bloqueos en Airtable
+    let bloqueosCreados = { records: [] };
+    if (bloqueosReales.length > 0) {
+      bloqueosCreados = await airtableFetch(TABLE_BLOQUEOS, apiKey, {
+        method: "POST",
+        body: JSON.stringify({
+          records: bloqueosReales.map((r) => ({
+            fields: {
+              [F_BLOQUEOS.nombre]: r.fields[F_REGLAS.combinacion] || "Bloqueo detectado",
+              [F_BLOQUEOS.comida]: texto,
+              [F_BLOQUEOS.fecha]: fechaHoy,
+              [F_BLOQUEOS.regla]: r.fields[F_REGLAS.combinacion] || "",
+              [F_BLOQUEOS.registro]: [registroId],
+            },
+          })),
+          typecast: true,
+        }),
+      });
+    }
 
-    // 7. Armar la respuesta con el detalle de cada bloqueo + su solución
-    const bloqueos = coincidencias.map((r, i) => {
+    // 6. Armar bloqueos reales con su solución
+    const bloqueos = bloqueosReales.map((r, i) => {
       const solucionIds = r.fields[F_REGLAS.solucionAplicable] || [];
       const primeraSolucion = solucionIds.length ? solucionesPorId[solucionIds[0]] : null;
       return {
@@ -172,8 +181,24 @@ export default async function handler(req, res) {
       };
     });
 
-    res.status(200).json({ registroId, bloqueos });
+    // 7. Armar resueltos (versión casera) como refuerzo positivo, sin crear Bloqueo
+    const resueltosRespuesta = resueltos.map((r) => {
+      const solucionIds = r.fields[F_REGLAS.solucionAplicable] || [];
+      const primeraSolucion = solucionIds.length ? solucionesPorId[solucionIds[0]] : null;
+      return {
+        combinacion: r.fields[F_REGLAS.combinacion] || "",
+        mensaje: "Ya aplicaste este hackeo con la versión casera.",
+        solucion: primeraSolucion
+          ? {
+              nombre: primeraSolucion[F_SOLUCIONES.nombre] || "",
+              adaptacion: primeraSolucion[F_SOLUCIONES.adaptacion] || "",
+            }
+          : null,
+      };
+    });
+
+    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta });
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }
-      }
+}
