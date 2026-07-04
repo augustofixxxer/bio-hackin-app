@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+       <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
@@ -36,7 +36,7 @@
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" onerror="document.getElementById('diagnostico').innerText='No pudo cargar React-DOM desde jsdelivr. Puede ser un bloqueo de red.'"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js" onerror="document.getElementById('diagnostico').innerText='No pudo cargar Babel desde jsdelivr. Puede ser un bloqueo de red.'"></script>
 
-<script type="text/babel" data-presets="react">
+<script id="app-source" type="text/plain">
 document.getElementById("diagnostico").innerText = "Librerías cargadas, iniciando la app...";
 
 const { useState, useEffect } = React;
@@ -408,4 +408,4 @@ function App() {
               <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 24, cursor: "pointer", padding: 0 }}>
                 ← Volver
               </button>
-              <h2 style={{ fo
+              <h2 style={{ fontFam
