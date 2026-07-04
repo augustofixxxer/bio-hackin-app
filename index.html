@@ -54,6 +54,33 @@ const EVIDENCE_STYLES = {
   Especulativo: { color: TOKENS.especulativo, label: "Especulativo" },
 };
 
+const CATEGORY_ICONS = {
+  "Aumento de Energía Diaria": "⚡",
+  "Balance Hormonal y Estrés": "🌿",
+  "Salud Digestiva y Antinflamación": "🌾",
+  "Longevidad y Antienvejecimiento": "⏳",
+  "Optimización de Testosterona": "💪",
+  "Recuperación Post-Entrenamiento": "🔄",
+  "Salud Cardiovascular y Potencia": "❤️",
+  "Ganancia de Masa Muscular": "🍗",
+  "perdida de peso y definición": "📉",
+  "Piel y Cabello": "✨",
+  "Foco y Concentración": "🎯",
+  "Hábitos y Rutinas": "🕯️",
+  "Sin categorizar (pendiente)": "❔",
+};
+
+function CategoryIcon({ name }) {
+  const icon = CATEGORY_ICONS[name] || "•";
+  return (
+    <span style={{
+      width: 36, height: 36, borderRadius: 8, background: TOKENS.primarySoft,
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      fontSize: 17, flexShrink: 0,
+    }}>{icon}</span>
+  );
+}
+
 function EvidenceStamp({ level }) {
   if (!level) return null;
   const style = EVIDENCE_STYLES[level] || { color: TOKENS.inkDim, label: level };
@@ -68,6 +95,48 @@ function EvidenceStamp({ level }) {
         fontFamily: "'IBM Plex Mono', monospace", fontSize: "10.5px",
         letterSpacing: "0.03em", color: style.color, fontWeight: 500,
       }}>{style.label}</span>
+    </div>
+  );
+}
+
+function EvidenceSummaryBar({ entradas }) {
+  const total = entradas.length;
+  if (!total) return null;
+  const counts = { Alto: 0, Medio: 0, Especulativo: 0 };
+  entradas.forEach((e) => {
+    if (counts[e.evidencia] !== undefined) counts[e.evidencia] += 1;
+  });
+  const segments = [
+    { key: "Alto", color: TOKENS.alto, count: counts.Alto },
+    { key: "Medio", color: TOKENS.medio, count: counts.Medio },
+    { key: "Especulativo", color: TOKENS.especulativo, count: counts.Especulativo },
+  ];
+  const sinClasificar = total - counts.Alto - counts.Medio - counts.Especulativo;
+
+  return (
+    <div style={{ marginBottom: 22, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 16 }}>
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: TOKENS.inkDim, letterSpacing: "0.05em", textTransform: "uppercase", marginTop: 0, marginBottom: 10 }}>
+        Solidez del contenido cargado ({total} entradas)
+      </p>
+      <div style={{ display: "flex", width: "100%", height: 8, borderRadius: 999, overflow: "hidden", background: TOKENS.border, marginBottom: 10 }}>
+        {segments.map((s) => s.count > 0 && (
+          <div key={s.key} style={{ width: `${(s.count / total) * 100}%`, background: s.color }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px" }}>
+        {segments.map((s) => (
+          <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: s.color }} />
+            <span style={{ fontSize: 12, color: TOKENS.inkDim }}>{s.key} · {s.count}</span>
+          </div>
+        ))}
+        {sinClasificar > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: TOKENS.border, border: `1px solid ${TOKENS.borderStrong}` }} />
+            <span style={{ fontSize: 12, color: TOKENS.inkDim }}>Sin clasificar · {sinClasificar}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -230,7 +299,7 @@ function App() {
   return (
     <div style={{ minHeight: "100vh", background: TOKENS.bg }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "28px 20px 60px" }}>
-        <header style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div>
             <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, letterSpacing: "0.08em", marginBottom: 6, textTransform: "uppercase" }}>
               Comida real · Dato verificable · Sincronizado {new Date(data.actualizado).toLocaleString("es-AR")}
@@ -249,6 +318,7 @@ function App() {
 
         {view.screen === "categories" && (
           <div className="fade-in">
+            <EvidenceSummaryBar entradas={data.entradas} />
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "10px 14px" }}>
               <input
                 value={query}
@@ -260,11 +330,14 @@ function App() {
             <div style={{ display: "grid", gap: 10 }}>
               {filteredCats.map((cat) => (
                 <button key={cat.name} onClick={() => setView({ screen: "category", name: cat.name })}
-                  style={{ textAlign: "left", width: "100%", background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "18px 20px", cursor: "pointer" }}>
-                  <span style={{ fontFamily: "'Libre Franklin', sans-serif", fontSize: 17, fontWeight: 700, color: TOKENS.ink, letterSpacing: "-0.01em" }}>{cat.name}</span>
-                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, marginTop: 6, marginBottom: 0 }}>
-                    {cat.entries.length} {cat.entries.length === 1 ? "entrada" : "entradas"}
-                  </p>
+                  style={{ textAlign: "left", width: "100%", display: "flex", alignItems: "center", gap: 14, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "16px 20px", cursor: "pointer" }}>
+                  <CategoryIcon name={cat.name} />
+                  <span style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontFamily: "'Libre Franklin', sans-serif", fontSize: 17, fontWeight: 700, color: TOKENS.ink, letterSpacing: "-0.01em" }}>{cat.name}</span>
+                    <span style={{ display: "block", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, marginTop: 4 }}>
+                      {cat.entries.length} {cat.entries.length === 1 ? "entrada" : "entradas"}
+                    </span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -282,7 +355,10 @@ function App() {
               <button onClick={() => setView({ screen: "categories" })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
                 ← Categorías
               </button>
-              <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 22, color: TOKENS.ink, marginBottom: 20, letterSpacing: "-0.01em" }}>{view.name}</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <CategoryIcon name={view.name} />
+                <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 22, color: TOKENS.ink, letterSpacing: "-0.01em", margin: 0 }}>{view.name}</h2>
+              </div>
               <div style={{ display: "grid", gap: 10 }}>
                 {cat.map((entry) => (
                   <button key={entry.id} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })}
@@ -316,20 +392,4 @@ function App() {
               {entry.frecuencia && (
                 <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18, marginTop: 18 }}>
                   <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Frecuencia</p>
-                  <p style={{ color: TOKENS.ink, fontSize: 14 }}>{entry.frecuencia}</p>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-document.getElementById("diagnostico").style.display = "none";
-
-</script>
-</body>
-</html>
+                  <p style={{
