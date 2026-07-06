@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad — Reseteo Propio</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    line-height: 1.6;
+    color: #222;
+    background: #fafafa;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+  .tagline {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 28px;
+  }
+  h2 {
+    font-size: 1.1rem;
+    margin-top: 32px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 6px;
+  }
+  ul { padding-left: 20px; }
+  .borrado-box {
+    margin-top: 40px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+  }
+  .borrado-box input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  .borrado-box button {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    background: #222;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+  }
+  .borrado-box button:disabled {
+    background: #999;
+  }
+  #mensaje-borrado {
+    margin-top: 12px;
+    font-size: 0.95rem;
+  }
+  a.volver {
+    display: inline-block;
+    margin-top: 40px;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+  <h1>Reseteo Propio</h1>
+  <div class="tagline">Te mostramos el mapa. El camino, lo elegís vos.</div>
+
+  <h2>Política de Privacidad</h2>
+  <p>Última actualización: 5 de julio de 2026.</p>
+
+  <h2>1. Qué datos recolectamos</h2>
+  <ul>
+    <li>Email y nombre o alias, si te registrás con Google.</li>
+    <li>Rango etario y objetivo principal que elijas al crear tu cuenta.</li>
+    <li>Las comidas que registrás con la función "Cargar comida" y los resultados (bloqueos detectados) que genera esa carga.</li>
+  </ul>
+  <p>No recolectamos datos médicos, de salud sensible, ni ningún dato que no hayas ingresado vos mismo de forma voluntaria.</p>
+
+  <h2>2. Para qué usamos tus datos</h2>
+  <p>Únicamente para que la app funcione: detectar combinaciones de alimentos conflictivas según tu historial y mostrarte las soluciones correspondientes. No vendemos ni compartimos tus datos con terceros, y no los usamos con fines publicitarios.</p>
+
+  <h2>3. Dónde se almacenan</h2>
+  <p>Tus datos se guardan en Airtable (proveedor de base de datos) y la app corre en Vercel. Ambos servicios cifran la información en tránsito y en reposo por defecto de su infraestructura.</p>
+
+  <h2>4. Tus derechos (Ley 25.326, Argentina)</h2>
+  <p>Tenés derecho a acceder, rectificar, actualizar o solicitar la eliminación total de tus datos en cualquier momento. Podés hacerlo con el formulario de abajo.</p>
+
+  <h2>5. Solicitar el borrado de tus datos</h2>
+  <p>Ingresá el email con el que te registraste. Vamos a eliminar tu cuenta y todo tu historial de comidas y bloqueos de forma permanente.</p>
+
+  <div class="borrado-box">
+    <input type="email" id="email-borrado" placeholder="tu-email@ejemplo.com" autocomplete="email">
+    <button id="btn-borrar" onclick="solicitarBorrado()">Solicitar borrado de mis datos</button>
+    <div id="mensaje-borrado"></div>
+  </div>
+
+  <a class="volver" href="index.html">&larr; Volver a Reseteo Propio</a>
+
+  <script>
+    async function solicitarBorrado() {
+      const email = document.getElementById('email-borrado').value.trim();
+      const boton = document.getElementById('btn-borrar');
+      const mensaje = document.getElementById('mensaje-borrado');
+
+      if (!email || !email.includes('@')) {
+        mensaje.textContent = 'Ingresá un email válido.';
+        mensaje.style.color = '#b00';
+        return;
+      }
+
+      boton.disabled = true;
+      boton.textContent = 'Procesando...';
+      mensaje.textContent = '';
+
+      try {
+        const respuesta = await fetch('/api/borrar-datos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await respuesta.json();
+
+        if (respuesta.ok) {
+          mensaje.textContent = data.mensaje || 'Solicitud procesada. Si el email estaba registrado, tus datos fueron eliminados.';
+          mensaje.style.color = '#0a7d2c';
+          document.getElementById('email-borrado').value = '';
+        } else {
+          mensaje.textContent = 'Hubo un error. Probá de nuevo en unos minutos.';
+          mensaje.style.color = '#b00';
+        }
+      } catch (e) {
+        mensaje.textContent = 'No se pudo conectar. Revisá tu conexión e intentá de nuevo.';
+        mensaje.style.color = '#b00';
+      }
+
+      boton.disabled = false;
+      boton.textContent = 'Solicitar borrado de mis datos';
+    }
+  </script>
+
+</body>
+</html>
