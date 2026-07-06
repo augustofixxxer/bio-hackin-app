@@ -59,6 +59,46 @@ function contienePalabraCompleta(textoNormalizado, clave) {
   return patron.test(textoNormalizado);
 }
 
+// Evalúa una Regla contra el texto normalizado.
+// Formato del campo "Palabras clave":
+//   - Sin ";": lista simple, alcanza con que aparezca UNA cualquiera (regla de un solo alimento).
+//   - Con UN ";": "Grupo A ; Grupo B" -> necesita al menos una palabra de CADA grupo (combinación real).
+//   - Con DOS ";": "Grupo A ; Grupo B ; Disparadores" -> además de la combinación, cualquier
+//     palabra de "Disparadores" alcanza sola (para platos compuestos que ya implican ambos, ej. "milanesa napolitana").
+//   - Prefijo "TIP:" al inicio -> no es una alerta, es un tip positivo (no bloquea, se muestra distinto).
+function evaluarRegla(textoNormalizado, palabrasClaveRaw) {
+  let raw = (palabrasClaveRaw || "").trim();
+  let esTip = false;
+  if (/^tip:/i.test(raw)) {
+    esTip = true;
+    raw = raw.replace(/^tip:/i, "").trim();
+  }
+
+  const segmentos = raw
+    .split(";")
+    .map((seg) =>
+      seg
+        .split(",")
+        .map((k) => normalizar(k.trim()))
+        .filter(Boolean)
+    )
+    .filter((grupo) => grupo.length > 0);
+
+  let coincide = false;
+  if (segmentos.length <= 1) {
+    const grupo = segmentos[0] || [];
+    coincide = grupo.some((clave) => contienePalabraCompleta(textoNormalizado, clave));
+  } else {
+    const [grupoA, grupoB, disparadores] = segmentos;
+    const matchA = grupoA.some((clave) => contienePalabraCompleta(textoNormalizado, clave));
+    const matchB = grupoB.some((clave) => contienePalabraCompleta(textoNormalizado, clave));
+    const matchDisparador = (disparadores || []).some((clave) => contienePalabraCompleta(textoNormalizado, clave));
+    coincide = (matchA && matchB) || matchDisparador;
+  }
+
+  return { coincide, esTip };
+}
+
 const PALABRAS_CASERO = ["casera", "caseras", "casero", "caseros", "en casa", "hecho en casa", "hecha en casa"];
 
 function esVersionCasera(textoNormalizado) {
@@ -124,15 +164,13 @@ export default async function handler(req, res) {
     // 1. Traer las Reglas con sus palabras clave
     const reglas = await fetchAllRecords(TABLE_REGLAS, apiKey);
 
-    // 2. Buscar coincidencias (por palabra completa, no por pedazos de palabra)
-    const coincidencias = reglas.filter((r) => {
-      const claves = r.fields[F_REGLAS.palabrasClave] || "";
-      return claves
-        .split(",")
-        .map((k) => normalizar(k.trim()))
-        .filter(Boolean)
-        .some((clave) => contienePalabraCompleta(textoNormalizado, clave));
-    });
+    // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos
+    const evaluaciones = reglas.map((r) => ({
+      regla: r,
+      ...evaluarRegla(textoNormalizado, r.fields[F_REGLAS.palabrasClave]),
+    }));
+    const coincidencias = evaluaciones.filter((e) => e.coincide && !e.esTip).map((e) => e.regla);
+    const coincidenciasTip = evaluaciones.filter((e) => e.coincide && e.esTip).map((e) => e.regla);
 
     // 2b. Si el texto indica versión casera, esas coincidencias quedan "resueltas"
     // (ya se aplicó el hackeo) y no se tratan como bloqueo real.
@@ -216,9 +254,16 @@ export default async function handler(req, res) {
       };
     });
 
-    // 8. Si no hay bloqueos reales, buscar tips positivos en Alternativas locales
+    // 8. Tips positivos de Reglas (siempre se muestran, marcadas con "TIP:" en Airtable)
+    let sugerencias = coincidenciasTip.map((r) => ({
+      nombre: r.fields[F_REGLAS.combinacion] || "",
+      mecanismo: r.fields[F_REGLAS.resultado] || "",
+      opcion: "",
+      evidencia: "",
+    }));
+
+    // 8b. Si no hay bloqueos reales, sumamos tips positivos en Alternativas locales
     // (matching simple por texto, ya que esa tabla no tiene un campo de palabras clave dedicado).
-    let sugerencias = [];
     if (bloqueosReales.length === 0) {
       const alternativas = await fetchAllRecords(TABLE_ALTERNATIVAS, apiKey);
       const coincidenciasAlternativas = alternativas.filter((a) => {
@@ -229,12 +274,14 @@ export default async function handler(req, res) {
           .filter((palabra) => palabra.length > 3)
           .some((palabra) => texto1.includes(palabra) || texto2.includes(palabra));
       });
-      sugerencias = coincidenciasAlternativas.slice(0, 2).map((a) => ({
-        nombre: a.fields[F_ALTERNATIVAS.nombre] || "",
-        mecanismo: a.fields[F_ALTERNATIVAS.mecanismo] || "",
-        opcion: a.fields[F_ALTERNATIVAS.opcion] || "",
-        evidencia: a.fields[F_ALTERNATIVAS.evidencia] || "",
-      }));
+      sugerencias = sugerencias.concat(
+        coincidenciasAlternativas.slice(0, 2).map((a) => ({
+          nombre: a.fields[F_ALTERNATIVAS.nombre] || "",
+          mecanismo: a.fields[F_ALTERNATIVAS.mecanismo] || "",
+          opcion: a.fields[F_ALTERNATIVAS.opcion] || "",
+          evidencia: a.fields[F_ALTERNATIVAS.evidencia] || "",
+        }))
+      );
     }
 
     res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias });
