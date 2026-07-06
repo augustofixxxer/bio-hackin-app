@@ -263,16 +263,29 @@ export default async function handler(req, res) {
     }));
 
     // 8b. Si no hay bloqueos reales, sumamos tips positivos en Alternativas locales
-    // (matching simple por texto, ya que esa tabla no tiene un campo de palabras clave dedicado).
+    // (comparación por palabra completa —con una raíz simple de plural—, no por substring:
+    // esto evita que "ensalada" matchee por ser parte de "ensaladas").
     if (bloqueosReales.length === 0) {
       const alternativas = await fetchAllRecords(TABLE_ALTERNATIVAS, apiKey);
+      const tokenizar = (t) => (t || "").split(/[^a-z0-9]+/).filter((p) => p.length > 3);
+      const raiz = (p) => (p.length > 4 && p.endsWith("s") ? p.slice(0, -1) : p);
+      // Palabras genéricas que no identifican a un alimento específico: si matchean solas,
+      // generan falsos positivos (ej. "ensalada" enganchando la ficha de la lechuga).
+      const GENERICAS = new Set([
+        "ensalada", "ensaladas", "comida", "comidas", "plato", "platos", "alimento",
+        "alimentos", "base", "fresca", "fresco", "frescos", "frescas", "opcion",
+        "opciones", "saludable", "saludables", "diaria", "diario", "buena", "bueno",
+        "aporte", "util", "utiles",
+      ].map(raiz));
       const coincidenciasAlternativas = alternativas.filter((a) => {
-        const texto1 = normalizar(a.fields[F_ALTERNATIVAS.nombre] || "");
-        const texto2 = normalizar(a.fields[F_ALTERNATIVAS.opcion] || "");
-        return textoNormalizado
-          .split(/\s+/)
-          .filter((palabra) => palabra.length > 3)
-          .some((palabra) => texto1.includes(palabra) || texto2.includes(palabra));
+        const candidatos = new Set([
+          ...tokenizar(normalizar(a.fields[F_ALTERNATIVAS.nombre] || "")).map(raiz),
+          ...tokenizar(normalizar(a.fields[F_ALTERNATIVAS.opcion] || "")).map(raiz),
+        ]);
+        const palabrasTexto = tokenizar(textoNormalizado)
+          .map(raiz)
+          .filter((p) => !GENERICAS.has(p));
+        return palabrasTexto.some((p) => candidatos.has(p) && !GENERICAS.has(p));
       });
       sugerencias = sugerencias.concat(
         coincidenciasAlternativas.slice(0, 2).map((a) => ({
