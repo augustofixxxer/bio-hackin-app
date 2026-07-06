@@ -40,6 +40,7 @@ const F_REGISTRO = {
   fecha: "fldhXNUiS6zbkyfwW",
   comida: "fldWHR0KR4k3pq70X",
   momento: "fldgxvMT73YIMoZ22",
+  usuario: "fld3S0l46TCaGbEPy",
 };
 
 function normalizar(texto) {
@@ -101,7 +102,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { texto, momento } = req.body || {};
+  const { texto, momento, usuarioId } = req.body || {};
   if (!texto || typeof texto !== "string" || texto.trim().length === 0) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
     return;
@@ -140,6 +141,7 @@ export default async function handler(req, res) {
               [F_REGISTRO.fecha]: fechaHoy,
               [F_REGISTRO.comida]: texto,
               ...(momento ? { [F_REGISTRO.momento]: momento } : {}),
+              ...(usuarioId ? { [F_REGISTRO.usuario]: [usuarioId] } : {}),
             },
           },
         ],
