@@ -185,6 +185,7 @@ function LogMealScreen({ onBack }) {
 
   if (resultado) {
     const resueltos = resultado.resueltos || [];
+    const sugerencias = resultado.sugerencias || [];
     return (
       <div className="fade-in">
         <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
@@ -197,7 +198,7 @@ function LogMealScreen({ onBack }) {
             ? "Buena elección"
             : "Sin bloqueos detectados"}
         </h2>
-        {resultado.bloqueos.length === 0 && resueltos.length === 0 && (
+        {resultado.bloqueos.length === 0 && resueltos.length === 0 && sugerencias.length === 0 && (
           <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.6 }}>No encontramos combinaciones conflictivas conocidas en lo que registraste. Igual quedó guardado en tu historial.</p>
         )}
         {resueltos.length > 0 && (
@@ -225,6 +226,17 @@ function LogMealScreen({ onBack }) {
             </div>
           ))}
         </div>
+        {sugerencias.length > 0 && (
+          <div style={{ display: "grid", gap: 12, marginTop: resultado.bloqueos.length ? 16 : 0 }}>
+            {sugerencias.map((s, i) => (
+              <div key={"sugerencia-" + i} style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
+                <p style={{ color: TOKENS.primary, fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 6 }}>💡 Tip relacionado</p>
+                <p style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{s.nombre}</p>
+                <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6 }}>{s.mecanismo}</p>
+              </div>
+            ))}
+          </div>
+        )}
         <button onClick={() => { setResultado(null); setTexto(""); setMomento(""); }}
           style={{ marginTop: 20, width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "13px", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
           Registrar otra comida
