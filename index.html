@@ -35,6 +35,7 @@
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js" onerror="document.getElementById('diagnostico').innerText='No pudo cargar React desde jsdelivr. Puede ser un bloqueo de red.'"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js" onerror="document.getElementById('diagnostico').innerText='No pudo cargar React-DOM desde jsdelivr. Puede ser un bloqueo de red.'"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js" onerror="document.getElementById('diagnostico').innerText='No pudo cargar Babel desde jsdelivr. Puede ser un bloqueo de red.'"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script id="app-source" type="text/plain">
 document.getElementById("diagnostico").innerText = "Librerías cargadas, iniciando la app...";
@@ -47,6 +48,8 @@ const TOKENS = {
   primary: "#1F4B6E", primarySoft: "#EAF0F5",
   alto: "#2F6F62", medio: "#9C7A2E", especulativo: "#7D8590",
 };
+
+const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
 
 const EVIDENCE_STYLES = {
   Alto: { color: TOKENS.alto, label: "Evidencia alta" },
@@ -156,7 +159,7 @@ function groupByCategoria(entradas) {
   return grupos;
 }
 
-function LogMealScreen({ onBack }) {
+function LogMealScreen({ onBack, usuarioId }) {
   const [texto, setTexto] = useState("");
   const [momento, setMomento] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -171,7 +174,7 @@ function LogMealScreen({ onBack }) {
       const resp = await fetch("/api/registrar-comida", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto, momento: momento || undefined }),
+        body: JSON.stringify({ texto, momento: momento || undefined, usuarioId }),
       });
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
@@ -283,6 +286,67 @@ function LogMealScreen({ onBack }) {
   );
 }
 
+function LoginScreen({ onLogin }) {
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleCredentialResponse(response) {
+    setCargando(true);
+    setError(null);
+    try {
+      const resp = await fetch("/api/login-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      localStorage.setItem("reseteo_usuario", JSON.stringify(data));
+      onLogin(data);
+    } catch (e) {
+      setError(String(e.message || e));
+      setCargando(false);
+    }
+  }
+
+  useEffect(() => {
+    let cancelado = false;
+    function intentarRenderizar() {
+      if (cancelado) return;
+      if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+        setTimeout(intentarRenderizar, 200);
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-signin-button"),
+        { theme: "outline", size: "large", width: 280, text: "signin_with" }
+      );
+    }
+    intentarRenderizar();
+    return () => { cancelado = true; };
+  }, []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: TOKENS.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ maxWidth: 340, textAlign: "center" }}>
+        <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 26, color: TOKENS.ink, marginBottom: 10, letterSpacing: "-0.02em" }}>
+          Reseteo Propio
+        </h1>
+        <p style={{ color: TOKENS.inkDim, fontSize: 13.5, marginBottom: 28, lineHeight: 1.5 }}>
+          Te mostramos el mapa. El camino, lo elegís vos.
+        </p>
+        <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }}></div>
+        {cargando && <p style={{ color: TOKENS.inkDim, fontSize: 13, marginTop: 16 }}>Ingresando...</p>}
+        {error && <p style={{ color: "#B3453D", fontSize: 13, marginTop: 16 }}>{error}</p>}
+      </div>
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -315,6 +379,14 @@ function App() {
   const [error, setError] = useState(null);
   const [view, setView] = useState({ screen: "categories" });
   const [query, setQuery] = useState("");
+  const [usuario, setUsuario] = useState(() => {
+    try {
+      const guardado = localStorage.getItem("reseteo_usuario");
+      return guardado ? JSON.parse(guardado) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   useEffect(() => {
     fetch("/api/data")
@@ -339,6 +411,10 @@ function App() {
 
   if (!data) {
     return <div style={{ padding: 24, color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif" }}>Cargando...</div>;
+  }
+
+  if (!usuario) {
+    return <LoginScreen onLogin={setUsuario} />;
   }
 
   const grupos = groupByCategoria(data.entradas);
@@ -400,7 +476,7 @@ function App() {
         )}
 
         {view.screen === "log" && (
-          <LogMealScreen onBack={() => setView({ screen: "categories" })} />
+          <LogMealScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
         )}
 
         {view.screen === "category" && (() => {
@@ -458,6 +534,13 @@ function App() {
           <a href="privacidad.html" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, textDecoration: "none" }}>
             Política de privacidad
           </a>
+          <span style={{ margin: "0 8px", color: TOKENS.border }}>·</span>
+          <button
+            onClick={() => { localStorage.removeItem("reseteo_usuario"); setUsuario(null); }}
+            style={{ background: "none", border: "none", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, cursor: "pointer", padding: 0 }}
+          >
+            Cerrar sesión ({usuario.email})
+          </button>
         </footer>
       </div>
     </div>
