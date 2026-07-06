@@ -380,6 +380,116 @@ function QuienSoyScreen({ onBack }) {
   );
 }
 
+function EscalaBienestar({ etiqueta, valor, onChange }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, fontWeight: 600, color: TOKENS.ink, marginBottom: 8 }}>
+        {etiqueta}
+      </p>
+      <div style={{ display: "flex", gap: 8 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onClick={() => onChange(n)}
+            style={{
+              flex: 1,
+              padding: "12px 0",
+              borderRadius: 8,
+              border: `1px solid ${valor === n ? TOKENS.primary : TOKENS.border}`,
+              background: valor === n ? TOKENS.primary : TOKENS.surface,
+              color: valor === n ? "#FFFFFF" : TOKENS.ink,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BienestarScreen({ onBack, usuarioId }) {
+  const [energia, setEnergia] = useState(null);
+  const [animo, setAnimo] = useState(null);
+  const [sueno, setSueno] = useState(null);
+  const [digestion, setDigestion] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState(null);
+
+  const completo = energia && animo && sueno && digestion;
+
+  async function enviar() {
+    setEnviando(true);
+    setError(null);
+    setResultado(null);
+    try {
+      const resp = await fetch("/api/registrar-bienestar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ energia, animo, sueno, digestion, usuarioId }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "Error al guardar");
+      setResultado("¡Registrado! Gracias por sumarlo.");
+      setEnergia(null);
+      setAnimo(null);
+      setSueno(null);
+      setDigestion(null);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div className="fade-in">
+      <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+        ← Categorías
+      </button>
+
+      <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 24, color: TOKENS.ink, marginBottom: 6, letterSpacing: "-0.02em" }}>
+        ¿Cómo te sentís hoy?
+      </h1>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: TOKENS.inkDim, marginBottom: 24 }}>
+        1 = muy bajo/malo · 5 = muy alto/bueno. Cargalo cuando quieras, las veces que quieras.
+      </p>
+
+      <EscalaBienestar etiqueta="Energía" valor={energia} onChange={setEnergia} />
+      <EscalaBienestar etiqueta="Ánimo" valor={animo} onChange={setAnimo} />
+      <EscalaBienestar etiqueta="Sueño" valor={sueno} onChange={setSueno} />
+      <EscalaBienestar etiqueta="Digestión" valor={digestion} onChange={setDigestion} />
+
+      <button
+        onClick={enviar}
+        disabled={!completo || enviando}
+        style={{
+          width: "100%",
+          padding: "14px 0",
+          borderRadius: 8,
+          border: "none",
+          background: completo ? TOKENS.primary : TOKENS.border,
+          color: "#FFFFFF",
+          fontWeight: 700,
+          fontSize: 14,
+          cursor: completo ? "pointer" : "not-allowed",
+          marginTop: 8,
+        }}
+      >
+        {enviando ? "Guardando..." : "Guardar registro"}
+      </button>
+
+      {resultado && <p style={{ color: "#0a7d2c", fontSize: 13, marginTop: 14 }}>{resultado}</p>}
+      {error && <p style={{ color: "#B3453D", fontSize: 13, marginTop: 14 }}>{error}</p>}
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -485,8 +595,8 @@ function App() {
             style={{
               background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
               fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, letterSpacing: "0.04em", fontWeight: 600,
-              color: view.screen !== "quien-soy" ? TOKENS.ink : TOKENS.inkDim,
-              borderBottom: view.screen !== "quien-soy" ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
+              color: (view.screen === "categories" || view.screen === "category" || view.screen === "entry" || view.screen === "log") ? TOKENS.ink : TOKENS.inkDim,
+              borderBottom: (view.screen === "categories" || view.screen === "category" || view.screen === "entry" || view.screen === "log") ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
               marginBottom: -1,
             }}>
             EXPLORADOR
@@ -501,10 +611,24 @@ function App() {
             }}>
             QUIÉN SOY
           </button>
+          <button onClick={() => setView({ screen: "bienestar" })}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, letterSpacing: "0.04em", fontWeight: 600,
+              color: view.screen === "bienestar" ? TOKENS.ink : TOKENS.inkDim,
+              borderBottom: view.screen === "bienestar" ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
+              marginBottom: -1,
+            }}>
+            BIENESTAR
+          </button>
         </nav>
 
         {view.screen === "quien-soy" && (
           <QuienSoyScreen onBack={() => setView({ screen: "categories" })} />
+        )}
+
+        {view.screen === "bienestar" && (
+          <BienestarScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
         )}
 
         {view.screen === "categories" && (
