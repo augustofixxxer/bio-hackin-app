@@ -50,6 +50,15 @@ function normalizar(texto) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function escapeRegex(texto) {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function contienePalabraCompleta(textoNormalizado, clave) {
+  const patron = new RegExp(`\\b${escapeRegex(clave)}\\b`);
+  return patron.test(textoNormalizado);
+}
+
 const PALABRAS_CASERO = ["casera", "caseras", "casero", "caseros", "en casa", "hecho en casa", "hecha en casa"];
 
 function esVersionCasera(textoNormalizado) {
@@ -115,14 +124,14 @@ export default async function handler(req, res) {
     // 1. Traer las Reglas con sus palabras clave
     const reglas = await fetchAllRecords(TABLE_REGLAS, apiKey);
 
-    // 2. Buscar coincidencias
+    // 2. Buscar coincidencias (por palabra completa, no por pedazos de palabra)
     const coincidencias = reglas.filter((r) => {
       const claves = r.fields[F_REGLAS.palabrasClave] || "";
       return claves
         .split(",")
         .map((k) => normalizar(k.trim()))
         .filter(Boolean)
-        .some((clave) => textoNormalizado.includes(clave));
+        .some((clave) => contienePalabraCompleta(textoNormalizado, clave));
     });
 
     // 2b. Si el texto indica versión casera, esas coincidencias quedan "resueltas"
