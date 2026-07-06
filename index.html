@@ -347,6 +347,39 @@ function LoginScreen({ onLogin }) {
   );
 }
 
+function QuienSoyScreen({ onBack }) {
+  const parrafos = [
+    "El 25 de enero de 2026 volví de vacaciones sintiéndome un desastre. Cansancio que no se iba con nada, insomnio, ansiedad, sangrado de encías, y unos pinchazos raros en la zona inguinal que después entendí que eran hernias. Ya había pasado por una docena de dietas distintas, con gimnasio y todo, y lo máximo que había logrado eran 3 kilos menos y cero cambio real en cómo me sentía. Puro maquillaje estético.",
+    "Soy reacio a médicos y medicamentos — no por ideología, es más bien terquedad — así que empecé a investigar por mi cuenta. Tengo una ventaja: cuando me propongo algo y veo resultados, lo sostengo. Y también tenía un miedo concreto empujándome: mis viejos y abuelos diabéticos, mi papá con cuatro hernias y problemas de próstata. La genética me estaba avisando.",
+    "Armé mi método con tres ejes simples: saqué harina, azúcar y aceites de semillas. Después fui cambiando la sal por condimentos que ayudan a digerir mejor, y sumé semillas de forma regular. Nada de conteo de calorías, nada de prohibiciones absolutas, ningún gimnasio obligatorio.",
+    "A fines de abril me hice estudios completos — sangre, orina, ecografía. Todos los marcadores volvieron a rango normal, varios mejor que \"normal\". Se me fue el sangrado de encías, recuperé energía todos los días, mi piel dejó de estar reseca. La ecografía de seguimiento ya no detectó las hernias — no tengo una explicación médica certera para eso puntual, lo cuento tal cual lo viví. Y llevo casi 10 kilos menos, sin esfuerzo forzado ni cárcel alimenticia.",
+    "No vengo a decirte que hagas lo mismo que yo. Vengo a mostrarte lo que hice, con la evidencia que tengo, separada de lo que dice la ciencia y de lo que es solo mi experiencia. Reseteo Propio es eso: te doy el mapa. La decisión — y el reseteo — son tuyos.",
+  ];
+
+  return (
+    <div className="fade-in">
+      <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+        ← Categorías
+      </button>
+
+      <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 26, color: TOKENS.ink, marginBottom: 6, letterSpacing: "-0.02em" }}>
+        Quién soy
+      </h1>
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: TOKENS.primary, marginBottom: 24, lineHeight: 1.5 }}>
+        Mi proceso personal, con evidencia clasificada. Armá tu propio reseteo.
+      </p>
+
+      <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 10, padding: "20px 22px" }}>
+        {parrafos.map((p, i) => (
+          <p key={i} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14.5, color: TOKENS.ink, lineHeight: 1.7, marginBottom: i === parrafos.length - 1 ? 0 : 16 }}>
+            {p}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -446,6 +479,33 @@ function App() {
             </button>
           )}
         </header>
+
+        <nav style={{ display: "flex", gap: 20, marginBottom: 24, borderBottom: `1px solid ${TOKENS.border}` }}>
+          <button onClick={() => setView({ screen: "categories" })}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, letterSpacing: "0.04em", fontWeight: 600,
+              color: view.screen !== "quien-soy" ? TOKENS.ink : TOKENS.inkDim,
+              borderBottom: view.screen !== "quien-soy" ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
+              marginBottom: -1,
+            }}>
+            EXPLORADOR
+          </button>
+          <button onClick={() => setView({ screen: "quien-soy" })}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, letterSpacing: "0.04em", fontWeight: 600,
+              color: view.screen === "quien-soy" ? TOKENS.ink : TOKENS.inkDim,
+              borderBottom: view.screen === "quien-soy" ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
+              marginBottom: -1,
+            }}>
+            QUIÉN SOY
+          </button>
+        </nav>
+
+        {view.screen === "quien-soy" && (
+          <QuienSoyScreen onBack={() => setView({ screen: "categories" })} />
+        )}
 
         {view.screen === "categories" && (
           <div className="fade-in">
