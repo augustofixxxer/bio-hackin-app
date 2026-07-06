@@ -7,6 +7,14 @@ const TABLE_REGLAS = "tblQHXCCsWei8zXAl";
 const TABLE_SOLUCIONES = "tbl8iPAmQpW0KxB8X";
 const TABLE_BLOQUEOS = "tblfYPLNnJDvStK3q";
 const TABLE_REGISTRO = "tblHYg7bZCVvgiEOe";
+const TABLE_ALTERNATIVAS = "tblfzFS6VHCfMdmAJ";
+
+const F_ALTERNATIVAS = {
+  nombre: "fld0iRCHDJKPyAkr7",
+  mecanismo: "fld3X4eJ7n6DmxHOu",
+  opcion: "fldQUkYhYHS6s1xGQ",
+  evidencia: "flda9sG3L9zeKFkRd",
+};
 
 const F_REGLAS = {
   combinacion: "flddQpwPXZ37Hd3gW",
@@ -197,7 +205,28 @@ export default async function handler(req, res) {
       };
     });
 
-    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta });
+    // 8. Si no hay bloqueos reales, buscar tips positivos en Alternativas locales
+    // (matching simple por texto, ya que esa tabla no tiene un campo de palabras clave dedicado).
+    let sugerencias = [];
+    if (bloqueosReales.length === 0) {
+      const alternativas = await fetchAllRecords(TABLE_ALTERNATIVAS, apiKey);
+      const coincidenciasAlternativas = alternativas.filter((a) => {
+        const texto1 = normalizar(a.fields[F_ALTERNATIVAS.nombre] || "");
+        const texto2 = normalizar(a.fields[F_ALTERNATIVAS.opcion] || "");
+        return textoNormalizado
+          .split(/\s+/)
+          .filter((palabra) => palabra.length > 3)
+          .some((palabra) => texto1.includes(palabra) || texto2.includes(palabra));
+      });
+      sugerencias = coincidenciasAlternativas.slice(0, 2).map((a) => ({
+        nombre: a.fields[F_ALTERNATIVAS.nombre] || "",
+        mecanismo: a.fields[F_ALTERNATIVAS.mecanismo] || "",
+        opcion: a.fields[F_ALTERNATIVAS.opcion] || "",
+        evidencia: a.fields[F_ALTERNATIVAS.evidencia] || "",
+      }));
+    }
+
+    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias });
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }
