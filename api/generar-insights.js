@@ -16,6 +16,7 @@ const TABLES = {
   bloqueos: 'tblfYPLNnJDvStK3q',
   bienestar: 'tbldbb580xRTayNJT',
   insights: 'tblhoGZoBgy3Kq7kn',
+  usuarios: 'tblJDf0WF5eCTWxLt',
 };
 
 const FIELDS = {
@@ -41,6 +42,15 @@ const FIELDS = {
     estado: 'fldod7rbWRfaKV0GS',
     json: 'fldW3X0NQRS8L6jqd',
   },
+  usuarios: {
+    nivelAcceso: 'fld9xEnJaUsYg1U9q',
+  },
+};
+
+const MUESTRA_GENERICA = {
+  bloqueo: 'Milanesa + Papas Fritas (ejemplo)',
+  metrica: 'Energía',
+  frase: 'Los días después de "Milanesa + Papas Fritas", tu energía bajó en promedio 1.2 puntos comparado a tus días habituales. Este es un ejemplo — suscribite para ver tus propios patrones reales.',
 };
 
 const METRICAS = ['energia', 'animo', 'sueno', 'digestion'];
@@ -109,6 +119,20 @@ module.exports = async (req, res) => {
     }
     if (!AIRTABLE_API_KEY) {
       return res.status(500).json({ error: 'Falta configurar AIRTABLE_API_KEY en Vercel' });
+    }
+
+    // 0) Chequear nivel de acceso ANTES de calcular nada (el análisis es lo que se paga)
+    const usuarioRec = await airtableFetch(
+      `${TABLES.usuarios}/${usuarioId}?fields[]=${FIELDS.usuarios.nivelAcceso}&returnFieldsByFieldId=true`
+    );
+    const nivel = usuarioRec.fields[FIELDS.usuarios.nivelAcceso];
+    const esPremium = nivel === 'Premium' || nivel === 'Personalizado';
+
+    if (!esPremium) {
+      return res.status(200).json({
+        estado: 'bloqueado',
+        muestra: MUESTRA_GENERICA,
+      });
     }
 
     // 1) Traer comidas del usuario (con bloqueos vinculados)
