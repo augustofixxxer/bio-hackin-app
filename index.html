@@ -187,6 +187,7 @@ function LogMealScreen({ onBack, usuarioId }) {
   };
 
   if (resultado) {
+    const bloqueos = resultado.bloqueos || [];
     const resueltos = resultado.resueltos || [];
     const sugerencias = resultado.sugerencias || [];
     return (
@@ -195,17 +196,17 @@ function LogMealScreen({ onBack, usuarioId }) {
           ← Categorías
         </button>
         <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 21, color: TOKENS.ink, marginBottom: 16, letterSpacing: "-0.01em" }}>
-          {resultado.bloqueos.length > 0
-            ? `${resultado.bloqueos.length} bloqueo${resultado.bloqueos.length > 1 ? "s" : ""} detectado${resultado.bloqueos.length > 1 ? "s" : ""}`
+          {bloqueos.length > 0
+            ? `${bloqueos.length} bloqueo${bloqueos.length > 1 ? "s" : ""} detectado${bloqueos.length > 1 ? "s" : ""}`
             : resueltos.length > 0
             ? "Buena elección"
             : "Sin bloqueos detectados"}
         </h2>
-        {resultado.bloqueos.length === 0 && resueltos.length === 0 && sugerencias.length === 0 && (
+        {bloqueos.length === 0 && resueltos.length === 0 && sugerencias.length === 0 && (
           <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.6 }}>No encontramos combinaciones conflictivas conocidas en lo que registraste. Igual quedó guardado en tu historial.</p>
         )}
         {resueltos.length > 0 && (
-          <div style={{ display: "grid", gap: 12, marginBottom: resultado.bloqueos.length ? 16 : 0 }}>
+          <div style={{ display: "grid", gap: 12, marginBottom: bloqueos.length ? 16 : 0 }}>
             {resueltos.map((r, i) => (
               <div key={"resuelto-" + i} style={{ background: TOKENS.alto + "0D", border: `1px solid ${TOKENS.alto}55`, borderRadius: 8, padding: 18 }}>
                 <p style={{ color: TOKENS.alto, fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 6 }}>✓ Hackeo ya aplicado</p>
@@ -216,7 +217,7 @@ function LogMealScreen({ onBack, usuarioId }) {
           </div>
         )}
         <div style={{ display: "grid", gap: 12 }}>
-          {resultado.bloqueos.map((b, i) => (
+          {bloqueos.map((b, i) => (
             <div key={i} style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
               <p style={{ color: TOKENS.ink, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{b.combinacion}</p>
               <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6, marginBottom: b.solucion ? 12 : 0 }}>{b.resultado}</p>
@@ -230,7 +231,7 @@ function LogMealScreen({ onBack, usuarioId }) {
           ))}
         </div>
         {sugerencias.length > 0 && (
-          <div style={{ display: "grid", gap: 12, marginTop: resultado.bloqueos.length ? 16 : 0 }}>
+          <div style={{ display: "grid", gap: 12, marginTop: bloqueos.length ? 16 : 0 }}>
             {sugerencias.map((s, i) => (
               <div key={"sugerencia-" + i} style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
                 <p style={{ color: TOKENS.primary, fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 6 }}>💡 Tip relacionado</p>
