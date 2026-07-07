@@ -569,6 +569,41 @@ function PatronesScreen({ onBack, usuarioId }) {
         </div>
       )}
 
+      {estado === "listo" && resultado.estado === "bloqueado" && (
+        <div>
+          <div style={{ position: "relative", marginBottom: 18 }}>
+            <div style={{ filter: "blur(4px)", pointerEvents: "none", userSelect: "none" }}>
+              <InsightCard insight={resultado.muestra} />
+            </div>
+            <div style={{
+              position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(250,251,252,0.35)",
+            }}>
+              <span style={{ fontSize: 22 }}>🔒</span>
+            </div>
+          </div>
+          <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
+            <p style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 600, marginBottom: 14 }}>
+              Los patrones reales son parte de Reseteo Propio Premium
+            </p>
+            {[
+              { nombre: "Gratuito", desc: "Explorador completo + registro ilimitado de comida y bienestar", precio: "Sin costo" },
+              { nombre: "Premium", desc: "Todo lo anterior + Mis Patrones, alertas y base de conocimiento completa", precio: "Suscripción" },
+              { nombre: "Personalizado", desc: "Todo Premium + reporte mensual y revisión de objetivos", precio: "Próximamente" },
+            ].map((n) => (
+              <div key={n.nombre} style={{ borderTop: `1px solid ${TOKENS.border}`, padding: "10px 0" }}>
+                <p style={{ color: TOKENS.ink, fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{n.nombre} — <span style={{ color: TOKENS.primary }}>{n.precio}</span></p>
+                <p style={{ color: TOKENS.inkDim, fontSize: 12, lineHeight: 1.5, margin: 0 }}>{n.desc}</p>
+              </div>
+            ))}
+            <button disabled
+              style={{ width: "100%", marginTop: 14, background: TOKENS.borderStrong, border: "none", borderRadius: 8, padding: "12px", color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: "not-allowed" }}>
+              Suscribirse (en desarrollo)
+            </button>
+          </div>
+        </div>
+      )}
+
       {estado === "listo" && resultado.estado === "insuficiente" && (
         <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
           <p style={{ color: TOKENS.ink, fontSize: 14, lineHeight: 1.6, margin: 0 }}>
