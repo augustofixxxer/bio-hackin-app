@@ -490,6 +490,117 @@ function BienestarScreen({ onBack, usuarioId }) {
   );
 }
 
+function BarraProgreso({ actual, total }) {
+  const pct = Math.min(100, Math.round((actual / total) * 100));
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", width: "100%", height: 8, borderRadius: 999, overflow: "hidden", background: TOKENS.border, marginBottom: 8 }}>
+        <div style={{ width: `${pct}%`, background: TOKENS.primary, transition: "width 0.3s ease" }} />
+      </div>
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, letterSpacing: "0.03em" }}>
+        {actual} de {total} días con registro cruzado
+      </p>
+    </div>
+  );
+}
+
+function InsightCard({ insight }) {
+  return (
+    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18, marginBottom: 12 }}>
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: TOKENS.primary, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>
+        {insight.metrica}
+      </p>
+      <p style={{ color: TOKENS.ink, fontSize: 14, lineHeight: 1.65, margin: 0 }}>{insight.frase}</p>
+    </div>
+  );
+}
+
+function PatronesScreen({ onBack, usuarioId }) {
+  const [estado, setEstado] = useState("idle"); // idle | cargando | listo | error
+  const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState(null);
+
+  async function verPatrones() {
+    setEstado("cargando");
+    setError(null);
+    try {
+      const resp = await fetch(`/api/generar-insights?usuarioId=${encodeURIComponent(usuarioId)}`);
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "Error al calcular patrones");
+      setResultado(data);
+      setEstado("listo");
+    } catch (e) {
+      setError(String(e.message || e));
+      setEstado("error");
+    }
+  }
+
+  return (
+    <div className="fade-in">
+      <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+        ← Categorías
+      </button>
+
+      <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 24, color: TOKENS.ink, marginBottom: 6, letterSpacing: "-0.02em" }}>
+        Mis patrones
+      </h1>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: TOKENS.inkDim, marginBottom: 24, lineHeight: 1.5 }}>
+        Cruzamos lo que comiste con cómo te sentiste después, y te mostramos solo lo que se repite de verdad.
+      </p>
+
+      {estado === "idle" && (
+        <button onClick={verPatrones}
+          style={{ width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "13px", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+          Ver mis patrones
+        </button>
+      )}
+
+      {estado === "cargando" && (
+        <p style={{ color: TOKENS.inkDim, fontSize: 13 }}>Cruzando tus registros...</p>
+      )}
+
+      {estado === "error" && (
+        <div>
+          <p style={{ color: "#B3453D", fontSize: 13, marginBottom: 12 }}>{error}</p>
+          <button onClick={verPatrones}
+            style={{ width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "13px", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {estado === "listo" && resultado.estado === "insuficiente" && (
+        <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
+          <p style={{ color: TOKENS.ink, fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+            Todavía no tenés suficientes días registrados para un patrón confiable. Seguí cargando comidas y bienestar.
+          </p>
+          <BarraProgreso actual={resultado.diasRegistrados} total={10} />
+        </div>
+      )}
+
+      {estado === "listo" && resultado.estado === "sin_patron_aun" && (
+        <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
+          <p style={{ color: TOKENS.ink, fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+            Ya tenés suficientes días registrados, pero todavía no encontramos ninguna diferencia lo bastante fuerte como para mostrártela. Seguí registrando — cuantos más días sumés, más precisos van a ser los patrones.
+          </p>
+        </div>
+      )}
+
+      {estado === "listo" && resultado.estado === "ok" && (
+        <div>
+          {resultado.insights.map((insight, i) => (
+            <InsightCard key={i} insight={insight} />
+          ))}
+          <button onClick={verPatrones}
+            style={{ width: "100%", background: "none", border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "12px", color: TOKENS.inkDim, fontWeight: 600, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
+            Recalcular
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -621,6 +732,16 @@ function App() {
             }}>
             BIENESTAR
           </button>
+          <button onClick={() => setView({ screen: "patrones" })}
+            style={{
+              background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, letterSpacing: "0.04em", fontWeight: 600,
+              color: view.screen === "patrones" ? TOKENS.ink : TOKENS.inkDim,
+              borderBottom: view.screen === "patrones" ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
+              marginBottom: -1,
+            }}>
+            MIS PATRONES
+          </button>
         </nav>
 
         {view.screen === "quien-soy" && (
@@ -629,6 +750,10 @@ function App() {
 
         {view.screen === "bienestar" && (
           <BienestarScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
+        )}
+
+        {view.screen === "patrones" && (
+          <PatronesScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
         )}
 
         {view.screen === "categories" && (
