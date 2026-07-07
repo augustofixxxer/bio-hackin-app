@@ -123,7 +123,7 @@ module.exports = async (req, res) => {
 
     // 0) Chequear nivel de acceso ANTES de calcular nada (el análisis es lo que se paga)
     const usuarioRec = await airtableFetch(
-      `${TABLES.usuarios}/${usuarioId}?fields[]=${FIELDS.usuarios.nivelAcceso}&returnFieldsByFieldId=true`
+      `${TABLES.usuarios}/${usuarioId}?returnFieldsByFieldId=true`
     );
     const nivel = usuarioRec.fields[FIELDS.usuarios.nivelAcceso];
     const esPremium = nivel === 'Premium' || nivel === 'Personalizado';
