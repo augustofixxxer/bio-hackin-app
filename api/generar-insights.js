@@ -44,6 +44,8 @@ const FIELDS = {
   },
   usuarios: {
     nivelAcceso: 'fld9xEnJaUsYg1U9q',
+    terminosAceptados: 'fld2IGCUNz35rdAhh',
+    suspendida: 'fldZsandK60e6CpYB',
   },
 };
 
@@ -125,6 +127,14 @@ module.exports = async (req, res) => {
     const usuarioRec = await airtableFetch(
       `${TABLES.usuarios}/${usuarioId}?returnFieldsByFieldId=true`
     );
+
+    if (usuarioRec.fields[FIELDS.usuarios.suspendida] === true) {
+      return res.status(403).json({ error: 'Esta cuenta fue suspendida. Contactanos si creés que es un error.' });
+    }
+    if (usuarioRec.fields[FIELDS.usuarios.terminosAceptados] !== true) {
+      return res.status(403).json({ error: 'Debés aceptar los Términos y Condiciones para continuar.', requiereTerminos: true });
+    }
+
     const nivel = usuarioRec.fields[FIELDS.usuarios.nivelAcceso];
     const esPremium = nivel === 'Premium' || nivel === 'Personalizado';
 
