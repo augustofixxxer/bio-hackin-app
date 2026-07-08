@@ -18,6 +18,25 @@ function validarEscala(valor) {
   return ["1", "2", "3", "4", "5"].includes(String(valor));
 }
 
+// Blindaje legal: bloquea el uso si no aceptó Términos, o si la cuenta fue suspendida.
+const TABLA_USUARIOS = "tblJDf0WF5eCTWxLt";
+const F_USUARIOS_ACCESO = { terminosAceptados: "fld2IGCUNz35rdAhh", suspendida: "fldZsandK60e6CpYB" };
+async function verificarAcceso(usuarioId, apiKey) {
+  const resp = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLA_USUARIOS}/${usuarioId}?returnFieldsByFieldId=true`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!resp.ok) return { ok: false, status: 404, error: "Usuario no encontrado." };
+  const data = await resp.json();
+  const f = data.fields || {};
+  if (f[F_USUARIOS_ACCESO.suspendida] === true) {
+    return { ok: false, status: 403, error: "Esta cuenta fue suspendida. Contactanos si creés que es un error." };
+  }
+  if (f[F_USUARIOS_ACCESO.terminosAceptados] !== true) {
+    return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
+  }
+  return { ok: true };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido, usar POST." });
@@ -37,6 +56,11 @@ export default async function handler(req, res) {
   }
   if (!usuarioId || typeof usuarioId !== "string") {
     return res.status(400).json({ error: "Falta el usuarioId." });
+  }
+
+  const acceso = await verificarAcceso(usuarioId, apiKey);
+  if (!acceso.ok) {
+    return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
   }
 
   try {
