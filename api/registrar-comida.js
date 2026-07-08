@@ -21,6 +21,7 @@ const F_REGLAS = {
   resultado: "fldBiLAr3oXs7EoPk",
   palabrasClave: "fld9Hanc1ZQTJP97A",
   solucionAplicable: "fldvlHzDyRJSnRBDU",
+  nivelRiesgo: "fldF30MVvuvytVKPR",
 };
 
 const F_SOLUCIONES = {
@@ -121,6 +122,25 @@ async function airtableFetch(path, apiKey, options = {}) {
   return data;
 }
 
+// Blindaje legal: bloquea el uso si no aceptó Términos, o si la cuenta fue suspendida.
+const TABLA_USUARIOS = "tblJDf0WF5eCTWxLt";
+const F_USUARIOS_ACCESO = { terminosAceptados: "fld2IGCUNz35rdAhh", suspendida: "fldZsandK60e6CpYB" };
+async function verificarAcceso(usuarioId, apiKey) {
+  const resp = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLA_USUARIOS}/${usuarioId}?returnFieldsByFieldId=true`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!resp.ok) return { ok: false, status: 404, error: "Usuario no encontrado." };
+  const data = await resp.json();
+  const f = data.fields || {};
+  if (f[F_USUARIOS_ACCESO.suspendida] === true) {
+    return { ok: false, status: 403, error: "Esta cuenta fue suspendida. Contactanos si creés que es un error." };
+  }
+  if (f[F_USUARIOS_ACCESO.terminosAceptados] !== true) {
+    return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
+  }
+  return { ok: true };
+}
+
 async function fetchAllRecords(tableId, apiKey) {
   const records = [];
   let offset;
@@ -155,6 +175,13 @@ export default async function handler(req, res) {
   if (!texto || typeof texto !== "string" || texto.trim().length === 0) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
     return;
+  }
+
+  if (usuarioId) {
+    const acceso = await verificarAcceso(usuarioId, apiKey);
+    if (!acceso.ok) {
+      return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
+    }
   }
 
   try {
@@ -228,6 +255,7 @@ export default async function handler(req, res) {
       return {
         combinacion: r.fields[F_REGLAS.combinacion] || "",
         resultado: r.fields[F_REGLAS.resultado] || "",
+        nivelRiesgo: r.fields[F_REGLAS.nivelRiesgo] || "Bajo",
         solucion: primeraSolucion
           ? {
               nombre: primeraSolucion[F_SOLUCIONES.nombre] || "",
