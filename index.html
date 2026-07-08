@@ -159,7 +159,56 @@ function groupByCategoria(entradas) {
   return grupos;
 }
 
-function LogMealScreen({ onBack, usuarioId }) {
+function BloqueoCard({ b, usuarioId, tieneCondicionMedica }) {
+  const requiereConsentimiento = b.nivelRiesgo && b.nivelRiesgo !== "Bajo";
+  const [confirmado, setConfirmado] = useState(!requiereConsentimiento);
+  const [enviando, setEnviando] = useState(false);
+
+  async function confirmarRiesgo() {
+    setEnviando(true);
+    try {
+      await fetch("/api/registrar-consentimiento-riesgo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuarioId, bloqueo: b.combinacion, nivelRiesgo: b.nivelRiesgo }),
+      });
+    } catch (e) {
+      // no bloqueamos al usuario si falla el log; solo lo dejamos avanzar
+    } finally {
+      setEnviando(false);
+      setConfirmado(true);
+    }
+  }
+
+  return (
+    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
+      <p style={{ color: TOKENS.ink, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{b.combinacion}</p>
+      <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6, marginBottom: b.solucion ? 12 : 0 }}>{b.resultado}</p>
+
+      {!confirmado && (
+        <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
+          <p style={{ fontSize: 12.5, color: TOKENS.ink, lineHeight: 1.55, marginBottom: 10 }}>
+            ⚠️ Este patrón tiene nivel de riesgo <b>{b.nivelRiesgo}</b>: implica más variabilidad individual, o mayor cuidado si aplica en tu caso.
+            {tieneCondicionMedica && " Marcaste que tenés una condición médica preexistente — consultá con tu profesional antes de aplicar cualquier sugerencia."}
+          </p>
+          <button onClick={confirmarRiesgo} disabled={enviando}
+            style={{ width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "10px", color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            {enviando ? "..." : "Entiendo, ver la sugerencia"}
+          </button>
+        </div>
+      )}
+
+      {confirmado && b.solucion && (
+        <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: TOKENS.primary, marginBottom: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>Solución</p>
+          <p style={{ color: TOKENS.ink, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogMealScreen({ onBack, usuarioId, tieneCondicionMedica }) {
   const [texto, setTexto] = useState("");
   const [momento, setMomento] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -177,7 +226,14 @@ function LogMealScreen({ onBack, usuarioId }) {
         body: JSON.stringify({ texto, momento: momento || undefined, usuarioId }),
       });
       const data = await resp.json();
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        if (data.requiereTerminos) {
+          localStorage.removeItem("reseteo_terminos_v1");
+          window.location.reload();
+          return;
+        }
+        throw new Error(data.error);
+      }
       setResultado(data);
     } catch (e) {
       setError(String(e.message || e));
@@ -218,16 +274,7 @@ function LogMealScreen({ onBack, usuarioId }) {
         )}
         <div style={{ display: "grid", gap: 12 }}>
           {bloqueos.map((b, i) => (
-            <div key={i} style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
-              <p style={{ color: TOKENS.ink, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{b.combinacion}</p>
-              <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6, marginBottom: b.solucion ? 12 : 0 }}>{b.resultado}</p>
-              {b.solucion && (
-                <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
-                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: TOKENS.primary, marginBottom: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>Solución</p>
-                  <p style={{ color: TOKENS.ink, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
-                </div>
-              )}
-            </div>
+            <BloqueoCard key={i} b={b} usuarioId={usuarioId} tieneCondicionMedica={tieneCondicionMedica} />
           ))}
         </div>
         {sugerencias.length > 0 && (
@@ -664,6 +711,92 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function TerminosGate({ usuarioId, onAceptar }) {
+  const [checkTerminos, setCheckTerminos] = useState(false);
+  const [condicionMedica, setCondicionMedica] = useState(null); // null | true | false
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(null);
+
+  const puedeContinuar = checkTerminos && condicionMedica !== null;
+
+  async function confirmar() {
+    if (!puedeContinuar) return;
+    setEnviando(true);
+    setError(null);
+    try {
+      const resp = await fetch("/api/aceptar-terminos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuarioId, condicionMedica }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "No se pudo registrar la aceptación.");
+      localStorage.setItem("reseteo_condicion_medica", condicionMedica ? "true" : "false");
+      onAceptar();
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: TOKENS.bg }}>
+      <div style={{ maxWidth: 440, width: "100%" }}>
+        <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 22, color: TOKENS.ink, marginBottom: 12, letterSpacing: "-0.02em" }}>
+          Antes de arrancar
+        </h1>
+        <p style={{ color: TOKENS.inkDim, fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
+          Reseteo Propio es una herramienta de auto-observación de patrones alimentarios. <b>No diagnostica ni trata condiciones médicas</b>, y no reemplaza la consulta con un profesional de la salud.
+        </p>
+
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 18, cursor: "pointer" }}>
+          <input type="checkbox" checked={checkTerminos} onChange={(e) => setCheckTerminos(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
+          <span style={{ fontSize: 13.5, color: TOKENS.ink, lineHeight: 1.5 }}>
+            Leí y acepto los <a href="/privacidad.html" target="_blank" style={{ color: TOKENS.primary }}>Términos y la Política de Privacidad</a>. Entiendo que las sugerencias de la app son informativas, no médicas.
+          </span>
+        </label>
+
+        <p style={{ fontSize: 13.5, color: TOKENS.ink, marginBottom: 10, fontWeight: 600 }}>
+          ¿Tenés algún diagnóstico médico preexistente (ej. diabetes, hipotiroidismo, patologías cardíacas, renales, etc.)?
+        </p>
+        <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
+          {[{ label: "No", val: false }, { label: "Sí", val: true }].map((op) => (
+            <button key={op.label} onClick={() => setCondicionMedica(op.val)}
+              style={{
+                flex: 1, padding: "12px", borderRadius: 8, cursor: "pointer",
+                border: `1.5px solid ${condicionMedica === op.val ? TOKENS.primary : TOKENS.border}`,
+                background: condicionMedica === op.val ? TOKENS.primarySoft : TOKENS.surface,
+                color: TOKENS.ink, fontWeight: 600, fontSize: 14,
+              }}>
+              {op.label}
+            </button>
+          ))}
+        </div>
+
+        {condicionMedica === true && (
+          <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 14, marginBottom: 18 }}>
+            <p style={{ fontSize: 13, color: TOKENS.ink, lineHeight: 1.5, margin: 0 }}>
+              Por seguridad, te vamos a mostrar una confirmación extra cada vez que aparezca una sugerencia que amerite más cuidado en tu caso. Igual, consultá siempre con tu profesional antes de aplicar cambios.
+            </p>
+          </div>
+        )}
+
+        {error && <p style={{ color: "#B3453D", fontSize: 13, marginBottom: 12 }}>{error}</p>}
+
+        <button onClick={confirmar} disabled={!puedeContinuar || enviando}
+          style={{
+            width: "100%", border: "none", borderRadius: 8, padding: "13px", fontWeight: 600, fontSize: 14,
+            color: "#FFFFFF", cursor: puedeContinuar && !enviando ? "pointer" : "not-allowed",
+            background: puedeContinuar && !enviando ? TOKENS.primary : TOKENS.borderStrong,
+          }}>
+          {enviando ? "Guardando..." : "Continuar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -677,6 +810,9 @@ function App() {
       return null;
     }
   });
+  const [terminosAceptados, setTerminosAceptados] = useState(
+    () => localStorage.getItem("reseteo_terminos_v1") === "true"
+  );
 
   useEffect(() => {
     fetch("/api/data")
@@ -705,6 +841,13 @@ function App() {
 
   if (!usuario) {
     return <LoginScreen onLogin={setUsuario} />;
+  }
+
+  if (!terminosAceptados) {
+    return <TerminosGate usuarioId={usuario.usuarioId} onAceptar={() => {
+      localStorage.setItem("reseteo_terminos_v1", "true");
+      setTerminosAceptados(true);
+    }} />;
   }
 
   const grupos = groupByCategoria(data.entradas);
@@ -821,7 +964,8 @@ function App() {
         )}
 
         {view.screen === "log" && (
-          <LogMealScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
+          <LogMealScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId}
+            tieneCondicionMedica={localStorage.getItem("reseteo_condicion_medica") === "true"} />
         )}
 
         {view.screen === "category" && (() => {
@@ -881,7 +1025,7 @@ function App() {
           </a>
           <span style={{ margin: "0 8px", color: TOKENS.border }}>·</span>
           <button
-            onClick={() => { localStorage.removeItem("reseteo_usuario"); setUsuario(null); }}
+            onClick={() => { localStorage.removeItem("reseteo_usuario"); localStorage.removeItem("reseteo_terminos_v1"); setUsuario(null); }}
             style={{ background: "none", border: "none", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, cursor: "pointer", padding: 0 }}
           >
             Cerrar sesión ({usuario.email})
