@@ -1,48 +1,6 @@
-// Función serverless (Vercel). Recibe POST con { texto, momento }.
+// Función serverless (Vercel). Recibe POST con { texto, momento, usuarioId }.
 // Detecta coincidencias con las Reglas por palabras clave, crea el Registro Diario
-// y los Bloqueos correspondientes en Airtable.
-
-const BASE_ID = "appVzRFXuykP2ZBvR";
-const TABLE_REGLAS = "tblQHXCCsWei8zXAl";
-const TABLE_SOLUCIONES = "tbl8iPAmQpW0KxB8X";
-const TABLE_BLOQUEOS = "tblfYPLNnJDvStK3q";
-const TABLE_REGISTRO = "tblHYg7bZCVvgiEOe";
-const TABLE_ALTERNATIVAS = "tblfzFS6VHCfMdmAJ";
-
-const F_ALTERNATIVAS = {
-  nombre: "fld0iRCHDJKPyAkr7",
-  mecanismo: "fld3X4eJ7n6DmxHOu",
-  opcion: "fldQUkYhYHS6s1xGQ",
-  evidencia: "flda9sG3L9zeKFkRd",
-};
-
-const F_REGLAS = {
-  combinacion: "flddQpwPXZ37Hd3gW",
-  resultado: "fldBiLAr3oXs7EoPk",
-  palabrasClave: "fld9Hanc1ZQTJP97A",
-  solucionAplicable: "fldvlHzDyRJSnRBDU",
-  nivelRiesgo: "fldF30MVvuvytVKPR",
-};
-
-const F_SOLUCIONES = {
-  nombre: "fld5gpvssqqLAA3NL",
-  adaptacion: "fldW6aPxbBfJ5nl9L",
-};
-
-const F_BLOQUEOS = {
-  nombre: "fldcnk9h2fRlOWgbL",
-  comida: "fldJZUPv88bNwGc12",
-  fecha: "fldJnrUtUjm0B6I1E",
-  regla: "fldAdvbSweClMT0bH",
-  registro: "fldDYcXSZbKKKZwNk",
-};
-
-const F_REGISTRO = {
-  fecha: "fldhXNUiS6zbkyfwW",
-  comida: "fldWHR0KR4k3pq70X",
-  momento: "fldgxvMT73YIMoZ22",
-  usuario: "fld3S0l46TCaGbEPy",
-};
+// y los Bloqueos correspondientes en Supabase (Postgres).
 
 function normalizar(texto) {
   return texto
@@ -61,7 +19,7 @@ function contienePalabraCompleta(textoNormalizado, clave) {
 }
 
 // Evalúa una Regla contra el texto normalizado.
-// Formato del campo "Palabras clave":
+// Formato del campo "palabras_clave":
 //   - Sin ";": lista simple, alcanza con que aparezca UNA cualquiera (regla de un solo alimento).
 //   - Con UN ";": "Grupo A ; Grupo B" -> necesita al menos una palabra de CADA grupo (combinación real).
 //   - Con DOS ";": "Grupo A ; Grupo B ; Disparadores" -> además de la combinación, cualquier
@@ -106,57 +64,42 @@ function esVersionCasera(textoNormalizado) {
   return PALABRAS_CASERO.some((p) => textoNormalizado.includes(normalizar(p)));
 }
 
-async function airtableFetch(path, apiKey, options = {}) {
-  const resp = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${path}`, {
+// ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function supabaseFetch(path, options = {}) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
   const data = await resp.json();
   if (!resp.ok) {
-    throw new Error(data.error?.message || `Airtable respondió ${resp.status}`);
+    throw new Error(data.message || data.error || `Supabase respondió ${resp.status}`);
   }
   return data;
 }
 
 // Blindaje legal: bloquea el uso si no aceptó Términos, o si la cuenta fue suspendida.
-const TABLA_USUARIOS = "tblJDf0WF5eCTWxLt";
-const F_USUARIOS_ACCESO = { terminosAceptados: "fld2IGCUNz35rdAhh", suspendida: "fldZsandK60e6CpYB" };
-async function verificarAcceso(usuarioId, apiKey) {
-  const resp = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLA_USUARIOS}/${usuarioId}?returnFieldsByFieldId=true`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  });
-  if (!resp.ok) return { ok: false, status: 404, error: "Usuario no encontrado." };
-  const data = await resp.json();
-  const f = data.fields || {};
-  if (f[F_USUARIOS_ACCESO.suspendida] === true) {
+async function verificarAcceso(usuarioId) {
+  const rows = await supabaseFetch(
+    `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados`
+  );
+  if (!rows.length) return { ok: false, status: 404, error: "Usuario no encontrado." };
+  const u = rows[0];
+  if (u.cuenta_suspendida === true) {
     return { ok: false, status: 403, error: "Esta cuenta fue suspendida. Contactanos si creés que es un error." };
   }
-  if (f[F_USUARIOS_ACCESO.terminosAceptados] !== true) {
+  if (u.terminos_aceptados !== true) {
     return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
   }
   return { ok: true };
-}
-
-async function fetchAllRecords(tableId, apiKey) {
-  const records = [];
-  let offset;
-  do {
-    const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${tableId}`);
-    url.searchParams.set("returnFieldsByFieldId", "true");
-    if (offset) url.searchParams.set("offset", offset);
-    const resp = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || `Airtable respondió ${resp.status}`);
-    records.push(...(data.records || []));
-    offset = data.offset;
-  } while (offset);
-  return records;
 }
 
 export default async function handler(req, res) {
@@ -165,9 +108,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ error: "Falta configurar AIRTABLE_API_KEY." });
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    res.status(500).json({ error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY." });
     return;
   }
 
@@ -178,7 +120,7 @@ export default async function handler(req, res) {
   }
 
   if (usuarioId) {
-    const acceso = await verificarAcceso(usuarioId, apiKey);
+    const acceso = await verificarAcceso(usuarioId);
     if (!acceso.ok) {
       return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
     }
@@ -188,13 +130,15 @@ export default async function handler(req, res) {
     const textoNormalizado = normalizar(texto);
     const versionCasera = esVersionCasera(textoNormalizado);
 
-    // 1. Traer las Reglas con sus palabras clave
-    const reglas = await fetchAllRecords(TABLE_REGLAS, apiKey);
+    // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje)
+    const reglas = await supabaseFetch(
+      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,soluciones(nombre_hackeo,adaptacion)`
+    );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos
     const evaluaciones = reglas.map((r) => ({
       regla: r,
-      ...evaluarRegla(textoNormalizado, r.fields[F_REGLAS.palabrasClave]),
+      ...evaluarRegla(textoNormalizado, r.palabras_clave),
     }));
     const coincidencias = evaluaciones.filter((e) => e.coincide && !e.esTip).map((e) => e.regla);
     const coincidenciasTip = evaluaciones.filter((e) => e.coincide && e.esTip).map((e) => e.regla);
@@ -206,95 +150,70 @@ export default async function handler(req, res) {
 
     // 3. Crear el Registro Diario
     const fechaHoy = new Date().toISOString().split("T")[0];
-    const registroCreado = await airtableFetch(TABLE_REGISTRO, apiKey, {
+    const registroCreado = await supabaseFetch(`registro_diario_real`, {
       method: "POST",
+      headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        records: [
-          {
-            fields: {
-              [F_REGISTRO.fecha]: fechaHoy,
-              [F_REGISTRO.comida]: texto,
-              ...(momento ? { [F_REGISTRO.momento]: momento } : {}),
-              ...(usuarioId ? { [F_REGISTRO.usuario]: [usuarioId] } : {}),
-            },
-          },
-        ],
-        typecast: true,
+        fecha: fechaHoy,
+        comida_registrada: texto,
+        ...(momento ? { momento_dia: momento } : {}),
+        ...(usuarioId ? { usuario_id: usuarioId } : {}),
       }),
     });
-    const registroId = registroCreado.records[0].id;
+    const registroId = registroCreado[0].id;
 
-    // 4. Traer Soluciones (las necesitamos tanto para bloqueos reales como para resueltos)
-    const soluciones = await fetchAllRecords(TABLE_SOLUCIONES, apiKey);
-    const solucionesPorId = Object.fromEntries(soluciones.map((s) => [s.id, s.fields]));
-
-    // 5. Si no hay coincidencias reales, no se crean Bloqueos en Airtable
-    let bloqueosCreados = { records: [] };
+    // 4. Si no hay coincidencias reales, no se crean Bloqueos
+    let bloqueosCreados = [];
     if (bloqueosReales.length > 0) {
-      bloqueosCreados = await airtableFetch(TABLE_BLOQUEOS, apiKey, {
+      bloqueosCreados = await supabaseFetch(`bloqueos`, {
         method: "POST",
-        body: JSON.stringify({
-          records: bloqueosReales.map((r) => ({
-            fields: {
-              [F_BLOQUEOS.nombre]: r.fields[F_REGLAS.combinacion] || "Bloqueo detectado",
-              [F_BLOQUEOS.comida]: texto,
-              [F_BLOQUEOS.fecha]: fechaHoy,
-              [F_BLOQUEOS.regla]: r.fields[F_REGLAS.combinacion] || "",
-              [F_BLOQUEOS.registro]: [registroId],
-            },
-          })),
-          typecast: true,
-        }),
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(
+          bloqueosReales.map((r) => ({
+            nombre_bloqueo: r.combinacion || "Bloqueo detectado",
+            comida_o_bebida: texto,
+            fecha_deteccion: fechaHoy,
+            registro_diario_id: registroId,
+          }))
+        ),
       });
     }
 
-    // 6. Armar bloqueos reales con su solución
-    const bloqueos = bloqueosReales.map((r, i) => {
-      const solucionIds = r.fields[F_REGLAS.solucionAplicable] || [];
-      const primeraSolucion = solucionIds.length ? solucionesPorId[solucionIds[0]] : null;
-      return {
-        combinacion: r.fields[F_REGLAS.combinacion] || "",
-        resultado: r.fields[F_REGLAS.resultado] || "",
-        nivelRiesgo: r.fields[F_REGLAS.nivelRiesgo] || "Bajo",
-        solucion: primeraSolucion
-          ? {
-              nombre: primeraSolucion[F_SOLUCIONES.nombre] || "",
-              adaptacion: primeraSolucion[F_SOLUCIONES.adaptacion] || "",
-            }
-          : null,
-        bloqueoId: bloqueosCreados.records[i]?.id,
-      };
-    });
+    // 5. Armar bloqueos reales con su solución (ya viene embebida desde el paso 1)
+    const bloqueos = bloqueosReales.map((r, i) => ({
+      combinacion: r.combinacion || "",
+      resultado: r.resultado || "",
+      nivelRiesgo: r.nivel_riesgo || "Bajo",
+      solucion: r.soluciones
+        ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "" }
+        : null,
+      bloqueoId: bloqueosCreados[i]?.id,
+    }));
 
-    // 7. Armar resueltos (versión casera) como refuerzo positivo, sin crear Bloqueo
-    const resueltosRespuesta = resueltos.map((r) => {
-      const solucionIds = r.fields[F_REGLAS.solucionAplicable] || [];
-      const primeraSolucion = solucionIds.length ? solucionesPorId[solucionIds[0]] : null;
-      return {
-        combinacion: r.fields[F_REGLAS.combinacion] || "",
-        mensaje: "Ya aplicaste este hackeo con la versión casera.",
-        solucion: primeraSolucion
-          ? {
-              nombre: primeraSolucion[F_SOLUCIONES.nombre] || "",
-              adaptacion: primeraSolucion[F_SOLUCIONES.adaptacion] || "",
-            }
-          : null,
-      };
-    });
+    // 6. Armar resueltos (versión casera) como refuerzo positivo, sin crear Bloqueo
+    const resueltosRespuesta = resueltos.map((r) => ({
+      combinacion: r.combinacion || "",
+      mensaje: "Ya aplicaste este hackeo con la versión casera.",
+      solucion: r.soluciones
+        ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "" }
+        : null,
+    }));
 
-    // 8. Tips positivos de Reglas (siempre se muestran, marcadas con "TIP:" en Airtable)
+    // 7. Tips positivos de Reglas (siempre se muestran, marcadas con "TIP:" en Supabase)
     let sugerencias = coincidenciasTip.map((r) => ({
-      nombre: r.fields[F_REGLAS.combinacion] || "",
-      mecanismo: r.fields[F_REGLAS.resultado] || "",
+      nombre: r.combinacion || "",
+      mecanismo: r.resultado || "",
       opcion: "",
       evidencia: "",
     }));
 
-    // 8b. Si no hay bloqueos reales, sumamos tips positivos en Alternativas locales
+    // 7b. Si no hay bloqueos reales, sumamos tips positivos en Alternativas locales
     // (comparación por palabra completa —con una raíz simple de plural—, no por substring:
     // esto evita que "ensalada" matchee por ser parte de "ensaladas").
     if (bloqueosReales.length === 0) {
-      const alternativas = await fetchAllRecords(TABLE_ALTERNATIVAS, apiKey);
+      const alternativas = await supabaseFetch(
+        `alternativas_locales?select=mecanismo,descripcion_mecanismo,recomendacion,nivel_evidencia`
+      );
       const tokenizar = (t) => (t || "").split(/[^a-z0-9]+/).filter((p) => p.length > 3);
       const raiz = (p) => (p.length > 4 && p.endsWith("s") ? p.slice(0, -1) : p);
       // Palabras genéricas que no identifican a un alimento específico: si matchean solas,
@@ -307,8 +226,8 @@ export default async function handler(req, res) {
       ].map(raiz));
       const coincidenciasAlternativas = alternativas.filter((a) => {
         const candidatos = new Set([
-          ...tokenizar(normalizar(a.fields[F_ALTERNATIVAS.nombre] || "")).map(raiz),
-          ...tokenizar(normalizar(a.fields[F_ALTERNATIVAS.opcion] || "")).map(raiz),
+          ...tokenizar(normalizar(a.mecanismo || "")).map(raiz),
+          ...tokenizar(normalizar(a.recomendacion || "")).map(raiz),
         ]);
         const palabrasTexto = tokenizar(textoNormalizado)
           .map(raiz)
@@ -317,10 +236,10 @@ export default async function handler(req, res) {
       });
       sugerencias = sugerencias.concat(
         coincidenciasAlternativas.slice(0, 2).map((a) => ({
-          nombre: a.fields[F_ALTERNATIVAS.nombre] || "",
-          mecanismo: a.fields[F_ALTERNATIVAS.mecanismo] || "",
-          opcion: a.fields[F_ALTERNATIVAS.opcion] || "",
-          evidencia: a.fields[F_ALTERNATIVAS.evidencia] || "",
+          nombre: a.mecanismo || "",
+          mecanismo: a.descripcion_mecanismo || "",
+          opcion: a.recomendacion || "",
+          evidencia: a.nivel_evidencia || "",
         }))
       );
     }
