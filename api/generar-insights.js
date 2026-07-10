@@ -35,11 +35,12 @@ async function supabaseFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Supabase error ${res.status}: ${body}`);
+    throw new Error((data && (data.message || data.error)) || `Supabase error ${res.status}`);
   }
-  return res.json();
+  return data;
 }
 
 function fechaISO(dateStr) {
