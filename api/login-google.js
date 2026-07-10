@@ -1,23 +1,37 @@
 // api/login-google.js
 // Recibe POST con { credential } (el JWT que entrega el botón de Google).
 // Verifica ese token contra los servidores de Google, y busca o crea
-// al usuario correspondiente en la tabla "Usuarios Real" de Airtable.
+// al usuario correspondiente en la tabla "usuarios" de Supabase.
 
-const BASE_ID = "appVzRFXuykP2ZBvR";
-const TABLA_USUARIOS = "tblJDf0WF5eCTWxLt";
 const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
 
-const F_EMAIL = "fldA1TM4B6yumsrEx";
-const F_NOMBRE = "fld3AoueaKL9t8o8l";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function supabaseFetch(path, options = {}) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const data = await resp.json();
+  if (!resp.ok) {
+    throw new Error(data.message || data.error || `Supabase respondió ${resp.status}`);
+  }
+  return data;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido, usar POST." });
   }
 
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "Falta configurar AIRTABLE_API_KEY." });
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return res.status(500).json({ error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY." });
   }
 
   const { credential } = req.body || {};
@@ -45,49 +59,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Google no devolvió un email válido." });
     }
 
-    const headers = {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    };
-
     // 2. Buscar si ya existe un usuario con ese email
-    const formula = encodeURIComponent(`{Email} = '${email.replace(/'/g, "\\'")}'`);
-    const buscarResp = await fetch(
-      `https://api.airtable.com/v0/${BASE_ID}/${TABLA_USUARIOS}?filterByFormula=${formula}`,
-      { headers }
+    const encontrados = await supabaseFetch(
+      `usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre_alias`
     );
-    const buscarData = await buscarResp.json();
-    if (!buscarResp.ok) {
-      throw new Error(buscarData.error?.message || "Error consultando Airtable");
-    }
 
     let usuarioId;
 
-    if (buscarData.records && buscarData.records.length > 0) {
+    if (encontrados.length > 0) {
       // Ya existe: lo usamos tal cual
-      usuarioId = buscarData.records[0].id;
+      usuarioId = encontrados[0].id;
     } else {
       // No existe: lo creamos
-      const crearResp = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLA_USUARIOS}`, {
+      const creado = await supabaseFetch(`usuarios`, {
         method: "POST",
-        headers,
+        headers: { Prefer: "return=representation" },
         body: JSON.stringify({
-          records: [
-            {
-              fields: {
-                [F_EMAIL]: email,
-                [F_NOMBRE]: nombre,
-              },
-            },
-          ],
-          typecast: true,
+          email,
+          nombre_alias: nombre,
         }),
       });
-      const crearData = await crearResp.json();
-      if (!crearResp.ok) {
-        throw new Error(crearData.error?.message || "Error creando el usuario en Airtable");
-      }
-      usuarioId = crearData.records[0].id;
+      usuarioId = creado[0].id;
     }
 
     return res.status(200).json({ usuarioId, email, nombre });
