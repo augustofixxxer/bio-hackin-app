@@ -15,9 +15,10 @@ async function supabaseFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-  const data = await resp.json();
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : null;
   if (!resp.ok) {
-    throw new Error(data.message || data.error || `Supabase respondió ${resp.status}`);
+    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
   }
   return data;
 }
