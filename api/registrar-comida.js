@@ -120,9 +120,14 @@ export default async function handler(req, res) {
   }
 
   if (usuarioId) {
-    const acceso = await verificarAcceso(usuarioId);
-    if (!acceso.ok) {
-      return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
+    try {
+      const acceso = await verificarAcceso(usuarioId);
+      if (!acceso.ok) {
+        return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
+      }
+    } catch (err) {
+      res.status(400).json({ error: "El usuarioId recibido no es válido.", detail: String(err) });
+      return;
     }
   }
 
