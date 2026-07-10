@@ -1,94 +1,67 @@
 // Función serverless (Vercel). Corre en el servidor, nunca en el navegador del usuario.
-// La API key de Airtable vive acá, en una variable de entorno — nunca se manda al cliente.
+// Alimenta el "Explorador por problemática": trae Reglas y Alternativas locales
+// y las devuelve en un único formato combinado.
 
-const BASE_ID = "appVzRFXuykP2ZBvR";
-const TABLE_REGLAS = "tblQHXCCsWei8zXAl";
-const TABLE_ALTERNATIVAS = "tblfzFS6VHCfMdmAJ";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// IDs de campo reales de tu base (no cambian aunque renombres las columnas en Airtable).
-const F_REGLAS = {
-  combinacion: "flddQpwPXZ37Hd3gW",
-  resultado: "fldBiLAr3oXs7EoPk",
-  objetivo: "fldvljkiVRCBrGrsa",
-  acceso: "fldL9TZbhKCqXFyLF",
-  evidencia: "fldO7A66ExpwxYUKS",
-  mecanismo: "fld7VhiXRjdPJMmqA",
-};
-
-const F_ALT = {
-  nombre: "fld0iRCHDJKPyAkr7",
-  categoria: "fld3X4eJ7n6DmxHOu",
-  opcion: "fldQUkYhYHS6s1xGQ",
-  frecuencia: "fldbVH0gwdk6ppifF",
-  nutriente: "fldgAm7SHAW3KrDLX",
-  tipo: "fldQK99XpHgyUeG4W",
-  categoriaReal: "fldEnkUYesPYe5fpQ",
-};
-
-async function fetchAllRecords(tableId, apiKey) {
-  const records = [];
-  let offset;
-  do {
-    const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${tableId}`);
-    url.searchParams.set("returnFieldsByFieldId", "true");
-    if (offset) url.searchParams.set("offset", offset);
-
-    const resp = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!resp.ok) {
-      throw new Error(`Airtable respondió ${resp.status} para la tabla ${tableId}`);
-    }
-    const data = await resp.json();
-    records.push(...(data.records || []));
-    offset = data.offset;
-  } while (offset);
-  return records;
+async function supabaseFetch(path) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!resp.ok) {
+    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+  }
+  return data;
 }
 
 export default async function handler(req, res) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-
-  if (!apiKey) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
     res.status(500).json({
-      error: "Falta configurar AIRTABLE_API_KEY como variable de entorno en Vercel.",
+      error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY como variable de entorno en Vercel.",
     });
     return;
   }
 
   try {
     const [reglas, alternativas] = await Promise.all([
-      fetchAllRecords(TABLE_REGLAS, apiKey),
-      fetchAllRecords(TABLE_ALTERNATIVAS, apiKey),
+      supabaseFetch(
+        `reglas?select=id,combinacion,resultado,objetivo_afectado,nivel_evidencia,mecanismo_base,nivel_acceso`
+      ),
+      supabaseFetch(
+        `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia`
+      ),
     ]);
 
-    const entradasReglas = reglas.map((r) => {
-      const f = r.fields;
-      return {
-        id: r.id,
-        tipo: "regla",
-        combinacion: f[F_REGLAS.combinacion] || "",
-        resultado: f[F_REGLAS.resultado] || "",
-        categorias: f[F_REGLAS.objetivo] || [],
-        evidencia: f[F_REGLAS.evidencia] || null,
-        mecanismo: f[F_REGLAS.mecanismo] || null,
-        acceso: f[F_REGLAS.acceso] || null,
-      };
-    });
+    const entradasReglas = reglas.map((r) => ({
+      id: r.id,
+      tipo: "regla",
+      combinacion: r.combinacion || "",
+      resultado: r.resultado || "",
+      categorias: r.objetivo_afectado || [],
+      evidencia: r.nivel_evidencia || null,
+      mecanismo: r.mecanismo_base || null,
+      acceso: r.nivel_acceso || null,
+    }));
 
-    const entradasAlternativas = alternativas.map((r) => {
-      const f = r.fields;
-      const esProtocolo = f[F_ALT.tipo] === "Protocolo";
+    const entradasAlternativas = alternativas.map((a) => {
+      const esProtocolo = a.tipo === "Protocolo";
       return {
-        id: r.id,
+        id: a.id,
         tipo: esProtocolo ? "protocolo" : "alternativa",
-        combinacion: f[F_ALT.nombre] || "",
-        resultado: f[F_ALT.opcion] || "",
-        mecanismo: f[F_ALT.categoria] || null,
-        frecuencia: f[F_ALT.frecuencia] || null,
-        nutriente: f[F_ALT.nutriente] || null,
-        categorias: f[F_ALT.categoriaReal] || [],
-        evidencia: null, // pendiente: falta el campo Nivel de Evidencia en esta tabla
+        combinacion: a.mecanismo || "",
+        resultado: a.recomendacion || "",
+        mecanismo: a.descripcion_mecanismo || null,
+        frecuencia: a.frecuencia_dosis || null,
+        nutriente: a.compuesto_activo || null,
+        categorias: a.objetivo || [],
+        evidencia: a.nivel_evidencia || null,
       };
     });
 
@@ -98,6 +71,6 @@ export default async function handler(req, res) {
       actualizado: new Date().toISOString(),
     });
   } catch (err) {
-    res.status(500).json({ error: "Error consultando Airtable", detail: String(err) });
+    res.status(500).json({ error: "Error consultando Supabase", detail: String(err) });
   }
 }
