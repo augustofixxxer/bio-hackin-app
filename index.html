@@ -637,7 +637,6 @@ function PatronesScreen({ onBack, usuarioId }) {
             {[
               { nombre: "Gratuito", desc: "Explorador completo + registro ilimitado de comida y bienestar", precio: "Sin costo" },
               { nombre: "Premium", desc: "Todo lo anterior + Mis Patrones, alertas y base de conocimiento completa", precio: "Suscripción" },
-              { nombre: "Personalizado", desc: "Todo Premium + reporte mensual y revisión de objetivos", precio: "Próximamente" },
             ].map((n) => (
               <div key={n.nombre} style={{ borderTop: `1px solid ${TOKENS.border}`, padding: "10px 0" }}>
                 <p style={{ color: TOKENS.ink, fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{n.nombre} — <span style={{ color: TOKENS.primary }}>{n.precio}</span></p>
