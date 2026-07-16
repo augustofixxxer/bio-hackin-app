@@ -288,6 +288,13 @@ function LogMealScreen({ onBack, usuarioId, tieneCondicionMedica }) {
             ))}
           </div>
         )}
+        {/* PUNTO DE INTEGRACIÓN — Primer Recorrido del Usuario (Sprint 9):
+            Acá, inmediatamente después de mostrar el resultado del primer registro de comida,
+            podrá insertarse la invitación opcional a registrar bienestar (energía, ánimo,
+            horas de sueño, digestión) sin rehacer este flujo. BienestarScreen ya existe como
+            componente independiente y reutilizable — solo falta decidir, con la Especificación
+            Funcional de Arquitectura, si se renderiza inline acá o se navega a él. No implementado
+            todavía por instrucción explícita del Sprint. */}
         <button onClick={() => { setResultado(null); setTexto(""); setMomento(""); }}
           style={{ marginTop: 20, width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "13px", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
           Registrar otra comida
@@ -796,9 +803,45 @@ function TerminosGate({ usuarioId, onAceptar }) {
   );
 }
 
+function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategory }) {
+  return (
+    <div className="fade-in">
+      <EvidenceSummaryBar entradas={data.entradas} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "10px 14px" }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar un alimento o combinación..."
+          style={{ background: "transparent", border: "none", outline: "none", color: TOKENS.ink, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, width: "100%" }}
+        />
+      </div>
+      <div style={{ display: "grid", gap: 10 }}>
+        {filteredCats.map((cat) => (
+          <button key={cat.name} onClick={() => onSelectCategory(cat.name)}
+            style={{ textAlign: "left", width: "100%", display: "flex", alignItems: "center", gap: 14, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "16px 20px", cursor: "pointer" }}>
+            <CategoryIcon name={cat.name} />
+            <span style={{ flex: 1 }}>
+              <span style={{ display: "block", fontFamily: "'Libre Franklin', sans-serif", fontSize: 17, fontWeight: 700, color: TOKENS.ink, letterSpacing: "-0.01em" }}>{cat.name}</span>
+              <span style={{ display: "block", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, marginTop: 4 }}>
+                {cat.entries.length} {cat.entries.length === 1 ? "entrada" : "entradas"}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  // PUNTO DE INTEGRACIÓN — Primer Recorrido del Usuario (Sprint 9):
+  // Hoy la pantalla inicial es "categories" (Explorador), ya extraído como componente
+  // reutilizable ExploradorScreen. Cuando exista la Especificación Funcional de Arquitectura,
+  // el valor por defecto de este estado se reemplaza por la nueva pantalla de Identificación
+  // sin tocar ExploradorScreen ni su lógica — queda disponible para usarse desde cualquier
+  // punto de la app (por ejemplo, como acción dentro del nuevo recorrido).
   const [view, setView] = useState({ screen: "categories" });
   const [query, setQuery] = useState("");
   const [usuario, setUsuario] = useState(() => {
@@ -935,31 +978,13 @@ function App() {
         )}
 
         {view.screen === "categories" && (
-          <div className="fade-in">
-            <EvidenceSummaryBar entradas={data.entradas} />
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "10px 14px" }}>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar un alimento o combinación..."
-                style={{ background: "transparent", border: "none", outline: "none", color: TOKENS.ink, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, width: "100%" }}
-              />
-            </div>
-            <div style={{ display: "grid", gap: 10 }}>
-              {filteredCats.map((cat) => (
-                <button key={cat.name} onClick={() => setView({ screen: "category", name: cat.name })}
-                  style={{ textAlign: "left", width: "100%", display: "flex", alignItems: "center", gap: 14, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "16px 20px", cursor: "pointer" }}>
-                  <CategoryIcon name={cat.name} />
-                  <span style={{ flex: 1 }}>
-                    <span style={{ display: "block", fontFamily: "'Libre Franklin', sans-serif", fontSize: 17, fontWeight: 700, color: TOKENS.ink, letterSpacing: "-0.01em" }}>{cat.name}</span>
-                    <span style={{ display: "block", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, marginTop: 4 }}>
-                      {cat.entries.length} {cat.entries.length === 1 ? "entrada" : "entradas"}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <ExploradorScreen
+            data={data}
+            query={query}
+            setQuery={setQuery}
+            filteredCats={filteredCats}
+            onSelectCategory={(name) => setView({ screen: "category", name })}
+          />
         )}
 
         {view.screen === "log" && (
