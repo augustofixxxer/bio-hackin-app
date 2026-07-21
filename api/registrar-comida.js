@@ -2,6 +2,8 @@
 // Detecta coincidencias con las Reglas por palabras clave, crea el Registro Diario
 // y los Bloqueos correspondientes en Supabase (Postgres).
 
+import { emitirEvento } from "./_instrumentacion.js";
+
 function normalizar(texto) {
   return texto
     .toLowerCase()
@@ -249,6 +251,16 @@ export default async function handler(req, res) {
         }))
       );
     }
+
+    // --- MIS Etapa 1 — Piloto de Instrumentación (DC-05). Único agregado de este archivo. ---
+    // No intrusivo: emitirEvento nunca lanza, un fallo interno se loguea y se descarta (Directiva 2).
+    await emitirEvento({
+      usuarioId,
+      eventType: "comida_registrada",
+      sourceComponent: "registrar-comida",
+      requestingComponent: "registrar-comida",
+      payload: { registroId, bloqueosCount: bloqueos.length, versionCasera },
+    });
 
     res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias });
   } catch (err) {
