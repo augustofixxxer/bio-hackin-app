@@ -5,6 +5,14 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Sprint "Sanitización" — usuarioId acá no se interpola en una URL (va en el body
+// del POST), así que no hay riesgo de inyección de query. Se valida igual como UUID
+// por consistencia de datos: evita que basura llegue a log_consentimiento_riesgo.usuario_id.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function esUUIDValido(valor) {
+  return typeof valor === "string" && UUID_REGEX.test(valor);
+}
+
 async function supabaseFetch(path, options = {}) {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
@@ -36,6 +44,9 @@ export default async function handler(req, res) {
   if (!usuarioId || !bloqueo || !nivelRiesgo) {
     return res.status(400).json({ error: "Faltan datos (usuarioId, bloqueo, nivelRiesgo)." });
   }
+  if (!esUUIDValido(usuarioId)) {
+    return res.status(400).json({ error: "usuarioId inválido." });
+  }
 
   try {
     await supabaseFetch(`log_consentimiento_riesgo`, {
@@ -53,3 +64,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error registrando el consentimiento", detail: String(err) });
   }
 }
+// END: /api/registrar-consentimiento-riesgo.js
