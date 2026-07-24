@@ -4,6 +4,14 @@
 
 import { emitirEvento } from "./_instrumentacion.js";
 
+// Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
+// más abajo, por eso debe validarse como UUID antes de llegar ahí. Acá usuarioId
+// es opcional (registro anónimo permitido), así que solo se valida si vino.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function esUUIDValido(valor) {
+  return typeof valor === "string" && UUID_REGEX.test(valor);
+}
+
 function normalizar(texto) {
   return texto
     .toLowerCase()
@@ -123,6 +131,10 @@ export default async function handler(req, res) {
   }
 
   if (usuarioId) {
+    if (!esUUIDValido(usuarioId)) {
+      res.status(400).json({ error: "usuarioId inválido." });
+      return;
+    }
     try {
       const acceso = await verificarAcceso(usuarioId);
       if (!acceso.ok) {
