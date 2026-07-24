@@ -196,6 +196,14 @@ async function guardarResultado(usuarioId, resultado) {
 // La Sección 1 nunca recibe ni conoce nada de lo que hay acá abajo.
 // ============================================================
 
+// Sprint "Sanitización" — usuarioId llega directo del cliente (query o body) y
+// se interpola en URLs de PostgREST más abajo (usuarios, registro_diario_real,
+// bienestar_diario_real). Debe validarse como UUID antes de tocar cualquier query.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function esUUIDValido(valor) {
+  return typeof valor === "string" && UUID_REGEX.test(valor);
+}
+
 const MUESTRA_GENERICA = {
   bloqueo: 'Milanesa + Papas Fritas (ejemplo)',
   metrica: 'Energía',
@@ -207,6 +215,9 @@ module.exports = async (req, res) => {
     const usuarioId = req.query?.usuarioId || req.body?.usuarioId;
     if (!usuarioId) {
       return res.status(400).json({ error: 'Falta usuarioId' });
+    }
+    if (!esUUIDValido(usuarioId)) {
+      return res.status(400).json({ error: 'usuarioId inválido.' });
     }
     if (!SUPABASE_URL || !SUPABASE_KEY) {
       return res.status(500).json({ error: 'Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Vercel' });
@@ -243,3 +254,4 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Error generando insights', detalle: err.message });
   }
 };
+// END: /api/generar-insights.js
