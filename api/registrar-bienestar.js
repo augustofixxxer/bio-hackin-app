@@ -5,6 +5,13 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
+// más abajo, por eso debe validarse como UUID antes de llegar ahí.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function esUUIDValido(valor) {
+  return typeof valor === "string" && UUID_REGEX.test(valor);
+}
+
 async function supabaseFetch(path, options = {}) {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
@@ -62,6 +69,9 @@ export default async function handler(req, res) {
   if (!usuarioId || typeof usuarioId !== "string") {
     return res.status(400).json({ error: "Falta el usuarioId." });
   }
+  if (!esUUIDValido(usuarioId)) {
+    return res.status(400).json({ error: "usuarioId inválido." });
+  }
 
   try {
     const acceso = await verificarAcceso(usuarioId);
@@ -92,3 +102,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error procesando el registro de bienestar", detail: String(err) });
   }
 }
+// END: /api/registrar-bienestar.js
