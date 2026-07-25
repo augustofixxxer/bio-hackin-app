@@ -2,6 +2,10 @@
 // Recibe POST con { energia, animo, sueno, digestion, usuarioId } (1-5 cada uno)
 // y crea un registro en la tabla "bienestar_diario_real", vinculado al usuario.
 
+// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
+// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
+import { emitirEvento } from "./_instrumentacion.js";
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -94,6 +98,14 @@ export default async function handler(req, res) {
         sueno: Number(sueno),
         digestion: Number(digestion),
       }),
+    });
+
+    await emitirEvento({
+      usuarioId,
+      eventType: "bienestar_registrado",
+      sourceComponent: "registrar-bienestar",
+      requestingComponent: "registrar-bienestar",
+      payload: { id: creado[0].id },
     });
 
     return res.status(200).json({ ok: true, id: creado[0].id });
