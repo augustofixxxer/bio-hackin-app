@@ -3,6 +3,10 @@
 // Verifica ese token contra los servidores de Google, y busca o crea
 // al usuario correspondiente en la tabla "usuarios" de Supabase.
 
+// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
+// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
+import { emitirEvento } from "./_instrumentacion.js";
+
 const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -66,6 +70,7 @@ export default async function handler(req, res) {
     );
 
     let usuarioId;
+    let esNuevo = false;
 
     if (encontrados.length > 0) {
       // Ya existe: lo usamos tal cual
@@ -81,7 +86,16 @@ export default async function handler(req, res) {
         }),
       });
       usuarioId = creado[0].id;
+      esNuevo = true;
     }
+
+    await emitirEvento({
+      usuarioId,
+      eventType: esNuevo ? "usuario_creado_login_google" : "login_google",
+      sourceComponent: "login-google",
+      requestingComponent: "login-google",
+      payload: { esNuevo },
+    });
 
     return res.status(200).json({ usuarioId, email, nombre });
   } catch (err) {
@@ -89,3 +103,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Error procesando el login", detail: String(err) });
   }
 }
+// END: /api/login-google.js
