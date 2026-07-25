@@ -17,6 +17,15 @@
 // SIEMPRE responde con el mismo mensaje genérico, exista o no el email,
 // para no revelar si un email está registrado (buena práctica de privacidad).
 
+// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
+// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
+// Se emite ANTES del DELETE a propósito: el usuario_id todavía tiene que existir
+// en la tabla "usuarios" en ese instante, porque usuario_subject_map tiene FK hacia
+// usuarios.id. El registro histórico (Sujeto/Acción/REA/Evento) no depende de esa FK
+// y sobrevive al borrado en cascada, quedando como evidencia de que la solicitud
+// de borrado se ejecutó.
+import { emitirEvento } from "./_instrumentacion.js";
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -69,7 +78,17 @@ export default async function handler(req, res) {
 
     const usuarioId = encontrados[0].id;
 
-    // 2. Un solo DELETE: el ON DELETE CASCADE del esquema se encarga de arrastrar
+    // 2. Emitir evidencia de la solicitud de borrado ANTES de ejecutar el DELETE
+    // (ver nota arriba sobre el orden, obligatorio por la FK de usuario_subject_map).
+    await emitirEvento({
+      usuarioId,
+      eventType: "borrado_datos_solicitado",
+      sourceComponent: "borrar-datos",
+      requestingComponent: "borrar-datos",
+      payload: {},
+    });
+
+    // 3. Un solo DELETE: el ON DELETE CASCADE del esquema se encarga de arrastrar
     // registro_diario_real, bloqueos, bienestar_diario_real e insights_generados.
     // Los dos logs de cumplimiento no tienen FK hacia usuarios, así que quedan intactos.
     await supabaseFetch(`usuarios?id=eq.${usuarioId}`, { method: 'DELETE' });
@@ -80,3 +99,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Error interno al procesar la solicitud' });
   }
 }
+// END: /api/borrar-datos.js
