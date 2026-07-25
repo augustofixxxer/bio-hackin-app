@@ -3,6 +3,10 @@
 // 1) marca terminos_aceptados = true en usuarios (guarda condicion_medica_preexistente si vino)
 // 2) crea un registro inmutable en "log_aceptacion_terminos" con fecha UTC, versión e IP.
 
+// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
+// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
+import { emitirEvento } from "./_instrumentacion.js";
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -72,6 +76,14 @@ export default async function handler(req, res) {
         version_terminos: VERSION_TERMINOS_ACTUAL,
         ip_address: ip,
       }),
+    });
+
+    await emitirEvento({
+      usuarioId,
+      eventType: "terminos_aceptados",
+      sourceComponent: "aceptar-terminos",
+      requestingComponent: "aceptar-terminos",
+      payload: { version: VERSION_TERMINOS_ACTUAL },
     });
 
     return res.status(200).json({ ok: true, version: VERSION_TERMINOS_ACTUAL });
