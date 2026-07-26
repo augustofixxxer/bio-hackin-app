@@ -2,7 +2,7 @@
 // Detecta coincidencias con las Reglas por palabras clave, crea el Registro Diario
 // y los Bloqueos correspondientes en Supabase (Postgres).
 
-import { emitirEvento } from "./_instrumentacion.js";
+import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 
 // Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
 // más abajo, por eso debe validarse como UUID antes de llegar ahí. Acá usuarioId
@@ -137,6 +137,16 @@ export default async function handler(req, res) {
     }
     try {
       const acceso = await verificarAcceso(usuarioId);
+
+      // MIS Etapa 3 — Validación Paralela. No cambia el resultado de "acceso": solo
+      // deja evidencia de si el modelo nuevo hubiera coincidido con esta decisión legacy.
+      await evaluarValidacionParalela({
+        usuarioId,
+        capabilityName: "uso_basico_app",
+        decisionLegacy: acceso.ok,
+        sourceComponent: "registrar-comida",
+      });
+
       if (!acceso.ok) {
         return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
       }
