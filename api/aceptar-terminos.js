@@ -6,33 +6,14 @@
 // MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
 // un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
 import { emitirEvento } from "./_instrumentacion.js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 // Sprint "Sanitización" — usuarioId siempre debe validarse como UUID antes de
 // interpolarlo en una URL de PostgREST (evita inyección vía query string).
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function esUUIDValido(valor) {
   return typeof valor === "string" && UUID_REGEX.test(valor);
-}
-
-async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
-  }
-  return data;
 }
 
 // Subí este número cada vez que cambies el texto legal de los Términos —
