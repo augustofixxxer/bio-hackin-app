@@ -3,6 +3,8 @@
 // y los Bloqueos correspondientes en Supabase (Postgres).
 
 import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
+// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 // Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
 // más abajo, por eso debe validarse como UUID antes de llegar ahí. Acá usuarioId
@@ -75,27 +77,7 @@ function esVersionCasera(textoNormalizado) {
 }
 
 // ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
-  }
-  return data;
-}
+// BT-02: supabaseFetch/SUPABASE_URL/SUPABASE_KEY ahora vienen de api/_supabase.js (import arriba).
 
 // Blindaje legal: bloquea el uso si no aceptó Términos, o si la cuenta fue suspendida.
 async function verificarAcceso(usuarioId) {
