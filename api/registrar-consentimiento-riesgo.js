@@ -7,9 +7,8 @@
 // Especialmente valioso acá: es evidencia de que un riesgo Medio/Alto/Experimental
 // fue reconocido por el usuario — refuerza el blindaje legal ya existente en el log.
 import { emitirEvento } from "./_instrumentacion.js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 // Sprint "Sanitización" — usuarioId acá no se interpola en una URL (va en el body
 // del POST), así que no hay riesgo de inyección de query. Se valida igual como UUID
@@ -17,24 +16,6 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function esUUIDValido(valor) {
   return typeof valor === "string" && UUID_REGEX.test(valor);
-}
-
-async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
-  }
-  return data;
 }
 
 export default async function handler(req, res) {
