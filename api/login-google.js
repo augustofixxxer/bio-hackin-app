@@ -6,29 +6,10 @@
 // MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
 // un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
 import { emitirEvento } from "./_instrumentacion.js";
+// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
-  }
-  return data;
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
