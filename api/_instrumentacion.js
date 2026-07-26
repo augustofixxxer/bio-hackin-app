@@ -1,5 +1,6 @@
 // api/_instrumentacion.js
 // MIS — Etapa 1: Instrumentación Base — Componente único de emisión (Directiva 3, DAE-01)
+// MIS — Etapa 3: Validación Paralela — agregado 25/07/2026, sin modificar nada de Etapa 1/2.
 // Patrón de archivo único (lección Sprint 16) — NO separar en lib/, NO importar entre carpetas.
 // Prefijo "_" para no exponerse como endpoint HTTP propio en Vercel.
 // Sintaxis ESM (export), coherente con el resto de api/*.js (ej. registrar-comida.js usa "export default").
@@ -84,17 +85,13 @@ async function resolverSujeto(usuarioId) {
   return subjectId;
 }
 
-async function resolverCapacidad() {
-  const rows = await supabaseFetch(
-    `capacidades?name=eq.${CAPABILITY_NAME}&select=capability_id`
-  );
+async function resolverCapacidadPorNombre(nombre) {
+  const rows = await supabaseFetch(`capacidades?name=eq.${nombre}&select=capability_id,scope`);
   if (rows.length === 0) {
     // RA-006 Punto 1: esta Capacidad debe existir como semilla. Si no existe, no se crea acá.
-    throw new Error(
-      `Capacidad semilla "${CAPABILITY_NAME}" no encontrada. Debe crearse manualmente antes de usar este componente.`
-    );
+    throw new Error(`Capacidad semilla "${nombre}" no encontrada. Debe crearse manualmente antes de usar este componente.`);
   }
-  return rows[0].capability_id;
+  return rows[0];
 }
 
 async function crearContexto({ executionOrigin, requestingComponent, executionScope }) {
@@ -111,20 +108,28 @@ async function crearContexto({ executionOrigin, requestingComponent, executionSc
   return rows[0].context_id;
 }
 
-async function resolverConcesionVigente(subjectId, capabilityId, contextIdParaEmision) {
-  const rows = await supabaseFetch(
-    `concesiones?subject_id=eq.${subjectId}&capability_id=eq.${capabilityId}&status=eq.vigente&select=grant_id`
+// RA-INSTR-01: solo Capacidades de scope "instrumentacion" pueden auto-otorgarse una
+// Concesión "vigente" indefinida, porque no gatean ningún recurso real (el control real
+// sigue siendo la Service Role Key, RC-01). Cualquier otro scope (ej. "operativa") sigue
+// el ciclo de vida oficial (RA-AI01-02) y se crea en estado "pendiente": es evidencia de
+// evaluación, no una autorización real todavía — eso requeriría una decisión explícita
+// del Sistema, que en Etapa 3 (Validación Paralela) no existe aún por diseño.
+async function resolverOCrearConcesionParaEvaluacion(subjectId, capacidad, contextIdParaEmision) {
+  const existente = await supabaseFetch(
+    `concesiones?subject_id=eq.${subjectId}&capability_id=eq.${capacidad.capability_id}&status=in.(vigente,pendiente)&select=grant_id,status&order=issued_at.desc&limit=1`
   );
-  if (rows.length > 0) return rows[0].grant_id;
+  if (existente.length > 0) return existente[0].grant_id;
+
+  const statusInicial = capacidad.scope === "instrumentacion" ? "vigente" : "pendiente";
 
   const nueva = await supabaseFetch(`concesiones`, {
     method: "POST",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({
       subject_id: subjectId,
-      capability_id: capabilityId,
+      capability_id: capacidad.capability_id,
       context_id: contextIdParaEmision,
-      status: "vigente",
+      status: statusInicial,
       issued_at: new Date().toISOString(),
     }),
   });
@@ -171,6 +176,7 @@ async function insertarEvento(envelope, evidenceId) {
 /**
  * Punto único de emisión (Directiva 3). No intrusivo (Directiva 2):
  * cualquier fallo se loguea y se descarta, nunca interrumpe al llamador.
+ * (MIS Etapa 1/2 — sin cambios respecto de la versión anterior.)
  */
 async function emitirEvento({ usuarioId, eventType, sourceComponent, payload, requestingComponent }) {
   try {
@@ -178,13 +184,13 @@ async function emitirEvento({ usuarioId, eventType, sourceComponent, payload, re
     if (!usuarioId) return; // política: sin usuarioId no hay Sujeto atribuible, se omite (no bloquea)
 
     const subjectId = await resolverSujeto(usuarioId);
-    const capabilityId = await resolverCapacidad();
+    const capacidad = await resolverCapacidadPorNombre(CAPABILITY_NAME);
     const contextId = await crearContexto({
       executionOrigin: "api",
       requestingComponent: requestingComponent || sourceComponent,
       executionScope: eventType,
     });
-    const grantId = await resolverConcesionVigente(subjectId, capabilityId, contextId);
+    const grantId = await resolverOCrearConcesionParaEvaluacion(subjectId, capacidad, contextId);
     const actionId = await crearAccion({
       subjectId,
       grantId,
@@ -201,4 +207,65 @@ async function emitirEvento({ usuarioId, eventType, sourceComponent, payload, re
   }
 }
 
-export { construirEnvelopeEvento, emitirEvento };
+/**
+ * MIS Etapa 3 — Validación Paralela (AI-01 Etapa B / Sección 10).
+ * Compara la decisión YA tomada por el mecanismo legacy (Service Role Key + código
+ * de negocio, ej. verificarAcceso() en cada endpoint) contra lo que decidiría el
+ * modelo nuevo (Sujeto→Capacidad→Concesión), y deja evidencia de coincidencia o
+ * divergencia. Restricciones respetadas (MIS Etapa 3): no bloquea operaciones,
+ * no cambia permisos productivos, no reemplaza autoridad, no migra nada solo.
+ *
+ * decisionLegacy: boolean — resultado real que ya determinó si la operación siguió.
+ * capabilityName: nombre de una Capacidad de scope "operativa" ya sembrada.
+ */
+async function evaluarValidacionParalela({ usuarioId, capabilityName, decisionLegacy, sourceComponent, contextoAdicional }) {
+  try {
+    if (!SUPABASE_URL || !SUPABASE_KEY) return;
+    if (!usuarioId) return;
+
+    const subjectId = await resolverSujeto(usuarioId);
+    const capacidad = await resolverCapacidadPorNombre(capabilityName);
+
+    const contextId = await crearContexto({
+      executionOrigin: "api",
+      requestingComponent: sourceComponent,
+      executionScope: `validacion_paralela:${capabilityName}`,
+    });
+
+    const grantId = await resolverOCrearConcesionParaEvaluacion(subjectId, capacidad, contextId);
+
+    // Decisión del modelo nuevo: hoy, una Concesión "pendiente" (no vigente) para una
+    // Capacidad operativa significa que el modelo nuevo aún NO autorizaría por sí solo
+    // (todavía no hay proceso de aprobación explícito — eso es justamente lo que falta
+    // definir antes de poder pasar a la Etapa C de AI-01, "Inversión de Autoridad").
+    const concesionRows = await supabaseFetch(`concesiones?grant_id=eq.${grantId}&select=status`);
+    const decisionNueva = concesionRows[0]?.status === "vigente";
+
+    const coincide = decisionLegacy === decisionNueva;
+
+    const actionId = await crearAccion({
+      subjectId,
+      grantId,
+      contextId,
+      actionType: `validacion_paralela:${capabilityName}`,
+      result: coincide ? "coincide" : "diverge",
+    });
+    const evidenceId = await crearREA({
+      actionId,
+      grantId,
+      contextId,
+      validationResult: coincide ? "coincide" : "diverge",
+    });
+
+    const envelope = construirEnvelopeEvento({
+      eventType: "validacion_paralela",
+      sourceComponent,
+      payload: { capabilityName, decisionLegacy, decisionNueva, coincide, ...(contextoAdicional || {}) },
+    });
+    await insertarEvento(envelope, evidenceId);
+  } catch (err) {
+    console.error("[instrumentacion][validacion-paralela] fallo no bloqueante:", err);
+  }
+}
+
+export { construirEnvelopeEvento, emitirEvento, evaluarValidacionParalela };
