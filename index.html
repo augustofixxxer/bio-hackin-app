@@ -833,15 +833,216 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
   );
 }
 
+// ============================================================
+// ONBOARDING — Primer Recorrido del Usuario, Etapa "Identificación" (Sprint 9 gap)
+// Integrado en el PUNTO DE INTEGRACIÓN ya marcado dentro de App() (ver más abajo).
+// Reutiliza TOKENS y tipografías existentes (Libre Franklin / IBM Plex) — no introduce
+// una identidad visual nueva, para no generar un salto brusco al entrar al resto de
+// la app. Estética shadcn/ui aplicada como prolijidad de layout (tarjetas, espaciado,
+// jerarquía), no como paleta de colores.
+// ============================================================
+
+const ONBOARDING_INTERESES = [
+  { val: "energia", label: "Mi energía", icon: "⚡" },
+  { val: "digestion", label: "Mi digestión", icon: "🌾" },
+  { val: "sueno", label: "Mi sueño", icon: "🌙" },
+  { val: "animo", label: "Mi ánimo", icon: "☀️" },
+];
+
+function OnboardingProgreso({ paso }) {
+  return (
+    <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
+      {[1, 2, 3, 4].map((n) => (
+        <div key={n} style={{
+          height: 4, flex: 1, borderRadius: 999,
+          background: n <= paso ? TOKENS.primary : TOKENS.border,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function OnboardingEyebrow({ children }) {
+  return (
+    <p style={{
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary,
+      letterSpacing: "0.08em", marginBottom: 10, marginTop: 0, textTransform: "uppercase",
+    }}>{children}</p>
+  );
+}
+
+function OnboardingBotonPrimario({ children, onClick, disabled }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      width: "100%", border: "none", borderRadius: 8, padding: "13px", fontWeight: 600, fontSize: 14,
+      color: "#FFFFFF", cursor: disabled ? "not-allowed" : "pointer", marginBottom: 10,
+      background: disabled ? TOKENS.borderStrong : TOKENS.primary,
+      fontFamily: "'IBM Plex Sans', sans-serif",
+    }}>{children}</button>
+  );
+}
+
+function OnboardingBotonFantasma({ children, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      width: "100%", background: "none", border: "none", color: TOKENS.inkDim,
+      fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, cursor: "pointer", padding: "6px", textAlign: "center",
+    }}>{children}</button>
+  );
+}
+
+function OnboardingFlow({ usuarioId, onCompletar }) {
+  const [paso, setPaso] = useState(1);
+  const [nombre, setNombre] = useState("");
+  const [interes, setInteres] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardarNombreYAvanzar() {
+    const nombreLimpio = nombre.trim();
+    if (nombreLimpio) {
+      setGuardando(true);
+      try {
+        await fetch("/api/actualizar-nombre", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuarioId, nombreAlias: nombreLimpio }),
+        });
+      } catch (e) {
+        // No bloquea el onboarding si falla — el nombre es un detalle de personalización,
+        // no una condición de acceso (mismo criterio que emitirEvento: no intrusivo).
+        console.error("No se pudo guardar el nombre:", e);
+      } finally {
+        setGuardando(false);
+      }
+    }
+    setPaso(2);
+  }
+
+  function completarOnboarding() {
+    try {
+      localStorage.setItem("reseteo_onboarding_v1", "true");
+      if (interes) localStorage.setItem("reseteo_interes_inicial", interes);
+    } catch (e) {}
+    onCompletar();
+  }
+
+  const cardStyle = {
+    maxWidth: 440, width: "100%", background: TOKENS.surface,
+    border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 28,
+  };
+  const wrapStyle = {
+    minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+    padding: 24, background: TOKENS.bg,
+  };
+  const h1Style = {
+    fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 22,
+    color: TOKENS.ink, marginBottom: 10, letterSpacing: "-0.02em",
+  };
+  const pStyle = { color: TOKENS.inkDim, fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 };
+  const inputStyle = {
+    width: "100%", padding: "12px 14px", borderRadius: 8, marginBottom: 18,
+    border: `1.5px solid ${TOKENS.border}`, fontFamily: "'IBM Plex Sans', sans-serif",
+    fontSize: 14, color: TOKENS.ink, outline: "none",
+  };
+
+  if (paso === 1) {
+    return (
+      <div style={wrapStyle} className="fade-in">
+        <div style={cardStyle}>
+          <OnboardingProgreso paso={1} />
+          <OnboardingEyebrow>Reseteo Propio · Paso 1 de 4</OnboardingEyebrow>
+          <h1 style={h1Style}>¿Cómo querés que te llamemos?</h1>
+          <p style={pStyle}>Nada de formularios largos. Esto es tuyo: un espacio para observar cómo responde tu cuerpo a tus propios hábitos, a tu ritmo.</p>
+          <input
+            style={inputStyle} placeholder="Ej: Augusto, Gustavo, Tucumanito..."
+            value={nombre} onChange={(e) => setNombre(e.target.value)}
+          />
+          <OnboardingBotonPrimario onClick={guardarNombreYAvanzar} disabled={guardando}>
+            {guardando ? "Guardando..." : "Continuar"}
+          </OnboardingBotonPrimario>
+          <OnboardingBotonFantasma onClick={() => setPaso(2)}>Prefiero omitir esto por ahora</OnboardingBotonFantasma>
+        </div>
+      </div>
+    );
+  }
+
+  if (paso === 2) {
+    return (
+      <div style={wrapStyle} className="fade-in">
+        <div style={cardStyle}>
+          <OnboardingProgreso paso={2} />
+          <OnboardingEyebrow>Reseteo Propio · Paso 2 de 4</OnboardingEyebrow>
+          <h1 style={h1Style}>¿Qué te gustaría entender mejor?</h1>
+          <p style={pStyle}>No hay respuesta incorrecta. Esto solo nos ayuda a mostrarte primero lo que más te interesa — podés cambiarlo cuando quieras.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+            {ONBOARDING_INTERESES.map((op) => (
+              <button key={op.val} onClick={() => setInteres(op.val)} style={{
+                padding: "14px 12px", borderRadius: 8, cursor: "pointer", textAlign: "left",
+                border: `1.5px solid ${interes === op.val ? TOKENS.primary : TOKENS.border}`,
+                background: interes === op.val ? TOKENS.primarySoft : TOKENS.surface,
+                fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 600, color: TOKENS.ink,
+              }}>
+                <span style={{ display: "block", fontSize: 18, marginBottom: 4 }}>{op.icon}</span>
+                {op.label}
+              </button>
+            ))}
+          </div>
+          <OnboardingBotonPrimario onClick={() => setPaso(3)}>Continuar</OnboardingBotonPrimario>
+          <OnboardingBotonFantasma onClick={() => setPaso(3)}>Quiero ver un poco de todo</OnboardingBotonFantasma>
+        </div>
+      </div>
+    );
+  }
+
+  if (paso === 3) {
+    return (
+      <div style={wrapStyle} className="fade-in">
+        <div style={cardStyle}>
+          <OnboardingProgreso paso={3} />
+          <OnboardingEyebrow>Reseteo Propio · Paso 3 de 4</OnboardingEyebrow>
+          <h1 style={h1Style}>Así funciona un "hackeo"</h1>
+          <p style={pStyle}>No te vamos a decir qué no comer. Te mostramos cómo mejorar lo que ya elegiste.</p>
+          <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 14, marginBottom: 22, display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 20 }}>🥟</span>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: TOKENS.ink }}>
+              Registrás <b>"empanadas fritas"</b> → te sugerimos probar la versión al horno, sin perder el sabor que te gusta.
+            </p>
+          </div>
+          <OnboardingBotonPrimario onClick={() => setPaso(4)}>Entendido, quiero probar</OnboardingBotonPrimario>
+        </div>
+      </div>
+    );
+  }
+
+  // paso === 4
+  return (
+    <div style={wrapStyle} className="fade-in">
+      <div style={{ ...cardStyle, textAlign: "center" }}>
+        <OnboardingProgreso paso={4} />
+        <div style={{
+          width: 56, height: 56, borderRadius: "50%", background: TOKENS.alto,
+          display: "flex", alignItems: "center", justifyContent: "center", margin: "4px auto 18px",
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h1 style={h1Style}>{nombre.trim() ? `¡Listo, ${nombre.trim()}!` : "¡Listo!"}</h1>
+        <p style={pStyle}>La app es tuya desde acá. Explorá cuando quieras, a tu ritmo — nosotros solo te acompañamos.</p>
+        <OnboardingBotonPrimario onClick={completarOnboarding}>Empezar a explorar</OnboardingBotonPrimario>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  // PUNTO DE INTEGRACIÓN — Primer Recorrido del Usuario (Sprint 9):
-  // Hoy la pantalla inicial es "categories" (Explorador), ya extraído como componente
-  // reutilizable ExploradorScreen. Cuando exista la Especificación Funcional de Arquitectura,
-  // el valor por defecto de este estado se reemplaza por la nueva pantalla de Identificación
-  // sin tocar ExploradorScreen ni su lógica — queda disponible para usarse desde cualquier
-  // punto de la app (por ejemplo, como acción dentro del nuevo recorrido).
+  // PUNTO DE INTEGRACIÓN — Primer Recorrido del Usuario (Sprint 9): RESUELTO (25/07/2026).
+  // No se tocó el valor por defecto de "view" ni ExploradorScreen. En cambio, se agregó
+  // un gate independiente (OnboardingFlow, más abajo) con el mismo patrón que TerminosGate:
+  // se muestra ANTES de llegar a este árbol de pantallas, y una vez completado deja pasar
+  // a "categories" como siempre. ExploradorScreen queda intacto y reutilizable.
   const [view, setView] = useState({ screen: "categories" });
   const [query, setQuery] = useState("");
   const [usuario, setUsuario] = useState(() => {
@@ -854,6 +1055,9 @@ function App() {
   });
   const [terminosAceptados, setTerminosAceptados] = useState(
     () => localStorage.getItem("reseteo_terminos_v1") === "true"
+  );
+  const [onboardingCompletado, setOnboardingCompletado] = useState(
+    () => localStorage.getItem("reseteo_onboarding_v1") === "true"
   );
 
   useEffect(() => {
@@ -890,6 +1094,10 @@ function App() {
       localStorage.setItem("reseteo_terminos_v1", "true");
       setTerminosAceptados(true);
     }} />;
+  }
+
+  if (!onboardingCompletado) {
+    return <OnboardingFlow usuarioId={usuario.usuarioId} onCompletar={() => setOnboardingCompletado(true)} />;
   }
 
   const grupos = groupByCategoria(data.entradas);
