@@ -4,7 +4,7 @@
 
 // MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
 // un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
-import { emitirEvento } from "./_instrumentacion.js";
+import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,6 +79,17 @@ export default async function handler(req, res) {
 
   try {
     const acceso = await verificarAcceso(usuarioId);
+
+    // MIS Etapa 3 — Validación Paralela. No cambia el resultado de "acceso": solo
+    // deja evidencia de si el modelo nuevo (Sujeto→Capacidad→Concesión) hubiera
+    // coincidido con esta decisión legacy. Nunca bloquea ni reemplaza nada.
+    await evaluarValidacionParalela({
+      usuarioId,
+      capabilityName: "uso_basico_app",
+      decisionLegacy: acceso.ok,
+      sourceComponent: "registrar-bienestar",
+    });
+
     if (!acceso.ok) {
       return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
     }
