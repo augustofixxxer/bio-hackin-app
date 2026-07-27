@@ -72,6 +72,37 @@ function evaluarRegla(textoNormalizado, palabrasClaveRaw) {
 
 const PALABRAS_CASERO = ["casera", "caseras", "casero", "caseros", "en casa", "hecho en casa", "hecha en casa"];
 
+// Diccionario de sinónimos — Sprint 9 (recomendado, nunca implementado) + hallazgo real 25/07/2026.
+// No reemplaza el texto del usuario (eso se sigue guardando tal cual lo escribió, sin tocar).
+// Solo AGREGA palabras equivalentes a una copia usada exclusivamente para matchear contra
+// reglas/alternativas. Construido contra las palabras_clave REALES de las 32 reglas actuales
+// (no inventado): el hueco más grande era "carne roja" — exige esa frase literal y no reconoce
+// cortes comunes (bife, churrasco, vacío, asado...). Ampliar esta lista es barato y sin riesgo;
+// es la mejora "gratis" acordada con Augusto mientras se evalúa una capa de IA para el resto.
+const SINONIMOS = {
+  // → "carne roja" (activa reglas 121855de "Carne Roja + Lácteos" y 5757e782 "Té + Hierro")
+  bife: "carne roja", churrasco: "carne roja", vacio: "carne roja", matambre: "carne roja",
+  costilla: "carne roja", cuadril: "carne roja", lomo: "carne roja", peceto: "carne roja",
+  nalga: "carne roja", bondiola: "carne roja", carnaza: "carne roja", tapa: "carne roja",
+  asado: "carne roja", parrillada: "carne roja", colita: "carne roja", entraña: "carne roja",
+  // → "pescado" (activa regla e6297877 "Arroz + Proteínas Magras")
+  salmon: "pescado", atun: "pescado", merluza: "pescado", trucha: "pescado", mero: "pescado",
+  corvina: "pescado", pejerrey: "pescado", boga: "pescado", surubi: "pescado", abadejo: "pescado",
+  // → "pollo" (misma regla e6297877)
+  suprema: "pollo", pechuga: "pollo", muslo: "pollo", supremas: "pollo",
+  // → "legumbres" (activa regla 105fe512 "Avena/Lentejas + Carne o Semillas")
+  garbanzos: "legumbres", porotos: "legumbres", habas: "legumbres", arvejas: "legumbres",
+};
+
+function expandirSinonimos(textoNormalizado) {
+  const palabras = textoNormalizado.split(/[^a-z0-9]+/).filter(Boolean);
+  const agregados = new Set();
+  for (const p of palabras) {
+    if (SINONIMOS[p]) agregados.add(SINONIMOS[p]);
+  }
+  return agregados.size > 0 ? `${textoNormalizado} ${[...agregados].join(" ")}` : textoNormalizado;
+}
+
 function esVersionCasera(textoNormalizado) {
   return PALABRAS_CASERO.some((p) => textoNormalizado.includes(normalizar(p)));
 }
@@ -140,6 +171,7 @@ export default async function handler(req, res) {
 
   try {
     const textoNormalizado = normalizar(texto);
+    const textoParaMatching = expandirSinonimos(textoNormalizado);
     const versionCasera = esVersionCasera(textoNormalizado);
 
     // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje)
@@ -147,10 +179,12 @@ export default async function handler(req, res) {
       `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,soluciones(nombre_hackeo,adaptacion)`
     );
 
-    // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos
+    // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
+    // Se evalúa contra textoParaMatching (texto original + sinónimos), nunca contra el texto
+    // que se guarda en el registro — eso sigue siendo exactamente lo que el usuario escribió.
     const evaluaciones = reglas.map((r) => ({
       regla: r,
-      ...evaluarRegla(textoNormalizado, r.palabras_clave),
+      ...evaluarRegla(textoParaMatching, r.palabras_clave),
     }));
     const coincidencias = evaluaciones.filter((e) => e.coincide && !e.esTip).map((e) => e.regla);
     const coincidenciasTip = evaluaciones.filter((e) => e.coincide && e.esTip).map((e) => e.regla);
@@ -253,7 +287,7 @@ export default async function handler(req, res) {
           ...tokenizar(normalizar(a.mecanismo || "")).map(raiz),
           ...tokenizar(normalizar(a.recomendacion || "")).map(raiz),
         ]);
-        const palabrasTexto = tokenizar(textoNormalizado)
+        const palabrasTexto = tokenizar(textoParaMatching)
           .map(raiz)
           .filter((p) => !GENERICAS.has(p));
         return palabrasTexto.some((p) => candidatos.has(p) && !GENERICAS.has(p));
