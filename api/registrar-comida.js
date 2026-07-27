@@ -229,12 +229,24 @@ export default async function handler(req, res) {
       const tokenizar = (t) => (t || "").split(/[^a-z0-9]+/).filter((p) => p.length > 3);
       const raiz = (p) => (p.length > 4 && p.endsWith("s") ? p.slice(0, -1) : p);
       // Palabras genéricas que no identifican a un alimento específico: si matchean solas,
-      // generan falsos positivos (ej. "ensalada" enganchando la ficha de la lechuga).
+      // generan falsos positivos (ej. "ensalada" enganchando la ficha de la lechuga, o
+      // "horno"/"papas" enganchando cualquier receta que los mencione de paso — caso real
+      // detectado 25/07/2026: "bife con papas al horno" matcheó con la ficha del Salmón
+      // solo porque su recomendación decía "a la plancha o al horno").
       const GENERICAS = new Set([
         "ensalada", "ensaladas", "comida", "comidas", "plato", "platos", "alimento",
         "alimentos", "base", "fresca", "fresco", "frescos", "frescas", "opcion",
         "opciones", "saludable", "saludables", "diaria", "diario", "buena", "bueno",
         "aporte", "util", "utiles",
+        // Métodos de cocción — no identifican al alimento, aparecen en cualquier receta:
+        "horno", "hornos", "plancha", "planchas", "hervida", "hervido", "hervidas",
+        "hervidos", "frito", "frita", "fritos", "fritas", "asado", "asada", "asados",
+        "asadas", "guiso", "guisos", "cocido", "cocida", "cocidos", "cocidas", "hervir",
+        "cocinar", "cocinado", "cocinada", "salteado", "salteada", "vapor",
+        // Acompañamientos/ingredientes tan comunes que no aportan especificidad por sí solos:
+        "papa", "papas", "arroz", "huevo", "huevos", "agua", "aceite", "aceites", "sal",
+        "sopa", "sopas", "pan", "panes", "taza", "tazas", "cucharada", "cucharadas",
+        "vaso", "vasos", "porcion", "porciones", "gramo", "gramos",
       ].map(raiz));
       const coincidenciasAlternativas = alternativas.filter((a) => {
         const candidatos = new Set([
