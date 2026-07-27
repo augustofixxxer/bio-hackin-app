@@ -5,6 +5,8 @@
 import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 // BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+// Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
+import { clasificarComidaIA } from "./_clasificador-ia.js";
 
 // Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
 // más abajo, por eso debe validarse como UUID antes de llegar ahí. Acá usuarioId
@@ -171,8 +173,15 @@ export default async function handler(req, res) {
 
   try {
     const textoNormalizado = normalizar(texto);
-    const textoParaMatching = expandirSinonimos(textoNormalizado);
+    let textoParaMatching = expandirSinonimos(textoNormalizado);
     const versionCasera = esVersionCasera(textoNormalizado);
+
+    // Capa de IA (opcional) — si Groq está configurada y responde a tiempo, suma más
+    // categorías reconocidas al texto de matching. Si no, sigue igual que hasta ahora.
+    const categoriasIA = await clasificarComidaIA(texto);
+    if (categoriasIA && categoriasIA.length > 0) {
+      textoParaMatching = `${textoParaMatching} ${categoriasIA.join(" ")}`;
+    }
 
     // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje)
     const reglas = await supabaseFetch(
@@ -309,7 +318,10 @@ export default async function handler(req, res) {
       eventType: "comida_registrada",
       sourceComponent: "registrar-comida",
       requestingComponent: "registrar-comida",
-      payload: { registroId, bloqueosCount: bloqueos.length, versionCasera },
+      payload: {
+        registroId, bloqueosCount: bloqueos.length, versionCasera,
+        iaUsada: Boolean(categoriasIA && categoriasIA.length > 0),
+      },
     });
 
     res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias });
