@@ -8,12 +8,21 @@
 // como dos secciones claras dentro de este archivo — no se mezclan ni se pierde
 // ninguna de las reglas del Sprint 16, solo se elimina el punto de fallo entre archivos.
 //
+// MIGRACIÓN 25/07/2026 (rigurosa, un solo cambio estructural): este archivo pasó de
+// CommonJS (`module.exports`) a ESM (`import`/`export default`) para poder usar los
+// mismos módulos compartidos que ya funcionan en producción en los otros 7 archivos
+// de /api (_supabase.js, _instrumentacion.js) — mezclar CommonJS con un import de un
+// archivo ESM es justamente el tipo de fricción entre sistemas de módulos que causó
+// el incidente de Sprint 16, así que en vez de mezclar, se unificó todo a ESM, el
+// mismo estilo ya validado en producción en registrar-comida.js y el resto. Ningún
+// comportamiento de la Sección 1 (Motor Puro) cambió — se movieron solo imports.
+//
 // ============================================================
 // SECCIÓN 1 — MOTOR PURO (no conoce nivel de acceso, no conoce req/res)
 // ============================================================
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 
 const METRICAS = ['energia', 'animo', 'sueno', 'digestion'];
 const NOMBRE_METRICA = { energia: 'Energía', animo: 'Ánimo', sueno: 'Sueño', digestion: 'Digestión' };
@@ -22,24 +31,6 @@ const UMBRAL_REPETICIONES = 3;
 const UMBRAL_DIAS_CRUZADOS = 10;
 const UMBRAL_DIFERENCIA = 0.7;
 const VENTANA_DIAS = 3; // promedio de los 2-3 días siguientes
-
-async function supabaseFetch(path, options = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!res.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase error ${res.status}`);
-  }
-  return data;
-}
 
 function fechaISO(dateStr) {
   return new Date(dateStr).toISOString().slice(0, 10);
@@ -210,7 +201,7 @@ const MUESTRA_GENERICA = {
   frase: 'Los días después de "Milanesa + Papas Fritas", tu energía bajó en promedio 1.2 puntos comparado a tus días habituales. Este es un ejemplo — suscribite para ver tus propios patrones reales.',
 };
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
     const usuarioId = req.query?.usuarioId || req.body?.usuarioId;
     if (!usuarioId) {
@@ -231,6 +222,17 @@ module.exports = async (req, res) => {
     }
     const usuario = usuarioRows[0];
 
+    const accesoBasico = usuario.cuenta_suspendida !== true && usuario.terminos_aceptados === true;
+
+    // MIS Etapa 3 — Validación Paralela. No cambia el resultado real: solo deja
+    // evidencia de si el modelo nuevo hubiera coincidido con esta decisión legacy.
+    await evaluarValidacionParalela({
+      usuarioId,
+      capabilityName: "uso_basico_app",
+      decisionLegacy: accesoBasico,
+      sourceComponent: "generar-insights",
+    });
+
     if (usuario.cuenta_suspendida === true) {
       return res.status(403).json({ error: 'Esta cuenta fue suspendida. Contactanos si creés que es un error.' });
     }
@@ -241,6 +243,14 @@ module.exports = async (req, res) => {
     const esPremium = usuario.nivel_acceso === 'Premium' || usuario.nivel_acceso === 'Personalizado';
 
     if (!esPremium) {
+      // MIS Etapa 2 — Trazabilidad. No intrusivo: emitirEvento nunca lanza.
+      await emitirEvento({
+        usuarioId,
+        eventType: "insights_bloqueado_premium",
+        sourceComponent: "generar-insights",
+        requestingComponent: "generar-insights",
+        payload: {},
+      });
       return res.status(200).json({
         estado: 'bloqueado',
         muestra: MUESTRA_GENERICA,
@@ -248,10 +258,19 @@ module.exports = async (req, res) => {
     }
 
     const resultado = await calcularInsights(usuarioId);
+
+    await emitirEvento({
+      usuarioId,
+      eventType: "insights_generados",
+      sourceComponent: "generar-insights",
+      requestingComponent: "generar-insights",
+      payload: { estado: resultado.estado, cantidadInsights: resultado.insights?.length || 0 },
+    });
+
     return res.status(200).json(resultado);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Error generando insights', detalle: err.message });
   }
-};
+}
 // END: /api/generar-insights.js
