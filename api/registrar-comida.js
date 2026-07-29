@@ -327,6 +327,9 @@ export default async function handler(req, res) {
         // sinónimo "bife" → "carne roja" agrega el token "carne", y ambas fichas lo contienen
         // en su mecanismo. Mismo patrón que "horno"/"papas" (25/07/2026).
         "carne", "carnes",
+        // "salsa" a secas, mismo problema — caso real detectado 29/07/2026: "cordero con salsa
+        // de crema" matcheó la ficha de "Tomate ... en salsa casera" sin relación real.
+        "salsa", "salsas",
       ].map(raiz));
       const coincidenciasAlternativas = alternativas.filter((a) => {
         const candidatos = new Set([
