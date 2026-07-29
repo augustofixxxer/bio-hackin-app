@@ -72,6 +72,28 @@ function evaluarRegla(textoNormalizado, palabrasClaveRaw) {
   return { coincide, esTip };
 }
 
+// Auditoría de contenido 25/07/2026 — dos condiciones adicionales que evaluarRegla()
+// no podía expresar (solo sabe buscar presencia de palabras, no ausencia ni horario):
+//
+// 1) palabras_excluyentes: si el texto contiene alguna, la regla NO dispara aunque
+//    matchee sus palabras_clave. Corrige casos como "Avena sin activar" disparando
+//    igual cuando el usuario SÍ activó el grano.
+// 2) momento_requerido: si está seteado, la regla solo aplica cuando coincide con
+//    el momento_dia real del registro (Desayuno/Almuerzo/Merienda/Cena) — no con
+//    palabras del texto. Corrige reglas como "...Tardías (Cena)" que disparaban a
+//    cualquier hora porque el motor nunca miraba el dato estructurado que ya existe.
+function excluidoPorPalabra(textoNormalizado, palabrasExcluyentesRaw) {
+  if (!palabrasExcluyentesRaw) return false;
+  const palabras = palabrasExcluyentesRaw.split(",").map((p) => normalizar(p.trim())).filter(Boolean);
+  return palabras.some((p) => contienePalabraCompleta(textoNormalizado, p));
+}
+
+function cumpleMomento(momentoRegistro, momentoRequerido) {
+  if (!momentoRequerido) return true; // sin requisito -> no restringe nada
+  if (!momentoRegistro) return false; // la regla exige momento pero no se proveyó ninguno
+  return normalizar(momentoRegistro) === normalizar(momentoRequerido);
+}
+
 const PALABRAS_CASERO = ["casera", "caseras", "casero", "caseros", "en casa", "hecho en casa", "hecha en casa"];
 
 // Diccionario de sinónimos — Sprint 9 (recomendado, nunca implementado) + hallazgo real 25/07/2026.
@@ -185,16 +207,25 @@ export default async function handler(req, res) {
 
     // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje)
     const reglas = await supabaseFetch(
-      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,soluciones(nombre_hackeo,adaptacion)`
+      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,momento_requerido,palabras_excluyentes,soluciones(nombre_hackeo,adaptacion)`
     );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
     // Se evalúa contra textoParaMatching (texto original + sinónimos), nunca contra el texto
     // que se guarda en el registro — eso sigue siendo exactamente lo que el usuario escribió.
-    const evaluaciones = reglas.map((r) => ({
-      regla: r,
-      ...evaluarRegla(textoParaMatching, r.palabras_clave),
-    }));
+    // Además del match de palabras, dos condiciones adicionales (auditoría 25/07/2026):
+    // exclusión por palabra ("sin activar" mal detectado) y momento del día real (no adivinado
+    // por texto) — ver excluidoPorPalabra()/cumpleMomento() más arriba.
+    const evaluaciones = reglas.map((r) => {
+      const evalPalabras = evaluarRegla(textoParaMatching, r.palabras_clave);
+      const pasaExclusion = !excluidoPorPalabra(textoParaMatching, r.palabras_excluyentes);
+      const pasaMomento = cumpleMomento(momento, r.momento_requerido);
+      return {
+        regla: r,
+        coincide: evalPalabras.coincide && pasaExclusion && pasaMomento,
+        esTip: evalPalabras.esTip,
+      };
+    });
     const coincidencias = evaluaciones.filter((e) => e.coincide && !e.esTip).map((e) => e.regla);
     const coincidenciasTip = evaluaciones.filter((e) => e.coincide && e.esTip).map((e) => e.regla);
 
