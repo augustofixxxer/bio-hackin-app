@@ -86,7 +86,16 @@ async function clasificarComidaIA(texto) {
           type: "json_schema",
           json_schema: { name: "clasificacion_comida", strict: true, schema: JSON_SCHEMA },
         },
-        max_completion_tokens: 150,
+        // Fix 29/07/2026: gpt-oss-20b es un modelo "razonador" — gasta tokens pensando
+        // antes de escribir el JSON final. Con max_completion_tokens:150 se quedaba sin
+        // margen a mitad de razonamiento y nunca llegaba a producir el JSON, causando
+        // el 400 "Generated JSON does not match the expected schema" (falla documentada
+        // y reportada por otros usuarios de Groq con este modelo + structured outputs).
+        // reasoning_effort:"low" reduce el pensamiento interno al mínimo (no lo necesitamos
+        // para esta tarea, es solo clasificación cerrada) y sirve además para no acercarse
+        // al timeout de 3s ya definido más abajo. max_completion_tokens sube con margen.
+        reasoning_effort: "low",
+        max_completion_tokens: 300,
         temperature: 0,
       }),
       signal: controller.signal,
