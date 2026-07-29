@@ -321,6 +321,12 @@ export default async function handler(req, res) {
         "papa", "papas", "arroz", "huevo", "huevos", "agua", "aceite", "aceites", "sal",
         "sopa", "sopas", "pan", "panes", "taza", "tazas", "cucharada", "cucharadas",
         "vaso", "vasos", "porcion", "porciones", "gramo", "gramos",
+        // "carne" a secas no identifica un alimento específico (aparece en decenas de fichas
+        // de alternativas_locales sin relación real entre sí) — caso real detectado 29/07/2026:
+        // "bife de cerdo con arroz" matcheó "Tamales" y "Hamburguesa casera" solo porque el
+        // sinónimo "bife" → "carne roja" agrega el token "carne", y ambas fichas lo contienen
+        // en su mecanismo. Mismo patrón que "horno"/"papas" (25/07/2026).
+        "carne", "carnes",
       ].map(raiz));
       const coincidenciasAlternativas = alternativas.filter((a) => {
         const candidatos = new Set([
