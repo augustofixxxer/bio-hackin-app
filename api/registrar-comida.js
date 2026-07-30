@@ -337,22 +337,26 @@ export default async function handler(req, res) {
         "papa", "papas", "arroz", "huevo", "huevos", "agua", "aceite", "aceites", "sal",
         "sopa", "sopas", "pan", "panes", "taza", "tazas", "cucharada", "cucharadas",
         "vaso", "vasos", "porcion", "porciones", "gramo", "gramos",
-        // "carne" a secas no identifica un alimento específico (aparece en decenas de fichas
-        // de alternativas_locales sin relación real entre sí) — caso real detectado 29/07/2026:
-        // "bife de cerdo con arroz" matcheó "Tamales" y "Hamburguesa casera" solo porque el
-        // sinónimo "bife" → "carne roja" agrega el token "carne", y ambas fichas lo contienen
-        // en su mecanismo. Mismo patrón que "horno"/"papas" (25/07/2026).
-        "carne", "carnes",
-        // "salsa" a secas, mismo problema — caso real detectado 29/07/2026: "cordero con salsa
-        // de crema" matcheó la ficha de "Tomate ... en salsa casera" sin relación real.
-        "salsa", "salsas",
+        // "carne"/"salsa" a secas no identifican un alimento específico (aparecen en decenas
+        // de fichas de alternativas_locales sin relación real entre sí) — casos reales 29/07/2026.
+        "carne", "carnes", "salsa", "salsas",
       ].map(raiz));
+      // Fix estructural 30/07/2026: este buscador de tips sueltos tiene que mirar SOLO lo que
+      // el usuario escribió literalmente (textoNormalizado) — nunca textoParaMatching, que
+      // viene inflado con sinónimos ("bife"->"carne roja") y con las categorías anchas de Groq
+      // ("harinas_refinadas" se separa en "harinas"+"refinadas" al tokenizar y engancha
+      // cualquier ficha que diga "harina", como pasó con "fideos con salsa bolognesa" -> tip de
+      // "Bollos ... con harina integral", sin relación real). Esas expansiones son necesarias y
+      // correctas para el motor de Reglas (que compara frases completas contra un vocabulario
+      // controlado), pero acá — comparación de palabras sueltas contra texto libre de 68 fichas
+      // sin curar — una categoría ancha es garantía de falso positivo. Ir agregando palabra por
+      // palabra a GENERICAS tapaba síntomas; esto corrige la causa.
       const coincidenciasAlternativas = alternativas.filter((a) => {
         const candidatos = new Set([
           ...tokenizar(normalizar(a.mecanismo || "")).map(raiz),
           ...tokenizar(normalizar(a.recomendacion || "")).map(raiz),
         ]);
-        const palabrasTexto = tokenizar(textoParaMatching)
+        const palabrasTexto = tokenizar(textoNormalizado)
           .map(raiz)
           .filter((p) => !GENERICAS.has(p));
         return palabrasTexto.some((p) => candidatos.has(p) && !GENERICAS.has(p));
