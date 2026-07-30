@@ -878,7 +878,7 @@ const GRUPOS_OBJETIVO = [
 function OnboardingProgreso({ paso }) {
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
-      {[1, 2, 3, 4].map((n) => (
+      {[1, 2, 3].map((n) => (
         <div key={n} style={{
           height: 4, flex: 1, borderRadius: 999,
           background: n <= paso ? TOKENS.primary : TOKENS.border,
@@ -994,7 +994,7 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <div style={cardStyle}>
           <OnboardingProgreso paso={1} />
-          <OnboardingEyebrow>Reseteo Propio · Paso 1 de 4</OnboardingEyebrow>
+          <OnboardingEyebrow>Reseteo Propio · Paso 1 de 3</OnboardingEyebrow>
           <h1 style={h1Style}>¿Cómo querés que te llamemos?</h1>
           <p style={pStyle}>Nada de formularios largos. Esto es tuyo: un espacio para observar cómo responde tu cuerpo a tus propios hábitos, a tu ritmo.</p>
           <input
@@ -1015,7 +1015,7 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <div style={cardStyle}>
           <OnboardingProgreso paso={2} />
-          <OnboardingEyebrow>Reseteo Propio · Paso 2 de 4</OnboardingEyebrow>
+          <OnboardingEyebrow>Reseteo Propio · Paso 2 de 3</OnboardingEyebrow>
           <h1 style={h1Style}>¿Qué objetivo le das a Reseteo Propio?</h1>
           <p style={pStyle}>No hay respuesta incorrecta. Con esto ordenamos lo que ves primero — podés cambiarlo cuando quieras.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
@@ -1046,7 +1046,7 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <div style={cardStyle}>
           <OnboardingProgreso paso={3} />
-          <OnboardingEyebrow>Reseteo Propio · Paso 3 de 4</OnboardingEyebrow>
+          <OnboardingEyebrow>Reseteo Propio · Paso 3 de 3</OnboardingEyebrow>
           <h1 style={h1Style}>Así funciona un "hackeo"</h1>
           <p style={pStyle}>No te vamos a decir qué no comer. Te mostramos cómo mejorar lo que ya elegiste.</p>
           <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 14, marginBottom: 22, display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -1055,31 +1055,11 @@ function OnboardingFlow({ pase, onCompletar }) {
               Registrás <b>"empanadas fritas"</b> → te sugerimos probar la versión al horno, sin perder el sabor que te gusta.
             </p>
           </div>
-          <OnboardingBotonPrimario onClick={() => setPaso(4)}>Entendido, quiero probar</OnboardingBotonPrimario>
+          <OnboardingBotonPrimario onClick={completarOnboarding}>Entendido, quiero probar</OnboardingBotonPrimario>
         </div>
       </div>
     );
   }
-
-  // paso === 4
-  return (
-    <div style={wrapStyle} className="fade-in">
-      <div style={{ ...cardStyle, textAlign: "center" }}>
-        <OnboardingProgreso paso={4} />
-        <div style={{
-          width: 56, height: 56, borderRadius: "50%", background: TOKENS.alto,
-          display: "flex", alignItems: "center", justifyContent: "center", margin: "4px auto 18px",
-        }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="26" height="26">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-        <h1 style={h1Style}>{nombre.trim() ? `¡Listo, ${nombre.trim()}!` : "¡Listo!"}</h1>
-        <p style={pStyle}>La app es tuya desde acá. Explorá cuando quieras, a tu ritmo — nosotros solo te acompañamos.</p>
-        <OnboardingBotonPrimario onClick={completarOnboarding}>Empezar a explorar</OnboardingBotonPrimario>
-      </div>
-    </div>
-  );
 }
 
 function App() {
