@@ -1,15 +1,14 @@
 // api/actualizar-nombre.js
-// Recibe POST con { usuarioId, nombreAlias } y actualiza usuarios.nombre_alias.
+// Recibe POST con { pase, nombreAlias } y actualiza usuarios.nombre_alias.
 // Usado por el Paso 1 del Onboarding (Identificación). No es una condición de acceso:
 // si falla, el Onboarding sigue adelante igual (ver OnboardingFlow en index.html).
+//
+// AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma del body —
+// se extrae del "pase" firmado (ver _sesion.js). Si el pase no es válido, 401.
 
 import { emitirEvento } from "./_instrumentacion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function esUUIDValido(valor) {
-  return typeof valor === "string" && UUID_REGEX.test(valor);
-}
+import { usuarioIdDesdeRequest } from "./_sesion.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -19,10 +18,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY." });
   }
 
-  const { usuarioId, nombreAlias } = req.body || {};
-  if (!usuarioId || !esUUIDValido(usuarioId)) {
-    return res.status(400).json({ error: "usuarioId inválido." });
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) {
+    return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
   }
+
+  const { nombreAlias } = req.body || {};
   if (!nombreAlias || typeof nombreAlias !== "string" || nombreAlias.trim().length === 0) {
     return res.status(400).json({ error: "Falta nombreAlias." });
   }
