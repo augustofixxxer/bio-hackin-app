@@ -1,19 +1,32 @@
 // api/aceptar-terminos.js
-// Recibe POST con { usuarioId, condicionMedica? } y:
+// Recibe POST con { pase, condicionMedica? } y:
 // 1) marca terminos_aceptados = true en usuarios (guarda condicion_medica_preexistente si vino)
 // 2) crea un registro inmutable en "log_aceptacion_terminos" con fecha UTC, versión e IP.
+//
+// AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma del body —
+// se extrae del "pase" firmado (ver _sesion.js). Si el pase no es válido, 401.
 
-// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
-// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
-import { emitirEvento } from "./_instrumentacion.js";
-// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
-import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
 
-// Sprint "Sanitización" — usuarioId siempre debe validarse como UUID antes de
-// interpolarlo en una URL de PostgREST (evita inyección vía query string).
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function esUUIDValido(valor) {
-  return typeof valor === "string" && UUID_REGEX.test(valor);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function supabaseFetch(path, options = {}) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!resp.ok) {
+    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+  }
+  return data;
 }
 
 // Subí este número cada vez que cambies el texto legal de los Términos —
@@ -29,13 +42,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY." });
   }
 
-  const { usuarioId, condicionMedica } = req.body || {};
-  if (!usuarioId || typeof usuarioId !== "string") {
-    return res.status(400).json({ error: "Falta usuarioId." });
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) {
+    return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
   }
-  if (!esUUIDValido(usuarioId)) {
-    return res.status(400).json({ error: "usuarioId inválido." });
-  }
+
+  const { condicionMedica } = req.body || {};
 
   const ipHeader = req.headers["x-forwarded-for"] || "";
   const ip = String(ipHeader).split(",")[0].trim() || req.socket?.remoteAddress || "desconocida";
@@ -57,14 +69,6 @@ export default async function handler(req, res) {
         version_terminos: VERSION_TERMINOS_ACTUAL,
         ip_address: ip,
       }),
-    });
-
-    await emitirEvento({
-      usuarioId,
-      eventType: "terminos_aceptados",
-      sourceComponent: "aceptar-terminos",
-      requestingComponent: "aceptar-terminos",
-      payload: { version: VERSION_TERMINOS_ACTUAL },
     });
 
     return res.status(200).json({ ok: true, version: VERSION_TERMINOS_ACTUAL });
