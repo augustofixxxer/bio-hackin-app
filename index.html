@@ -844,11 +844,35 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
 // jerarquía), no como paleta de colores.
 // ============================================================
 
-const ONBOARDING_INTERESES = [
-  { val: "energia", label: "Mi energía", icon: "⚡" },
-  { val: "digestion", label: "Mi digestión", icon: "🌾" },
-  { val: "sueno", label: "Mi sueño", icon: "🌙" },
-  { val: "animo", label: "Mi ánimo", icon: "☀️" },
+// Home orientado a objetivo (30/07/2026) — reemplaza al viejo ONBOARDING_INTERESES
+// (Paso 2 anterior: preguntaba por energía/digestión/sueño/ánimo, se guardaba en
+// localStorage y nunca lo leía nadie más — no llegaba a persistirse en Supabase ni
+// a influir en ninguna pantalla). Este mapeo sí se persiste (usuarios.objetivo_grupo,
+// vía /api/actualizar-objetivo) y sí se usa: reordena el Explorador para que el grupo
+// elegido aparezca primero. Los 4 grupos agrupan los 11 "objetivo" reales que ya
+// existen en alternativas_locales, por conexión estructural (no por reparto parejo) —
+// definido con Augusto el 30/07/2026:
+const GRUPOS_OBJETIVO = [
+  {
+    val: "bajar_peso", label: "Bajar de peso", icon: "📉",
+    detalle: "El peso rara vez es solo comida — también pesa lo hormonal.",
+    objetivos: ["perdida de peso y definición", "Balance Hormonal y Estrés"],
+  },
+  {
+    val: "energia_foco", label: "Energía y foco en el día a día", icon: "⚡",
+    detalle: "Rendir mejor en lo cotidiano, sin bajones.",
+    objetivos: ["Aumento de Energía Diaria", "Foco y Concentración"],
+  },
+  {
+    val: "rendimiento_fisico", label: "Rendimiento físico", icon: "💪",
+    detalle: "Todo lo que mueve el eje hormonal-muscular.",
+    objetivos: ["Ganancia de Masa Muscular", "Recuperación Post-Entrenamiento", "Optimización de Testosterona", "Salud Cardiovascular y Potencia"],
+  },
+  {
+    val: "sentirme_mejor", label: "Sentirme mejor por dentro y por fuera", icon: "✨",
+    detalle: "La inflamación conecta más de lo que parece.",
+    objetivos: ["Salud Digestiva y Antinflamación", "Piel y Cabello", "Longevidad y Antienvejecimiento"],
+  },
 ];
 
 function OnboardingProgreso({ paso }) {
@@ -896,7 +920,7 @@ function OnboardingBotonFantasma({ children, onClick }) {
 function OnboardingFlow({ pase, onCompletar }) {
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState("");
-  const [interes, setInteres] = useState(null);
+  const [objetivoGrupo, setObjetivoGrupo] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
   async function guardarNombreYAvanzar() {
@@ -920,10 +944,28 @@ function OnboardingFlow({ pase, onCompletar }) {
     setPaso(2);
   }
 
+  async function guardarObjetivoYAvanzar() {
+    if (objetivoGrupo) {
+      try {
+        localStorage.setItem("reseteo_objetivo_grupo", objetivoGrupo);
+      } catch (e) {}
+      try {
+        await fetch("/api/actualizar-objetivo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+          body: JSON.stringify({ objetivoGrupo }),
+        });
+      } catch (e) {
+        // Mismo criterio que el nombre: no bloquea el onboarding si falla.
+        console.error("No se pudo guardar el objetivo:", e);
+      }
+    }
+    setPaso(3);
+  }
+
   function completarOnboarding() {
     try {
       localStorage.setItem("reseteo_onboarding_v1", "true");
-      if (interes) localStorage.setItem("reseteo_interes_inicial", interes);
     } catch (e) {}
     onCompletar();
   }
@@ -974,23 +1016,26 @@ function OnboardingFlow({ pase, onCompletar }) {
         <div style={cardStyle}>
           <OnboardingProgreso paso={2} />
           <OnboardingEyebrow>Reseteo Propio · Paso 2 de 4</OnboardingEyebrow>
-          <h1 style={h1Style}>¿Qué te gustaría entender mejor?</h1>
-          <p style={pStyle}>No hay respuesta incorrecta. Esto solo nos ayuda a mostrarte primero lo que más te interesa — podés cambiarlo cuando quieras.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
-            {ONBOARDING_INTERESES.map((op) => (
-              <button key={op.val} onClick={() => setInteres(op.val)} style={{
-                padding: "14px 12px", borderRadius: 8, cursor: "pointer", textAlign: "left",
-                border: `1.5px solid ${interes === op.val ? TOKENS.primary : TOKENS.border}`,
-                background: interes === op.val ? TOKENS.primarySoft : TOKENS.surface,
-                fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 600, color: TOKENS.ink,
+          <h1 style={h1Style}>¿Qué objetivo le das a Reseteo Propio?</h1>
+          <p style={pStyle}>No hay respuesta incorrecta. Con esto ordenamos lo que ves primero — podés cambiarlo cuando quieras.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
+            {GRUPOS_OBJETIVO.map((op) => (
+              <button key={op.val} onClick={() => setObjetivoGrupo(op.val)} style={{
+                padding: "14px 14px", borderRadius: 8, cursor: "pointer", textAlign: "left",
+                border: `1.5px solid ${objetivoGrupo === op.val ? TOKENS.primary : TOKENS.border}`,
+                background: objetivoGrupo === op.val ? TOKENS.primarySoft : TOKENS.surface,
+                display: "flex", alignItems: "flex-start", gap: 12,
               }}>
-                <span style={{ display: "block", fontSize: 18, marginBottom: 4 }}>{op.icon}</span>
-                {op.label}
+                <span style={{ fontSize: 20, lineHeight: 1.3 }}>{op.icon}</span>
+                <span>
+                  <span style={{ display: "block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13.5, fontWeight: 600, color: TOKENS.ink }}>{op.label}</span>
+                  <span style={{ display: "block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: TOKENS.inkDim, marginTop: 2, lineHeight: 1.4 }}>{op.detalle}</span>
+                </span>
               </button>
             ))}
           </div>
-          <OnboardingBotonPrimario onClick={() => setPaso(3)}>Continuar</OnboardingBotonPrimario>
-          <OnboardingBotonFantasma onClick={() => setPaso(3)}>Quiero ver un poco de todo</OnboardingBotonFantasma>
+          <OnboardingBotonPrimario onClick={guardarObjetivoYAvanzar} disabled={!objetivoGrupo}>Continuar</OnboardingBotonPrimario>
+          <OnboardingBotonFantasma onClick={() => setPaso(3)}>Prefiero verlo yo mismo, todavía no sé</OnboardingBotonFantasma>
         </div>
       </div>
     );
@@ -1062,6 +1107,10 @@ function App() {
     () => localStorage.getItem("reseteo_onboarding_v1") === "true"
   );
 
+  const [objetivoGrupo] = useState(() => {
+    try { return localStorage.getItem("reseteo_objetivo_grupo"); } catch (e) { return null; }
+  });
+
   useEffect(() => {
     fetch("/api/data")
       .then((r) => r.json())
@@ -1103,7 +1152,14 @@ function App() {
   }
 
   const grupos = groupByCategoria(data.entradas);
-  const categorias = Object.keys(grupos).sort();
+  const grupoElegido = GRUPOS_OBJETIVO.find((g) => g.val === objetivoGrupo);
+  const categoriasPrioritarias = grupoElegido
+    ? grupoElegido.objetivos.filter((o) => grupos[o])
+    : [];
+  const categorias = [
+    ...categoriasPrioritarias,
+    ...Object.keys(grupos).filter((c) => !categoriasPrioritarias.includes(c)).sort(),
+  ];
 
   const filteredCats = categorias
     .map((cat) => ({
@@ -1120,9 +1176,20 @@ function App() {
             <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, letterSpacing: "0.08em", marginBottom: 6, textTransform: "uppercase" }}>
               Comida real · Dato verificable · Sincronizado {new Date(data.actualizado).toLocaleString("es-AR")}
             </p>
-            <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 28, color: TOKENS.ink, lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0 }}>
-              Explorador por problemática
-            </h1>
+            {view.screen === "categories" && grupoElegido ? (
+              <React.Fragment>
+                <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 26, color: TOKENS.ink, lineHeight: 1.2, letterSpacing: "-0.02em", margin: 0 }}>
+                  {grupoElegido.icon} Tu objetivo: {grupoElegido.label}
+                </h1>
+                <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: TOKENS.inkDim, marginTop: 6, marginBottom: 0, lineHeight: 1.5 }}>
+                  {grupoElegido.detalle} Empezamos por acá — el resto sigue disponible cuando quieras.
+                </p>
+              </React.Fragment>
+            ) : (
+              <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 28, color: TOKENS.ink, lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0 }}>
+                Explorador por problemática
+              </h1>
+            )}
           </div>
           {view.screen === "categories" && (
             <button onClick={() => setView({ screen: "log" })}
