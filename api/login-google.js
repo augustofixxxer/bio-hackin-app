@@ -2,14 +2,36 @@
 // Recibe POST con { credential } (el JWT que entrega el botón de Google).
 // Verifica ese token contra los servidores de Google, y busca o crea
 // al usuario correspondiente en la tabla "usuarios" de Supabase.
+//
+// AUTENTICACIÓN REAL DE SESIÓN (ST-01, implementado 29/07/2026): además de
+// usuarioId/email/nombre, ahora devuelve "pase" — un token firmado (ver
+// _sesion.js) que el frontend debe reenviar en cada pedido protegido de
+// ahora en más. Es la única puerta de entrada donde se emite un pase nuevo.
 
-// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
-// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
-import { emitirEvento } from "./_instrumentacion.js";
-// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
-import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+import { emitirPase } from "./_sesion.js";
 
 const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function supabaseFetch(path, options = {}) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!resp.ok) {
+    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+  }
+  return data;
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -18,6 +40,9 @@ export default async function handler(req, res) {
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return res.status(500).json({ error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY." });
+  }
+  if (!process.env.SESSION_SECRET) {
+    return res.status(500).json({ error: "Falta configurar SESSION_SECRET." });
   }
 
   const { credential } = req.body || {};
@@ -51,7 +76,6 @@ export default async function handler(req, res) {
     );
 
     let usuarioId;
-    let esNuevo = false;
 
     if (encontrados.length > 0) {
       // Ya existe: lo usamos tal cual
@@ -67,18 +91,13 @@ export default async function handler(req, res) {
         }),
       });
       usuarioId = creado[0].id;
-      esNuevo = true;
     }
 
-    await emitirEvento({
-      usuarioId,
-      eventType: esNuevo ? "usuario_creado_login_google" : "login_google",
-      sourceComponent: "login-google",
-      requestingComponent: "login-google",
-      payload: { esNuevo },
-    });
+    // 3. Emitir el pase de sesión — esto es lo nuevo. De acá en más, el frontend
+    // debe mandar este pase (no solo el usuarioId) en cada pedido protegido.
+    const pase = emitirPase(usuarioId);
 
-    return res.status(200).json({ usuarioId, email, nombre });
+    return res.status(200).json({ usuarioId, email, nombre, pase });
   } catch (err) {
     console.error("Error en login-google:", err);
     return res.status(500).json({ error: "Error procesando el login", detail: String(err) });
