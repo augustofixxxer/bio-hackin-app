@@ -1,18 +1,31 @@
 // api/registrar-bienestar.js
-// Recibe POST con { energia, animo, sueno, digestion, usuarioId } (1-5 cada uno)
-// y crea un registro en la tabla "bienestar_diario_real", vinculado al usuario.
+// Recibe POST con { energia, animo, sueno, digestion, pase } y crea un registro
+// en la tabla "bienestar_diario_real", vinculado al usuario.
+//
+// AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma del body —
+// se extrae del "pase" firmado (ver _sesion.js). Si el pase no es válido, 401.
 
-// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
-// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
-import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
-// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
-import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
 
-// Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
-// más abajo, por eso debe validarse como UUID antes de llegar ahí.
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function esUUIDValido(valor) {
-  return typeof valor === "string" && UUID_REGEX.test(valor);
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function supabaseFetch(path, options = {}) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!resp.ok) {
+    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+  }
+  return data;
 }
 
 function validarEscala(valor) {
@@ -44,33 +57,21 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY." });
   }
 
-  const { energia, animo, sueno, digestion, usuarioId } = req.body || {};
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) {
+    return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
+  }
+
+  const { energia, animo, sueno, digestion } = req.body || {};
 
   for (const [nombre, valor] of Object.entries({ energia, animo, sueno, digestion })) {
     if (!validarEscala(valor)) {
       return res.status(400).json({ error: `El valor de "${nombre}" debe ser un número del 1 al 5.` });
     }
   }
-  if (!usuarioId || typeof usuarioId !== "string") {
-    return res.status(400).json({ error: "Falta el usuarioId." });
-  }
-  if (!esUUIDValido(usuarioId)) {
-    return res.status(400).json({ error: "usuarioId inválido." });
-  }
 
   try {
     const acceso = await verificarAcceso(usuarioId);
-
-    // MIS Etapa 3 — Validación Paralela. No cambia el resultado de "acceso": solo
-    // deja evidencia de si el modelo nuevo (Sujeto→Capacidad→Concesión) hubiera
-    // coincidido con esta decisión legacy. Nunca bloquea ni reemplaza nada.
-    await evaluarValidacionParalela({
-      usuarioId,
-      capabilityName: "uso_basico_app",
-      decisionLegacy: acceso.ok,
-      sourceComponent: "registrar-bienestar",
-    });
-
     if (!acceso.ok) {
       return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
     }
@@ -90,14 +91,6 @@ export default async function handler(req, res) {
         sueno: Number(sueno),
         digestion: Number(digestion),
       }),
-    });
-
-    await emitirEvento({
-      usuarioId,
-      eventType: "bienestar_registrado",
-      sourceComponent: "registrar-bienestar",
-      requestingComponent: "registrar-bienestar",
-      payload: { id: creado[0].id },
     });
 
     return res.status(200).json({ ok: true, id: creado[0].id });
