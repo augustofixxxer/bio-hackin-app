@@ -23,6 +23,7 @@
 
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
 
 const METRICAS = ['energia', 'animo', 'sueno', 'digestion'];
 const NOMBRE_METRICA = { energia: 'Energía', animo: 'Ánimo', sueno: 'Sueño', digestion: 'Digestión' };
@@ -187,9 +188,11 @@ async function guardarResultado(usuarioId, resultado) {
 // La Sección 1 nunca recibe ni conoce nada de lo que hay acá abajo.
 // ============================================================
 
-// Sprint "Sanitización" — usuarioId llega directo del cliente (query o body) y
-// se interpola en URLs de PostgREST más abajo (usuarios, registro_diario_real,
-// bienestar_diario_real). Debe validarse como UUID antes de tocar cualquier query.
+// AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma de
+// query/body — se extrae del "pase" firmado (ver _sesion.js), que ya viene
+// validado como perteneciente a un usuario real. La validación UUID de acá
+// queda de todos modos como cinturón de seguridad extra antes de interpolar
+// en URLs de PostgREST (usuarios, registro_diario_real, bienestar_diario_real).
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function esUUIDValido(valor) {
   return typeof valor === "string" && UUID_REGEX.test(valor);
@@ -203,9 +206,9 @@ const MUESTRA_GENERICA = {
 
 export default async function handler(req, res) {
   try {
-    const usuarioId = req.query?.usuarioId || req.body?.usuarioId;
+    const usuarioId = usuarioIdDesdeRequest(req);
     if (!usuarioId) {
-      return res.status(400).json({ error: 'Falta usuarioId' });
+      return res.status(401).json({ error: 'Sesión inválida o vencida. Volvé a iniciar sesión.' });
     }
     if (!esUUIDValido(usuarioId)) {
       return res.status(400).json({ error: 'usuarioId inválido.' });
