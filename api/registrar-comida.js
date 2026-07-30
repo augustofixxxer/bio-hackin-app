@@ -7,10 +7,17 @@ import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 // Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
 import { clasificarComidaIA } from "./_clasificador-ia.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
 
+// AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma de un
+// campo suelto del body (eso permitía que cualquiera mandara el usuarioId de
+// otra persona). Ahora se extrae del "pase" firmado (ver _sesion.js). El
+// registro anónimo sigue permitido tal cual estaba: si no viene ningún pase,
+// usuarioId queda undefined y el flujo sigue igual que antes.
+//
 // Sprint "Sanitización" — usuarioId se interpola en la query de verificarAcceso()
-// más abajo, por eso debe validarse como UUID antes de llegar ahí. Acá usuarioId
-// es opcional (registro anónimo permitido), así que solo se valida si vino.
+// más abajo, por eso debe validarse como UUID antes de llegar ahí (cinturón de
+// seguridad extra, aunque ahora ya viene validado desde el pase firmado).
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function esUUIDValido(valor) {
   return typeof valor === "string" && UUID_REGEX.test(valor);
@@ -161,9 +168,18 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { texto, momento, usuarioId } = req.body || {};
+  const { texto, momento } = req.body || {};
   if (!texto || typeof texto !== "string" || texto.trim().length === 0) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
+    return;
+  }
+
+  // Si mandó un pase (header Authorization o body.pase) tiene que ser válido —
+  // si no mandó ninguno, sigue siendo un registro anónimo válido, como siempre.
+  const paseProvisto = !!(req.headers?.authorization || req.body?.pase);
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (paseProvisto && !usuarioId) {
+    res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
     return;
   }
 
