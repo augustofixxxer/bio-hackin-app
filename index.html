@@ -159,7 +159,7 @@ function groupByCategoria(entradas) {
   return grupos;
 }
 
-function BloqueoCard({ b, usuarioId, tieneCondicionMedica }) {
+function BloqueoCard({ b, pase, tieneCondicionMedica }) {
   const requiereConsentimiento = b.nivelRiesgo && b.nivelRiesgo !== "Bajo";
   const [confirmado, setConfirmado] = useState(!requiereConsentimiento);
   const [enviando, setEnviando] = useState(false);
@@ -169,8 +169,8 @@ function BloqueoCard({ b, usuarioId, tieneCondicionMedica }) {
     try {
       await fetch("/api/registrar-consentimiento-riesgo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuarioId, bloqueo: b.combinacion, nivelRiesgo: b.nivelRiesgo }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+        body: JSON.stringify({ bloqueo: b.combinacion, nivelRiesgo: b.nivelRiesgo }),
       });
     } catch (e) {
       // no bloqueamos al usuario si falla el log; solo lo dejamos avanzar
@@ -208,7 +208,7 @@ function BloqueoCard({ b, usuarioId, tieneCondicionMedica }) {
   );
 }
 
-function LogMealScreen({ onBack, usuarioId, tieneCondicionMedica }) {
+function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
   const [texto, setTexto] = useState("");
   const [momento, setMomento] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -222,8 +222,8 @@ function LogMealScreen({ onBack, usuarioId, tieneCondicionMedica }) {
     try {
       const resp = await fetch("/api/registrar-comida", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texto, momento: momento || undefined, usuarioId }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+        body: JSON.stringify({ texto, momento: momento || undefined }),
       });
       const data = await resp.json();
       if (data.error) {
@@ -274,7 +274,7 @@ function LogMealScreen({ onBack, usuarioId, tieneCondicionMedica }) {
         )}
         <div style={{ display: "grid", gap: 12 }}>
           {bloqueos.map((b, i) => (
-            <BloqueoCard key={i} b={b} usuarioId={usuarioId} tieneCondicionMedica={tieneCondicionMedica} />
+            <BloqueoCard key={i} b={b} pase={pase} tieneCondicionMedica={tieneCondicionMedica} />
           ))}
         </div>
         {sugerencias.length > 0 && (
@@ -467,7 +467,7 @@ function EscalaBienestar({ etiqueta, valor, onChange }) {
   );
 }
 
-function BienestarScreen({ onBack, usuarioId }) {
+function BienestarScreen({ onBack, pase }) {
   const [energia, setEnergia] = useState(null);
   const [animo, setAnimo] = useState(null);
   const [sueno, setSueno] = useState(null);
@@ -485,8 +485,8 @@ function BienestarScreen({ onBack, usuarioId }) {
     try {
       const resp = await fetch("/api/registrar-bienestar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ energia, animo, sueno, digestion, usuarioId }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+        body: JSON.stringify({ energia, animo, sueno, digestion }),
       });
       const data = await resp.json();
       if (!resp.ok || data.error) throw new Error(data.error || "Error al guardar");
@@ -570,7 +570,7 @@ function InsightCard({ insight }) {
   );
 }
 
-function PatronesScreen({ onBack, usuarioId }) {
+function PatronesScreen({ onBack, pase }) {
   const [estado, setEstado] = useState("idle"); // idle | cargando | listo | error
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
@@ -579,7 +579,9 @@ function PatronesScreen({ onBack, usuarioId }) {
     setEstado("cargando");
     setError(null);
     try {
-      const resp = await fetch(`/api/generar-insights?usuarioId=${encodeURIComponent(usuarioId)}`);
+      const resp = await fetch("/api/generar-insights", {
+        headers: { Authorization: `Bearer ${pase || ""}` },
+      });
       const data = await resp.json();
       if (!resp.ok || data.error) throw new Error(data.error || "Error al calcular patrones");
       setResultado(data);
@@ -717,7 +719,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-function TerminosGate({ usuarioId, onAceptar }) {
+function TerminosGate({ pase, onAceptar }) {
   const [checkTerminos, setCheckTerminos] = useState(false);
   const [condicionMedica, setCondicionMedica] = useState(null); // null | true | false
   const [enviando, setEnviando] = useState(false);
@@ -732,8 +734,8 @@ function TerminosGate({ usuarioId, onAceptar }) {
     try {
       const resp = await fetch("/api/aceptar-terminos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuarioId, condicionMedica }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+        body: JSON.stringify({ condicionMedica }),
       });
       const data = await resp.json();
       if (!resp.ok || data.error) throw new Error(data.error || "No se pudo registrar la aceptación.");
@@ -891,7 +893,7 @@ function OnboardingBotonFantasma({ children, onClick }) {
   );
 }
 
-function OnboardingFlow({ usuarioId, onCompletar }) {
+function OnboardingFlow({ pase, onCompletar }) {
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState("");
   const [interes, setInteres] = useState(null);
@@ -904,8 +906,8 @@ function OnboardingFlow({ usuarioId, onCompletar }) {
       try {
         await fetch("/api/actualizar-nombre", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ usuarioId, nombreAlias: nombreLimpio }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+          body: JSON.stringify({ nombreAlias: nombreLimpio }),
         });
       } catch (e) {
         // No bloquea el onboarding si falla — el nombre es un detalle de personalización,
@@ -1090,14 +1092,14 @@ function App() {
   }
 
   if (!terminosAceptados) {
-    return <TerminosGate usuarioId={usuario.usuarioId} onAceptar={() => {
+    return <TerminosGate pase={usuario.pase} onAceptar={() => {
       localStorage.setItem("reseteo_terminos_v1", "true");
       setTerminosAceptados(true);
     }} />;
   }
 
   if (!onboardingCompletado) {
-    return <OnboardingFlow usuarioId={usuario.usuarioId} onCompletar={() => setOnboardingCompletado(true)} />;
+    return <OnboardingFlow pase={usuario.pase} onCompletar={() => setOnboardingCompletado(true)} />;
   }
 
   const grupos = groupByCategoria(data.entradas);
@@ -1178,11 +1180,11 @@ function App() {
         )}
 
         {view.screen === "bienestar" && (
-          <BienestarScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
+          <BienestarScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase} />
         )}
 
         {view.screen === "patrones" && (
-          <PatronesScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId} />
+          <PatronesScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase} />
         )}
 
         {view.screen === "categories" && (
@@ -1196,7 +1198,7 @@ function App() {
         )}
 
         {view.screen === "log" && (
-          <LogMealScreen onBack={() => setView({ screen: "categories" })} usuarioId={usuario.usuarioId}
+          <LogMealScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase}
             tieneCondicionMedica={localStorage.getItem("reseteo_condicion_medica") === "true"} />
         )}
 
