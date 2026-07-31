@@ -7,6 +7,7 @@ import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 // Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
 import { clasificarComidaIA } from "./_clasificador-ia.js";
+import { elegirTipRelevanteIA } from "./_selector-tips-ia.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 
 // AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma de un
@@ -309,77 +310,30 @@ export default async function handler(req, res) {
       evidencia: "",
     }));
 
-    // 7b. DESACTIVADO 31/07/2026 — decisión del Fundador tras 5 falsos positivos reales y
-    // consecutivos (carne, salsa, harina vía Groq, leche, queso: "café con leche y queso"
-    // enganchó "Bombas de carne y queso" solo por "queso"). La comparación por palabra suelta
-    // contra las 68 fichas sin curar de alternativas_locales no da un resultado confiable,
-    // ni siquiera restringida a "mecanismo". Preferimos que la pantalla no muestre nada antes
-    // que muestre algo incorrecto — más coherente con la honestidad que buscamos.
-    // Los tips de Reglas tipo "TIP:" (paso 7, arriba, vocabulario controlado y curado por
-    // Arquitectura) siguen activos sin cambios — ese mecanismo nunca tuvo este problema.
-    // Reemplazo pendiente: usar Groq para elegir la alternativa más relevante por significado
-    // real, no por coincidencia de palabras — priorizado como próximo paso, no resuelto acá
-    // para no apurar una solución a medias en el mismo bloque que la desactivación.
-    if (false && bloqueosReales.length === 0) {
+    // 7b. REEMPLAZADO 31/07/2026 (Opción B, decisión del Fundador) — el matching por
+    // palabras sueltas contra alternativas_locales tuvo 5 falsos positivos reales
+    // consecutivos (carne, salsa, harina, leche, queso) y quedó desactivado el mismo día.
+    // En vez de seguir tapando palabra por palabra, ahora es Groq el que ENTIENDE cuál
+    // ficha es realmente relevante — mismo IA que ya usamos para clasificar la comida,
+    // llamado aparte, aislado (ver _selector-tips-ia.js: si esto falla, se apaga solo,
+    // sin arriesgar el motor de bloqueos). Nunca inventa una ficha: solo puede elegir un
+    // ID real o "ninguna", igual de blindado que el clasificador de comida.
+    if (bloqueosReales.length === 0) {
       const alternativas = await supabaseFetch(
-        `alternativas_locales?select=mecanismo,descripcion_mecanismo,recomendacion,nivel_evidencia`
+        `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,nivel_evidencia`
       );
-      const tokenizar = (t) => (t || "").split(/[^a-z0-9]+/).filter((p) => p.length > 3);
-      const raiz = (p) => (p.length > 4 && p.endsWith("s") ? p.slice(0, -1) : p);
-      // Palabras genéricas que no identifican a un alimento específico: si matchean solas,
-      // generan falsos positivos (ej. "ensalada" enganchando la ficha de la lechuga, o
-      // "horno"/"papas" enganchando cualquier receta que los mencione de paso — caso real
-      // detectado 25/07/2026: "bife con papas al horno" matcheó con la ficha del Salmón
-      // solo porque su recomendación decía "a la plancha o al horno").
-      const GENERICAS = new Set([
-        "ensalada", "ensaladas", "comida", "comidas", "plato", "platos", "alimento",
-        "alimentos", "base", "fresca", "fresco", "frescos", "frescas", "opcion",
-        "opciones", "saludable", "saludables", "diaria", "diario", "buena", "bueno",
-        "aporte", "util", "utiles",
-        // Métodos de cocción — no identifican al alimento, aparecen en cualquier receta:
-        "horno", "hornos", "plancha", "planchas", "hervida", "hervido", "hervidas",
-        "hervidos", "frito", "frita", "fritos", "fritas", "asado", "asada", "asados",
-        "asadas", "guiso", "guisos", "cocido", "cocida", "cocidos", "cocidas", "hervir",
-        "cocinar", "cocinado", "cocinada", "salteado", "salteada", "vapor",
-        // Acompañamientos/ingredientes tan comunes que no aportan especificidad por sí solos:
-        "papa", "papas", "arroz", "huevo", "huevos", "agua", "aceite", "aceites", "sal",
-        "sopa", "sopas", "pan", "panes", "taza", "tazas", "cucharada", "cucharadas",
-        "vaso", "vasos", "porcion", "porciones", "gramo", "gramos",
-        // "carne"/"salsa" a secas no identifican un alimento específico (aparecen en decenas
-        // de fichas de alternativas_locales sin relación real entre sí) — casos reales 29/07/2026.
-        "carne", "carnes", "salsa", "salsas", "leche", "leches",
-      ].map(raiz));
-      // Fix estructural 30/07/2026: este buscador de tips sueltos tiene que mirar SOLO lo que
-      // el usuario escribió literalmente (textoNormalizado) — nunca textoParaMatching, que
-      // viene inflado con sinónimos ("bife"->"carne roja") y con las categorías anchas de Groq
-      // ("harinas_refinadas" se separa en "harinas"+"refinadas" al tokenizar y engancha
-      // cualquier ficha que diga "harina", como pasó con "fideos con salsa bolognesa" -> tip de
-      // "Bollos ... con harina integral", sin relación real). Esas expansiones son necesarias y
-      // correctas para el motor de Reglas (que compara frases completas contra un vocabulario
-      // controlado), pero acá — comparación de palabras sueltas contra texto libre de 68 fichas
-      // sin curar — una categoría ancha es garantía de falso positivo. Ir agregando palabra por
-      // palabra a GENERICAS tapaba síntomas; esto corrige la causa.
-      // Fix estructural 30/07/2026: comparar solo contra "mecanismo" (el nombre específico
-      // de la ficha), no contra "recomendacion" — ese campo suele listar variantes de
-      // preparación genéricas ("en agua, leche o yogur", "fresco o en salsa casera") que
-      // generaban falsos positivos sistemáticos (carne, salsa, leche...) sin relación real
-      // con el plato del usuario. Ir agregando esas palabras a GENERICAS una por una tapaba
-      // síntomas repetidos; esto corta la fuente.
-      const coincidenciasAlternativas = alternativas.filter((a) => {
-        const candidatos = new Set(tokenizar(normalizar(a.mecanismo || "")).map(raiz));
-        const palabrasTexto = tokenizar(textoNormalizado)
-          .map(raiz)
-          .filter((p) => !GENERICAS.has(p));
-        return palabrasTexto.some((p) => candidatos.has(p) && !GENERICAS.has(p));
-      });
-      sugerencias = sugerencias.concat(
-        coincidenciasAlternativas.slice(0, 2).map((a) => ({
-          nombre: a.mecanismo || "",
-          mecanismo: a.descripcion_mecanismo || "",
-          opcion: a.recomendacion || "",
-          evidencia: a.nivel_evidencia || "",
-        }))
-      );
+      const idElegido = await elegirTipRelevanteIA(texto, alternativas);
+      if (idElegido) {
+        const elegida = alternativas.find((a) => a.id === idElegido);
+        if (elegida) {
+          sugerencias.push({
+            nombre: elegida.mecanismo || "",
+            mecanismo: elegida.descripcion_mecanismo || "",
+            opcion: elegida.recomendacion || "",
+            evidencia: elegida.nivel_evidencia || "",
+          });
+        }
+      }
     }
 
     // --- MIS Etapa 1 — Piloto de Instrumentación (DC-05). Único agregado de este archivo. ---
