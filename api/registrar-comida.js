@@ -309,10 +309,18 @@ export default async function handler(req, res) {
       evidencia: "",
     }));
 
-    // 7b. Si no hay bloqueos reales, sumamos tips positivos en Alternativas locales
-    // (comparación por palabra completa —con una raíz simple de plural—, no por substring:
-    // esto evita que "ensalada" matchee por ser parte de "ensaladas").
-    if (bloqueosReales.length === 0) {
+    // 7b. DESACTIVADO 31/07/2026 — decisión del Fundador tras 5 falsos positivos reales y
+    // consecutivos (carne, salsa, harina vía Groq, leche, queso: "café con leche y queso"
+    // enganchó "Bombas de carne y queso" solo por "queso"). La comparación por palabra suelta
+    // contra las 68 fichas sin curar de alternativas_locales no da un resultado confiable,
+    // ni siquiera restringida a "mecanismo". Preferimos que la pantalla no muestre nada antes
+    // que muestre algo incorrecto — más coherente con la honestidad que buscamos.
+    // Los tips de Reglas tipo "TIP:" (paso 7, arriba, vocabulario controlado y curado por
+    // Arquitectura) siguen activos sin cambios — ese mecanismo nunca tuvo este problema.
+    // Reemplazo pendiente: usar Groq para elegir la alternativa más relevante por significado
+    // real, no por coincidencia de palabras — priorizado como próximo paso, no resuelto acá
+    // para no apurar una solución a medias en el mismo bloque que la desactivación.
+    if (false && bloqueosReales.length === 0) {
       const alternativas = await supabaseFetch(
         `alternativas_locales?select=mecanismo,descripcion_mecanismo,recomendacion,nivel_evidencia`
       );
