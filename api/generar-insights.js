@@ -25,8 +25,36 @@ import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 
-const METRICAS = ['energia', 'animo', 'sueno', 'digestion'];
-const NOMBRE_METRICA = { energia: 'Energía', animo: 'Ánimo', sueno: 'Sueño', digestion: 'Digestión' };
+// REDISEÑO 30/07/2026 (definido con Augusto): "animo" sale del sistema de correlación
+// (variable contaminada por factores no alimenticios). Se suman "hidratacion" y
+// "actividad_fisica". Los 3 campos nuevos/cambiados (sueno, hidratacion, actividad_fisica)
+// ya no son escalas numéricas 1-5 sino categorías con base científica (ver comentarios de
+// columna en Supabase) — puntajeCategoria() las traduce a un puntaje 1-3 para poder
+// reutilizar la misma matemática de correlación que ya funciona para energía/digestión,
+// sin reescribir el motor entero. UMBRAL_DIFERENCIA (0.7) quedó calibrado en su momento
+// para una escala 1-5; en una escala 1-3 representa un salto proporcionalmente más grande
+// — es un umbral más conservador para estos 3 campos, no un error. Si en la práctica
+// resulta demasiado conservador, es un ajuste de un solo número, no una reescritura.
+const METRICAS = ['energia', 'digestion', 'sueno', 'hidratacion', 'actividad_fisica'];
+const NOMBRE_METRICA = {
+  energia: 'Energía', digestion: 'Digestión',
+  sueno: 'Sueño', hidratacion: 'Hidratación', actividad_fisica: 'Actividad física',
+};
+const CATEGORIAS_NUMERICAS = new Set(['sueno', 'hidratacion', 'actividad_fisica']);
+
+// Mapea cada valor categórico a un puntaje 1-3 (a mayor puntaje, patrón más alineado con
+// la evidencia). "sueno" tiene forma de U (dormir de más también es subóptimo), el resto
+// es monótono creciente.
+const PUNTAJE_CATEGORIA = {
+  sueno: { menos_6h: 1, '6_7h': 2, '7_9h': 3, mas_9h: 2 },
+  hidratacion: { menos_1l: 1, '1_2l': 2, '2_3l': 3, mas_3l: 3 },
+  actividad_fisica: { sedentario: 1, activo: 2, muy_activo: 3 },
+};
+function puntajeCategoria(metrica, valor) {
+  if (valor === undefined || valor === null) return null;
+  const tabla = PUNTAJE_CATEGORIA[metrica];
+  return tabla && tabla[valor] !== undefined ? tabla[valor] : null;
+}
 
 const UMBRAL_REPETICIONES = 3;
 const UMBRAL_DIAS_CRUZADOS = 10;
@@ -57,25 +85,28 @@ async function calcularInsights(usuarioId) {
   );
 
   const bienestarRecs = await supabaseFetch(
-    `bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,animo,sueno,digestion`
+    `bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion,sueno,hidratacion,actividad_fisica`
   );
 
   const bienestarPorFecha = {};
   for (const rec of bienestarRecs) {
     const fecha = fechaISO(rec.fecha_hora);
     if (!bienestarPorFecha[fecha]) {
-      bienestarPorFecha[fecha] = { energia: [], animo: [], sueno: [], digestion: [] };
+      bienestarPorFecha[fecha] = { energia: [], digestion: [], sueno: [], hidratacion: [], actividad_fisica: [] };
     }
     const push = (metrica) => {
-      const val = rec[metrica];
-      if (val !== undefined && val !== null) {
-        bienestarPorFecha[fecha][metrica].push(Number(val));
+      const val = CATEGORIAS_NUMERICAS.has(metrica)
+        ? puntajeCategoria(metrica, rec[metrica])
+        : (rec[metrica] !== undefined && rec[metrica] !== null ? Number(rec[metrica]) : null);
+      if (val !== null) {
+        bienestarPorFecha[fecha][metrica].push(val);
       }
     };
     push('energia');
-    push('animo');
-    push('sueno');
     push('digestion');
+    push('sueno');
+    push('hidratacion');
+    push('actividad_fisica');
   }
   const bienestarDiario = {};
   for (const fecha of Object.keys(bienestarPorFecha)) {
