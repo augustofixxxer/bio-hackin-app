@@ -339,7 +339,7 @@ export default async function handler(req, res) {
         "vaso", "vasos", "porcion", "porciones", "gramo", "gramos",
         // "carne"/"salsa" a secas no identifican un alimento específico (aparecen en decenas
         // de fichas de alternativas_locales sin relación real entre sí) — casos reales 29/07/2026.
-        "carne", "carnes", "salsa", "salsas",
+        "carne", "carnes", "salsa", "salsas", "leche", "leches",
       ].map(raiz));
       // Fix estructural 30/07/2026: este buscador de tips sueltos tiene que mirar SOLO lo que
       // el usuario escribió literalmente (textoNormalizado) — nunca textoParaMatching, que
@@ -351,11 +351,14 @@ export default async function handler(req, res) {
       // controlado), pero acá — comparación de palabras sueltas contra texto libre de 68 fichas
       // sin curar — una categoría ancha es garantía de falso positivo. Ir agregando palabra por
       // palabra a GENERICAS tapaba síntomas; esto corrige la causa.
+      // Fix estructural 30/07/2026: comparar solo contra "mecanismo" (el nombre específico
+      // de la ficha), no contra "recomendacion" — ese campo suele listar variantes de
+      // preparación genéricas ("en agua, leche o yogur", "fresco o en salsa casera") que
+      // generaban falsos positivos sistemáticos (carne, salsa, leche...) sin relación real
+      // con el plato del usuario. Ir agregando esas palabras a GENERICAS una por una tapaba
+      // síntomas repetidos; esto corta la fuente.
       const coincidenciasAlternativas = alternativas.filter((a) => {
-        const candidatos = new Set([
-          ...tokenizar(normalizar(a.mecanismo || "")).map(raiz),
-          ...tokenizar(normalizar(a.recomendacion || "")).map(raiz),
-        ]);
+        const candidatos = new Set(tokenizar(normalizar(a.mecanismo || "")).map(raiz));
         const palabrasTexto = tokenizar(textoNormalizado)
           .map(raiz)
           .filter((p) => !GENERICAS.has(p));
