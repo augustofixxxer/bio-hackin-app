@@ -290,8 +290,9 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
         )}
         {/* PUNTO DE INTEGRACIÓN — Primer Recorrido del Usuario (Sprint 9):
             Acá, inmediatamente después de mostrar el resultado del primer registro de comida,
-            podrá insertarse la invitación opcional a registrar bienestar (energía, ánimo,
-            horas de sueño, digestión) sin rehacer este flujo. BienestarScreen ya existe como
+            podrá insertarse la invitación opcional a registrar bienestar (energía, digestión,
+            sueño, hidratación, actividad física — actualizado 30/07/2026, ver BienestarScreen)
+            sin rehacer este flujo. BienestarScreen ya existe como
             componente independiente y reutilizable — solo falta decidir, con la Especificación
             Funcional de Arquitectura, si se renderiza inline acá o se navega a él. No implementado
             todavía por instrucción explícita del Sprint. */}
@@ -467,16 +468,73 @@ function EscalaBienestar({ etiqueta, valor, onChange }) {
   );
 }
 
+// Registro unificado (30/07/2026): sueño/hidratación/actividad dejaron de ser escalas
+// subjetivas 1-5 y pasan a rangos con base científica — este selector reemplaza a
+// EscalaBienestar para esos 3 campos, mismo look, opciones categóricas en vez de números.
+function SelectorCategoria({ etiqueta, opciones, valor, onChange }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, fontWeight: 600, color: TOKENS.ink, marginBottom: 8 }}>
+        {etiqueta}
+      </p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {opciones.map((op) => (
+          <button
+            key={op.val}
+            onClick={() => onChange(valor === op.val ? null : op.val)}
+            style={{
+              flex: "1 1 auto",
+              minWidth: 70,
+              padding: "10px 8px",
+              borderRadius: 8,
+              border: `1px solid ${valor === op.val ? TOKENS.primary : TOKENS.border}`,
+              background: valor === op.val ? TOKENS.primary : TOKENS.surface,
+              color: valor === op.val ? "#FFFFFF" : TOKENS.ink,
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {op.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const OPCIONES_SUENO = [
+  { val: "menos_6h", label: "Menos de 6h" },
+  { val: "6_7h", label: "6-7h" },
+  { val: "7_9h", label: "7-9h" },
+  { val: "mas_9h", label: "Más de 9h" },
+];
+const OPCIONES_HIDRATACION = [
+  { val: "menos_1l", label: "Menos de 1L" },
+  { val: "1_2l", label: "1-2L" },
+  { val: "2_3l", label: "2-3L" },
+  { val: "mas_3l", label: "Más de 3L" },
+];
+const OPCIONES_ACTIVIDAD = [
+  { val: "sedentario", label: "Sedentario" },
+  { val: "activo", label: "Activo" },
+  { val: "muy_activo", label: "Muy activo" },
+];
+
 function BienestarScreen({ onBack, pase }) {
   const [energia, setEnergia] = useState(null);
-  const [animo, setAnimo] = useState(null);
-  const [sueno, setSueno] = useState(null);
   const [digestion, setDigestion] = useState(null);
+  const [sueno, setSueno] = useState(null);
+  const [hidratacion, setHidratacion] = useState(null);
+  const [actividadFisica, setActividadFisica] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
 
-  const completo = energia && animo && sueno && digestion;
+  // Registro unificado, no obligatorio (30/07/2026): cargás lo que quieras, no las 5
+  // cosas a la fuerza — alcanza con que haya al menos un dato para poder guardar.
+  const hayAlgo = energia || digestion || sueno || hidratacion || actividadFisica;
 
   async function enviar() {
     setEnviando(true);
@@ -486,15 +544,22 @@ function BienestarScreen({ onBack, pase }) {
       const resp = await fetch("/api/registrar-bienestar", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
-        body: JSON.stringify({ energia, animo, sueno, digestion }),
+        body: JSON.stringify({
+          energia: energia || undefined,
+          digestion: digestion || undefined,
+          sueno: sueno || undefined,
+          hidratacion: hidratacion || undefined,
+          actividad_fisica: actividadFisica || undefined,
+        }),
       });
       const data = await resp.json();
       if (!resp.ok || data.error) throw new Error(data.error || "Error al guardar");
       setResultado("¡Registrado! Gracias por sumarlo.");
       setEnergia(null);
-      setAnimo(null);
-      setSueno(null);
       setDigestion(null);
+      setSueno(null);
+      setHidratacion(null);
+      setActividadFisica(null);
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -512,27 +577,28 @@ function BienestarScreen({ onBack, pase }) {
         ¿Cómo te sentís hoy?
       </h1>
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: TOKENS.inkDim, marginBottom: 24 }}>
-        1 = muy bajo/malo · 5 = muy alto/bueno. Cargalo cuando quieras, las veces que quieras.
+        Cargá lo que quieras — no hace falta completar todo. Cuantos más datos sumes con el tiempo, más afinado va a ser lo que te devolvamos.
       </p>
 
-      <EscalaBienestar etiqueta="Energía" valor={energia} onChange={setEnergia} />
-      <EscalaBienestar etiqueta="Ánimo" valor={animo} onChange={setAnimo} />
-      <EscalaBienestar etiqueta="Sueño" valor={sueno} onChange={setSueno} />
-      <EscalaBienestar etiqueta="Digestión" valor={digestion} onChange={setDigestion} />
+      <EscalaBienestar etiqueta="Energía (1 = muy baja · 5 = muy alta)" valor={energia} onChange={setEnergia} />
+      <EscalaBienestar etiqueta="Digestión (1 = muy mala · 5 = muy buena)" valor={digestion} onChange={setDigestion} />
+      <SelectorCategoria etiqueta="Horas de sueño anoche" opciones={OPCIONES_SUENO} valor={sueno} onChange={setSueno} />
+      <SelectorCategoria etiqueta="Líquidos que tomaste hoy" opciones={OPCIONES_HIDRATACION} valor={hidratacion} onChange={setHidratacion} />
+      <SelectorCategoria etiqueta="Actividad física esta semana" opciones={OPCIONES_ACTIVIDAD} valor={actividadFisica} onChange={setActividadFisica} />
 
       <button
         onClick={enviar}
-        disabled={!completo || enviando}
+        disabled={!hayAlgo || enviando}
         style={{
           width: "100%",
           padding: "14px 0",
           borderRadius: 8,
           border: "none",
-          background: completo ? TOKENS.primary : TOKENS.border,
+          background: hayAlgo ? TOKENS.primary : TOKENS.border,
           color: "#FFFFFF",
           fontWeight: 700,
           fontSize: 14,
-          cursor: completo ? "pointer" : "not-allowed",
+          cursor: hayAlgo ? "pointer" : "not-allowed",
           marginTop: 8,
         }}
       >
