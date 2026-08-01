@@ -145,7 +145,7 @@ function esVersionCasera(textoNormalizado) {
 // Blindaje legal: bloquea el uso si no aceptó Términos, o si la cuenta fue suspendida.
 async function verificarAcceso(usuarioId) {
   const rows = await supabaseFetch(
-    `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados`
+    `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso`
   );
   if (!rows.length) return { ok: false, status: 404, error: "Usuario no encontrado." };
   const u = rows[0];
@@ -155,7 +155,7 @@ async function verificarAcceso(usuarioId) {
   if (u.terminos_aceptados !== true) {
     return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
   }
-  return { ok: true };
+  return { ok: true, nivelAcceso: u.nivel_acceso || "gratuito" };
 }
 
 export default async function handler(req, res) {
@@ -184,6 +184,8 @@ export default async function handler(req, res) {
     return;
   }
 
+  let nivelAcceso = "gratuito";
+
   if (usuarioId) {
     if (!esUUIDValido(usuarioId)) {
       res.status(400).json({ error: "usuarioId inválido." });
@@ -204,6 +206,7 @@ export default async function handler(req, res) {
       if (!acceso.ok) {
         return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
       }
+      nivelAcceso = acceso.nivelAcceso || "gratuito";
     } catch (err) {
       res.status(400).json({ error: "El usuarioId recibido no es válido.", detail: String(err) });
       return;
@@ -282,14 +285,24 @@ export default async function handler(req, res) {
       });
     }
 
-    // 5. Armar bloqueos reales con su solución (ya viene embebida desde el paso 1)
+    // 5. Armar bloqueos reales. La solución concreta (el "cómo") queda para Premium desde
+    // el 31/07/2026 — decisión del Fundador: el "resultado" (el "por qué") siempre es
+    // gratis y completo, nunca se oculta, eso es la parte educativa no negociable. Lo que
+    // pasa a ser de pago es el paso a paso accionable. El usuario gratuito nunca se queda
+    // sin salida — recibe una frase puente honesta, nunca solo el problema sin más.
+    const esPremiumComida = nivelAcceso === "Premium";
     const bloqueos = bloqueosReales.map((r, i) => ({
       combinacion: r.combinacion || "",
       resultado: r.resultado || "",
       nivelRiesgo: r.nivel_riesgo || "Bajo",
-      solucion: r.soluciones
-        ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "" }
-        : null,
+      solucion:
+        esPremiumComida && r.soluciones
+          ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "", premium: true }
+          : null,
+      invitacionPremium:
+        !esPremiumComida && r.soluciones
+          ? "Esto sí tiene forma de mejorarse sin dejar de comerlo. Sabemos que puede preocupar un poco, pero estás en el lugar indicado — te mostramos cómo en la sección Premium."
+          : null,
       bloqueoId: bloqueosCreados[i]?.id,
     }));
 
