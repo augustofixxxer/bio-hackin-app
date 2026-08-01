@@ -141,7 +141,7 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
   return (
     <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
       <p style={{ color: TOKENS.ink, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{b.combinacion}</p>
-      <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6, marginBottom: b.solucion ? 12 : 0 }}>{b.resultado}</p>
+      <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6, marginBottom: (b.solucion || b.invitacionPremium) ? 12 : 0 }}>{b.resultado}</p>
 
       {!confirmado && (
         <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
@@ -160,6 +160,16 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
         <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: TOKENS.primary, marginBottom: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>Solución</p>
           <p style={{ color: TOKENS.ink, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
+        </div>
+      )}
+
+      {confirmado && !b.solucion && b.invitacionPremium && (
+        <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, marginTop: 4 }}>
+          <div style={{ background: TOKENS.primarySoft, borderRadius: 8, padding: "12px 14px" }}>
+            <p style={{ color: TOKENS.ink, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
+              💡 {b.invitacionPremium}
+            </p>
+          </div>
         </div>
       )}
     </div>
