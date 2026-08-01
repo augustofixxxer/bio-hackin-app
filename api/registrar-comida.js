@@ -169,7 +169,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { texto, momento } = req.body || {};
+  const { texto, momento, soloVista } = req.body || {};
   if (!texto || typeof texto !== "string" || texto.trim().length === 0) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
     return;
@@ -254,23 +254,28 @@ export default async function handler(req, res) {
     const bloqueosReales = versionCasera ? [] : coincidencias;
     const resueltos = versionCasera ? coincidencias : [];
 
-    // 3. Crear el Registro Diario
+    // 3. Crear el Registro Diario — salvo en modo "planificar antes de comer" (soloVista):
+    // ahí se evalúa todo exactamente igual, pero no se persiste nada, porque el usuario
+    // todavía no comió — es una consulta preventiva, no un hecho consumado.
     const fechaHoy = new Date().toISOString().split("T")[0];
-    const registroCreado = await supabaseFetch(`registro_diario_real`, {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        fecha: fechaHoy,
-        comida_registrada: texto,
-        ...(momento ? { momento_dia: momento } : {}),
-        ...(usuarioId ? { usuario_id: usuarioId } : {}),
-      }),
-    });
-    const registroId = registroCreado[0].id;
+    let registroId = null;
+    if (!soloVista) {
+      const registroCreado = await supabaseFetch(`registro_diario_real`, {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          fecha: fechaHoy,
+          comida_registrada: texto,
+          ...(momento ? { momento_dia: momento } : {}),
+          ...(usuarioId ? { usuario_id: usuarioId } : {}),
+        }),
+      });
+      registroId = registroCreado[0].id;
+    }
 
-    // 4. Si no hay coincidencias reales, no se crean Bloqueos
+    // 4. Si no hay coincidencias reales, no se crean Bloqueos (tampoco en modo soloVista)
     let bloqueosCreados = [];
-    if (bloqueosReales.length > 0) {
+    if (!soloVista && bloqueosReales.length > 0) {
       bloqueosCreados = await supabaseFetch(`bloqueos`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -351,18 +356,21 @@ export default async function handler(req, res) {
 
     // --- MIS Etapa 1 — Piloto de Instrumentación (DC-05). Único agregado de este archivo. ---
     // No intrusivo: emitirEvento nunca lanza, un fallo interno se loguea y se descarta (Directiva 2).
-    await emitirEvento({
-      usuarioId,
-      eventType: "comida_registrada",
-      sourceComponent: "registrar-comida",
-      requestingComponent: "registrar-comida",
-      payload: {
-        registroId, bloqueosCount: bloqueos.length, versionCasera,
-        iaUsada: Boolean(categoriasIA && categoriasIA.length > 0),
-      },
-    });
+    // No se emite en modo soloVista: no hubo un registro real que instrumentar.
+    if (!soloVista) {
+      await emitirEvento({
+        usuarioId,
+        eventType: "comida_registrada",
+        sourceComponent: "registrar-comida",
+        requestingComponent: "registrar-comida",
+        payload: {
+          registroId, bloqueosCount: bloqueos.length, versionCasera,
+          iaUsada: Boolean(categoriasIA && categoriasIA.length > 0),
+        },
+      });
+    }
 
-    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias });
+    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) });
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }
