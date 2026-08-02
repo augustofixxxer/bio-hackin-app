@@ -1,6 +1,14 @@
 // Función serverless (Vercel). Corre en el servidor, nunca en el navegador del usuario.
-// Alimenta el "Explorador por problemática": trae Reglas y Alternativas locales
-// y las devuelve en un único formato combinado.
+// Alimenta el "Explorador": trae SOLO Alternativas Locales (técnicas, protocolos y
+// reemplazos regionales) — herramientas reutilizables, no atadas a un alimento puntual.
+//
+// CAMBIO ESTRUCTURAL 31/07/2026 (decisión del Fundador): las Reglas (alimentos puntuales
+// con problema, ej. "Vainilla comercial: azúcar sin control") YA NO se muestran acá.
+// Quedan 100% reactivas — solo aparecen al registrar o planificar una comida real. Mostrarlas
+// en un catálogo para hojear las convertía, por diseño, en una lista infinita de "alimentos
+// prohibidos" — exactamente lo que esta app no quiere ser. Las Alternativas Locales, en
+// cambio, son un conjunto finito de herramientas (hoy 68), coherente con la identidad de
+// "hackeo" de la app.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -30,27 +38,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [reglas, alternativas] = await Promise.all([
-      supabaseFetch(
-        `reglas?select=id,combinacion,resultado,objetivo_afectado,nivel_evidencia,mecanismo_base,nivel_acceso`
-      ),
-      supabaseFetch(
-        `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia`
-      ),
-    ]);
+    const alternativas = await supabaseFetch(
+      `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia`
+    );
 
-    const entradasReglas = reglas.map((r) => ({
-      id: r.id,
-      tipo: "regla",
-      combinacion: r.combinacion || "",
-      resultado: r.resultado || "",
-      categorias: r.objetivo_afectado || [],
-      evidencia: r.nivel_evidencia || null,
-      mecanismo: r.mecanismo_base || null,
-      acceso: r.nivel_acceso || null,
-    }));
-
-    const entradasAlternativas = alternativas.map((a) => {
+    const entradas = alternativas.map((a) => {
       const esProtocolo = a.tipo === "Protocolo";
       return {
         id: a.id,
@@ -67,10 +59,11 @@ export default async function handler(req, res) {
 
     res.setHeader("Cache-Control", "s-maxage=120, stale-while-revalidate=300");
     res.status(200).json({
-      entradas: [...entradasReglas, ...entradasAlternativas],
+      entradas,
       actualizado: new Date().toISOString(),
     });
   } catch (err) {
     res.status(500).json({ error: "Error consultando Supabase", detail: String(err) });
   }
 }
+// END: /api/data.js
