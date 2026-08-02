@@ -473,9 +473,17 @@ function PlanificarPanel({ pase }) {
             <p style={{ fontSize: 13, color: TOKENS.ink, fontWeight: 600 }}>Bien ahí, sin nada para ajustar.</p>
           ) : (
             resultado.bloqueos.map((b, i) => (
-              <div key={i} style={{ marginBottom: i === resultado.bloqueos.length - 1 ? 0 : 12 }}>
+              <div key={i} style={{ marginBottom: i === resultado.bloqueos.length - 1 ? 0 : 14 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: TOKENS.ink, marginBottom: 4 }}>{b.combinacion}</p>
-                <p style={{ fontSize: 12.5, color: TOKENS.inkDim, lineHeight: 1.5 }}>{b.resultado}</p>
+                <p style={{ fontSize: 12.5, color: TOKENS.inkDim, lineHeight: 1.5, marginBottom: (b.solucion || b.invitacionPremium) ? 8 : 0 }}>{b.resultado}</p>
+                {b.solucion && (
+                  <p style={{ fontSize: 12.5, color: TOKENS.ink, lineHeight: 1.5 }}>{b.solucion.adaptacion}</p>
+                )}
+                {!b.solucion && b.invitacionPremium && (
+                  <div style={{ background: TOKENS.primarySoft, borderRadius: 8, padding: "10px 12px", marginTop: 4 }}>
+                    <p style={{ color: TOKENS.ink, fontSize: 12, lineHeight: 1.5, margin: 0 }}>💡 {b.invitacionPremium}</p>
+                  </div>
+                )}
               </div>
             ))
           )}
