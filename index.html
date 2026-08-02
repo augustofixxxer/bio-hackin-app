@@ -1417,16 +1417,6 @@ function App() {
             }}>
             EXPLORADOR
           </button>
-          <button onClick={() => setView({ screen: "bienestar" })}
-            style={{
-              background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, letterSpacing: "0.04em", fontWeight: 600,
-              color: view.screen === "bienestar" ? TOKENS.ink : TOKENS.inkDim,
-              borderBottom: view.screen === "bienestar" ? `2px solid ${TOKENS.primary}` : "2px solid transparent",
-              marginBottom: -1,
-            }}>
-            BIENESTAR
-          </button>
           <button onClick={() => setView({ screen: "patrones" })}
             style={{
               background: "none", border: "none", cursor: "pointer", padding: "0 0 10px 0",
