@@ -72,14 +72,16 @@ export default async function handler(req, res) {
 
     // 2. Buscar si ya existe un usuario con ese email
     const encontrados = await supabaseFetch(
-      `usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre_alias`
+      `usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre_alias,nivel_acceso`
     );
 
     let usuarioId;
+    let nivelAcceso = "gratuito";
 
     if (encontrados.length > 0) {
       // Ya existe: lo usamos tal cual
       usuarioId = encontrados[0].id;
+      nivelAcceso = encontrados[0].nivel_acceso || "gratuito";
     } else {
       // No existe: lo creamos
       const creado = await supabaseFetch(`usuarios`, {
@@ -97,7 +99,7 @@ export default async function handler(req, res) {
     // debe mandar este pase (no solo el usuarioId) en cada pedido protegido.
     const pase = emitirPase(usuarioId);
 
-    return res.status(200).json({ usuarioId, email, nombre, pase });
+    return res.status(200).json({ usuarioId, email, nombre, pase, nivelAcceso });
   } catch (err) {
     console.error("Error en login-google:", err);
     return res.status(500).json({ error: "Error procesando el login", detail: String(err) });
