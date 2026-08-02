@@ -1494,6 +1494,7 @@ function App() {
           const cat = grupos[view.catName] || [];
           const entry = cat.find((e) => e.id === view.id);
           if (!entry) return null;
+          const esPremium = usuario.nivelAcceso === "Premium";
           return (
             <div className="fade-in">
               <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 24, cursor: "pointer", padding: 0 }}>
@@ -1502,15 +1503,27 @@ function App() {
               <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 25, color: TOKENS.ink, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
                 <EvidenceStamp level={entry.evidencia} />
-                {entry.mecanismo && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim }}>{entry.mecanismo}</span>}
               </div>
-              <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
-                <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
-              </div>
-              {entry.frecuencia && (
-                <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18, marginTop: 18 }}>
-                  <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Frecuencia</p>
-                  <p style={{ color: TOKENS.ink, fontSize: 14 }}>{entry.frecuencia}</p>
+              {esPremium ? (
+                <React.Fragment>
+                  <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
+                    {entry.mecanismo && <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, marginBottom: 10 }}>{entry.mecanismo}</p>}
+                    <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+                  </div>
+                  {entry.frecuencia && (
+                    <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18, marginTop: 18 }}>
+                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Frecuencia</p>
+                      <p style={{ color: TOKENS.ink, fontSize: 14 }}>{entry.frecuencia}</p>
+                    </div>
+                  )}
+                </React.Fragment>
+              ) : (
+                <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
+                  <div style={{ background: TOKENS.primarySoft, borderRadius: 8, padding: "12px 14px" }}>
+                    <p style={{ color: TOKENS.ink, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
+                      💡 Esta herramienta sí tiene una forma concreta de aplicarse. Te mostramos el paso a paso en la sección Premium.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
