@@ -249,6 +249,15 @@ export default async function handler(req, res) {
     const coincidencias = evaluaciones.filter((e) => e.coincide && !e.esTip).map((e) => e.regla);
     const coincidenciasTip = evaluaciones.filter((e) => e.coincide && e.esTip).map((e) => e.regla);
 
+    // Orden por especificidad (31/07/2026): una regla de un solo grupo de palabras clave
+    // (ej. "tarta, tartas, pascualina") suele nombrar un plato puntual — más directamente
+    // relacionada con lo que el usuario escribió. Una regla de varios grupos separados por
+    // ";" (ej. "carne roja ; queso, crema, lacteos") es una interacción entre ingredientes
+    // sueltos, más genérica. Mostrar primero lo específico evita que el usuario tenga que
+    // leer 2-3 avisos genéricos antes de llegar al que realmente nombra su plato.
+    const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
+    coincidencias.sort((a, b) => especificidad(a) - especificidad(b));
+
     // 2b. Si el texto indica versión casera, esas coincidencias quedan "resueltas"
     // (ya se aplicó el hackeo) y no se tratan como bloqueo real.
     const bloqueosReales = versionCasera ? [] : coincidencias;
