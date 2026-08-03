@@ -375,6 +375,11 @@ function LoginScreen({ onLogin }) {
 // la primera vez que el usuario llega a Home después del Onboarding, y a partir de ahí
 // queda colapsada a una línea — no desaparece (Augusto quiere poder repasarla), pero
 // tampoco vuelve a ocupar toda la pantalla cada vez que solo querés cargar un almuerzo.
+// Portada Home — formato cover (03/08/2026): texto reposicionado arriba, sin imagen de fondo
+// pesada (decisión Fundador, 03/08/2026: evitar demoras de carga). Se aplica directo el
+// degradado CSS bio-green definido para la Pestaña 1 (Explorador).
+const BG_PORTADA_HOME = "linear-gradient(180deg, #182923 0%, #0F1A16 100%)";
+
 function PortadaHome() {
   const [expandida, setExpandida] = useState(() => {
     try { return localStorage.getItem("reseteo_portada_vista") !== "true"; } catch (e) { return true; }
@@ -398,25 +403,36 @@ function PortadaHome() {
   }
 
   return (
-    <div style={{
-      background: `linear-gradient(155deg, ${TOKENS.ink} 0%, #16324a 100%)`,
-      borderRadius: 14, padding: "26px 22px", marginBottom: 24,
-    }} className="fade-in">
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#8FB8D6", letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>
-        Por qué existe Reseteo Propio
-      </p>
-      {TEXTO_QUIEN_SOY.map((p, i) => (
-        <p key={i} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13.5, color: "#EAF1F6", lineHeight: 1.7, marginBottom: i === TEXTO_QUIEN_SOY.length - 1 ? 18 : 12 }}>
-          {p}
-        </p>
-      ))}
-      <button onClick={colapsar} style={{
-        background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)",
-        borderRadius: 8, padding: "9px 16px", color: "#FFFFFF", fontFamily: "'IBM Plex Sans', sans-serif",
-        fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+    <div className="fade-in" style={{
+      position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 24,
+      minHeight: 260, background: BG_PORTADA_HOME, padding: 16,
+    }}>
+      {/* Panel de cristal (glassmorphism) — mismos tokens que Pestaña 1 (Explorador) */}
+      <div style={{
+        position: "relative", borderRadius: 18, padding: "22px 20px 20px",
+        background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37), inset 0 1px 1px 0 rgba(255,255,255,0.2)",
       }}>
-        Entendido, vamos a lo importante
-      </button>
+        <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#C5A059", letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>
+          Por qué existe Reseteo Propio
+        </p>
+        {TEXTO_QUIEN_SOY.map((p, i) => (
+          <p key={i} style={{
+            fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13.5, color: "#F2EFE9", lineHeight: 1.7,
+            marginBottom: i === TEXTO_QUIEN_SOY.length - 1 ? 18 : 12,
+          }}>
+            {p}
+          </p>
+        ))}
+        <button onClick={colapsar} style={{
+          background: "rgba(255,255,255,0.12)", border: "1px solid rgba(197,160,89,0.4)",
+          borderRadius: 999, padding: "9px 18px", color: "#FFFFFF", fontFamily: "'IBM Plex Sans', sans-serif",
+          fontSize: 12.5, fontWeight: 600, cursor: "pointer", backdropFilter: "blur(4px)",
+        }}>
+          Entendido, vamos a lo importante
+        </button>
+      </div>
     </div>
   );
 }
