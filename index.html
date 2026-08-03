@@ -375,10 +375,32 @@ function LoginScreen({ onLogin }) {
 // la primera vez que el usuario llega a Home después del Onboarding, y a partir de ahí
 // queda colapsada a una línea — no desaparece (Augusto quiere poder repasarla), pero
 // tampoco vuelve a ocupar toda la pantalla cada vez que solo querés cargar un almuerzo.
-// Portada Home — formato cover (03/08/2026): texto reposicionado arriba, sin imagen de fondo
-// pesada (decisión Fundador, 03/08/2026: evitar demoras de carga). Se aplica directo el
-// degradado CSS bio-green definido para la Pestaña 1 (Explorador).
-const BG_PORTADA_HOME = "linear-gradient(180deg, #182923 0%, #0F1A16 100%)";
+// Portada Home — formato banner (03/08/2026, versión final aprobada): banner de borde a
+// borde, texto a todo el ancho arriba, hojas vectoriales SVG como textura de fondo muy
+// sutil (opacidad baja, sin foto — decisión Fundador: cero peso de carga). Reemplaza el
+// intento anterior con panel de cristal centrado, que no reflejaba la composición pedida.
+const BG_PORTADA_HOME = "linear-gradient(115deg, #182923 0%, #1E3A30 45%, #0F1A16 100%)";
+
+function HojasDecorativas() {
+  return (
+    <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice"
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.16 }}
+      fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="60" cy="40" rx="50" ry="26" fill="#7FAF93" transform="rotate(-20 60 40)" />
+      <ellipse cx="330" cy="30" rx="55" ry="28" fill="#C5A059" transform="rotate(18 330 30)" />
+      <ellipse cx="200" cy="70" rx="60" ry="30" fill="#7FAF93" transform="rotate(-8 200 70)" />
+      <ellipse cx="90" cy="130" rx="58" ry="30" fill="#C5A059" transform="rotate(12 90 130)" />
+      <ellipse cx="270" cy="140" rx="62" ry="32" fill="#7FAF93" transform="rotate(-15 270 140)" />
+      <ellipse cx="360" cy="180" rx="50" ry="26" fill="#C5A059" transform="rotate(22 360 180)" />
+      <ellipse cx="140" cy="200" rx="55" ry="28" fill="#7FAF93" transform="rotate(-25 140 200)" />
+      <ellipse cx="30" cy="220" rx="48" ry="24" fill="#C5A059" transform="rotate(10 30 220)" />
+      <ellipse cx="230" cy="230" rx="58" ry="28" fill="#7FAF93" transform="rotate(6 230 230)" />
+      <path d="M60 40 Q75 15 95 -5" stroke="#F2EFE9" strokeWidth="1.5" />
+      <path d="M270 140 Q285 115 305 90" stroke="#F2EFE9" strokeWidth="1.5" />
+      <path d="M140 200 Q155 175 175 155" stroke="#F2EFE9" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 function PortadaHome() {
   const [expandida, setExpandida] = useState(() => {
@@ -405,15 +427,10 @@ function PortadaHome() {
   return (
     <div className="fade-in" style={{
       position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 24,
-      minHeight: 260, background: BG_PORTADA_HOME, padding: 16,
+      background: BG_PORTADA_HOME,
     }}>
-      {/* Panel de cristal (glassmorphism) — mismos tokens que Pestaña 1 (Explorador) */}
-      <div style={{
-        position: "relative", borderRadius: 18, padding: "22px 20px 20px",
-        background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37), inset 0 1px 1px 0 rgba(255,255,255,0.2)",
-      }}>
+      <HojasDecorativas />
+      <div style={{ position: "relative", zIndex: 1, padding: "22px 20px 20px" }}>
         <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#C5A059", letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>
           Por qué existe Reseteo Propio
         </p>
@@ -426,9 +443,9 @@ function PortadaHome() {
           </p>
         ))}
         <button onClick={colapsar} style={{
-          background: "rgba(255,255,255,0.12)", border: "1px solid rgba(197,160,89,0.4)",
-          borderRadius: 999, padding: "9px 18px", color: "#FFFFFF", fontFamily: "'IBM Plex Sans', sans-serif",
-          fontSize: 12.5, fontWeight: 600, cursor: "pointer", backdropFilter: "blur(4px)",
+          background: "#F2EFE9", border: "none", borderRadius: 999, padding: "10px 20px",
+          color: "#182923", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600,
+          fontSize: 12.5, cursor: "pointer",
         }}>
           Entendido, vamos a lo importante
         </button>
