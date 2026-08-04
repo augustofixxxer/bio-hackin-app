@@ -373,13 +373,10 @@ function LoginScreen({ onLogin }) {
 
 // Portada de Home (30/07/2026, reemplaza a la vieja pestaña "QUIÉN SOY").
 // Portada — banner fijo tipo portada de Facebook (03/08/2026, versión final confirmada
-// por Augusto con captura de referencia): altura fija ~22% de la pantalla, full-bleed
-// (ancho completo, fuera del contenedor con padding), arriba de TODO — antes del
-// encabezado "Comida real...". El banner NUNCA crece: muestra un adelanto de 2 líneas +
-// botón "Leer más", que despliega el texto completo más abajo, dentro del contenido
-// normal (TextoQuienSoyExpandido), sin mover ni agrandar el banner. Reemplaza los dos
-// intentos anteriores (panel de cristal centrado, banner de altura variable) que no
-// respetaban la proporción ni la posición pedidas.
+// por Augusto): full-bleed, arriba de TODO — antes del encabezado "Comida real...".
+// Colapsado: ~22% de la pantalla, adelanto de 2 líneas + "Leer más". Al tocar "Leer más",
+// el MISMO banner crece hacia abajo y muestra el texto completo (nunca se duplica en otro
+// cuadro en otro lugar) — "Leer menos" lo vuelve a achicar. Un solo lugar, un solo texto.
 const BG_PORTADA_HOME = "linear-gradient(115deg, #182923 0%, #1E3A30 45%, #0F1A16 100%)";
 
 function HojasDecorativas() {
@@ -406,23 +403,43 @@ function HojasDecorativas() {
 function PortadaBanner({ abierto, onToggle }) {
   return (
     <div style={{
-      position: "relative", width: "100%", height: "22vh", maxHeight: 190, minHeight: 150,
+      position: "relative", width: "100%",
+      height: abierto ? "auto" : "22vh",
+      maxHeight: abierto ? "none" : 190,
+      minHeight: abierto ? "auto" : 150,
       overflow: "hidden", background: BG_PORTADA_HOME,
+      transition: "min-height 0.25s ease",
     }}>
       <HojasDecorativas />
       <div style={{
-        position: "relative", zIndex: 1, height: "100%", padding: "14px 18px",
-        display: "flex", flexDirection: "column", justifyContent: "center",
+        position: "relative", zIndex: 1,
+        height: abierto ? "auto" : "100%",
+        padding: abierto ? "20px 18px 24px" : "14px 18px",
+        display: "flex", flexDirection: "column",
+        justifyContent: abierto ? "flex-start" : "center",
       }}>
-        <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#C5A059", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 6px" }}>
+        <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#C5A059", letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 8px" }}>
           Por qué existe Reseteo Propio
         </p>
-        <p style={{
-          fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, lineHeight: 1.5, color: "#F2EFE9", margin: "0 0 8px",
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-        }}>
-          {TEXTO_QUIEN_SOY[0]}
-        </p>
+
+        {!abierto && (
+          <p style={{
+            fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12.5, lineHeight: 1.5, color: "#F2EFE9", margin: "0 0 8px",
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+          }}>
+            {TEXTO_QUIEN_SOY[0]}
+          </p>
+        )}
+
+        {abierto && TEXTO_QUIEN_SOY.map((p, i) => (
+          <p key={i} className="fade-in" style={{
+            fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, lineHeight: 1.65, color: "#F2EFE9",
+            marginBottom: i === TEXTO_QUIEN_SOY.length - 1 ? 14 : 12,
+          }}>
+            {p}
+          </p>
+        ))}
+
         <button onClick={onToggle} style={{
           alignSelf: "flex-start", background: "#F2EFE9", color: "#182923", border: "none", borderRadius: 999,
           padding: "6px 14px", fontFamily: "'IBM Plex Sans', sans-serif", fontWeight: 600, fontSize: 11, cursor: "pointer",
@@ -430,25 +447,6 @@ function PortadaBanner({ abierto, onToggle }) {
           {abierto ? "Leer menos" : "Leer más"}
         </button>
       </div>
-    </div>
-  );
-}
-
-function TextoQuienSoyExpandido({ abierto }) {
-  if (!abierto) return null;
-  return (
-    <div className="fade-in" style={{
-      background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8,
-      padding: 16, marginBottom: 24,
-    }}>
-      {TEXTO_QUIEN_SOY.map((p, i) => (
-        <p key={i} style={{
-          fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, color: TOKENS.ink, lineHeight: 1.65,
-          marginBottom: i === TEXTO_QUIEN_SOY.length - 1 ? 0 : 12,
-        }}>
-          {p}
-        </p>
-      ))}
     </div>
   );
 }
@@ -1475,7 +1473,6 @@ function App() {
 
         {view.screen === "categories" && (
           <React.Fragment>
-            <TextoQuienSoyExpandido abierto={portadaLeerMas} />
             <TableroAccesos
               onCargarComida={() => setView({ screen: "log" })}
               onRegistrarBienestar={() => setView({ screen: "bienestar" })}
