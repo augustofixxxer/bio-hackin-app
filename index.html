@@ -56,6 +56,25 @@ const TOKENS = {
 
 const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
 
+// Helpers de localStorage (03/08/2026 — corrección de hallazgo real): varios accesos
+// directos a localStorage en el archivo NO estaban protegidos con try/catch. En
+// navegadores con storage bloqueado (modo privado con política estricta, extensiones de
+// privacidad, storage deshabilitado por el usuario), localStorage.getItem/setItem puede
+// lanzar SecurityError — y como alguno de esos accesos vive dentro de un inicializador de
+// useState, un error ahí rompe el render inicial de React entero, no solo esa función.
+// Se centralizan acá los tres accesos (get/set/remove) para que TODO el archivo pase por
+// un único punto ya protegido, en vez de tener try/catch repetido y potencialmente
+// olvidado en algún lugar nuevo a futuro.
+function lsGet(key) {
+  try { return window.localStorage.getItem(key); } catch (e) { console.warn("localStorage inaccesible (get):", e); return null; }
+}
+function lsSet(key, value) {
+  try { window.localStorage.setItem(key, value); } catch (e) { console.warn("localStorage inaccesible (set):", e); }
+}
+function lsRemove(key) {
+  try { window.localStorage.removeItem(key); } catch (e) { console.warn("localStorage inaccesible (remove):", e); }
+}
+
 const EVIDENCE_STYLES = {
   Alto: { color: TOKENS.alto, label: "Evidencia alta" },
   Medio: { color: TOKENS.medio, label: "Evidencia media" },
@@ -201,7 +220,7 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
       const data = await resp.json();
       if (data.error) {
         if (data.requiereTerminos) {
-          localStorage.removeItem("reseteo_terminos_v1");
+          lsRemove("reseteo_terminos_v1");
           window.location.reload();
           return;
         }
@@ -330,7 +349,7 @@ function LoginScreen({ onLogin }) {
       });
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
-      localStorage.setItem("reseteo_usuario", JSON.stringify(data));
+      lsSet("reseteo_usuario", JSON.stringify(data));
       onLogin(data);
     } catch (e) {
       setError(String(e.message || e));
@@ -384,10 +403,10 @@ function LoginScreen({ onLogin }) {
 // cuadro en otro lugar) — "Leer menos" lo vuelve a achicar. Un solo lugar, un solo texto.
 const BG_PORTADA_HOME = "linear-gradient(115deg, #182923 0%, #1E3A30 45%, #0F1A16 100%)";
 
-function HojasDecorativas() {
+function HojasDecorativas({ zIndex }) {
   return (
     <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice"
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.16 }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.16, zIndex }}
       fill="none" xmlns="http://www.w3.org/2000/svg">
       <ellipse cx="60" cy="40" rx="50" ry="26" fill="#7FAF93" transform="rotate(-20 60 40)" />
       <ellipse cx="330" cy="30" rx="55" ry="28" fill="#C5A059" transform="rotate(18 330 30)" />
@@ -1009,7 +1028,7 @@ function TerminosGate({ pase, onAceptar }) {
       });
       const data = await resp.json();
       if (!resp.ok || data.error) throw new Error(data.error || "No se pudo registrar la aceptación.");
-      localStorage.setItem("reseteo_condicion_medica", condicionMedica ? "true" : "false");
+      lsSet("reseteo_condicion_medica", condicionMedica ? "true" : "false");
       onAceptar();
     } catch (e) {
       setError(String(e.message || e));
@@ -1308,7 +1327,7 @@ function OnboardingFlow({ pase, onCompletar }) {
   async function guardarObjetivoYAvanzar() {
     if (objetivoGrupo) {
       try {
-        localStorage.setItem("reseteo_objetivo_grupo", objetivoGrupo);
+        lsSet("reseteo_objetivo_grupo", objetivoGrupo);
       } catch (e) {}
       try {
         await fetch("/api/actualizar-objetivo", {
@@ -1326,7 +1345,7 @@ function OnboardingFlow({ pase, onCompletar }) {
 
   function completarOnboarding() {
     try {
-      localStorage.setItem("reseteo_onboarding_v1", "true");
+      lsSet("reseteo_onboarding_v1", "true");
     } catch (e) {}
     onCompletar();
   }
@@ -1436,21 +1455,21 @@ function App() {
   const [portadaLeerMas, setPortadaLeerMas] = useState(false);
   const [usuario, setUsuario] = useState(() => {
     try {
-      const guardado = localStorage.getItem("reseteo_usuario");
+      const guardado = lsGet("reseteo_usuario");
       return guardado ? JSON.parse(guardado) : null;
     } catch (e) {
       return null;
     }
   });
   const [terminosAceptados, setTerminosAceptados] = useState(
-    () => localStorage.getItem("reseteo_terminos_v1") === "true"
+    () => lsGet("reseteo_terminos_v1") === "true"
   );
   const [onboardingCompletado, setOnboardingCompletado] = useState(
-    () => localStorage.getItem("reseteo_onboarding_v1") === "true"
+    () => lsGet("reseteo_onboarding_v1") === "true"
   );
 
   const [objetivoGrupo] = useState(() => {
-    try { return localStorage.getItem("reseteo_objetivo_grupo"); } catch (e) { return null; }
+    return lsGet("reseteo_objetivo_grupo");
   });
 
   useEffect(() => {
@@ -1484,7 +1503,7 @@ function App() {
 
   if (!terminosAceptados) {
     return <TerminosGate pase={usuario.pase} onAceptar={() => {
-      localStorage.setItem("reseteo_terminos_v1", "true");
+      lsSet("reseteo_terminos_v1", "true");
       setTerminosAceptados(true);
     }} />;
   }
@@ -1515,16 +1534,14 @@ function App() {
   return (
     <div style={{ minHeight: "100vh", background: TOKENS.bg }}>
       <div style={{ position: "relative", background: enExplorador ? EXPLORADOR_TOKENS.bg : "transparent", overflow: "hidden" }}>
-        {/* Textura de fondo (03/08/2026, corrección técnica): backdrop-filter blur() no
-            produce efecto de cristal visible sobre un fondo perfectamente plano — no hay
-            nada que desenfocar. Se agregan las mismas hojas vectoriales de la Portada como
-            textura de fondo continua detrás de TODO el bloque Explorador, para que el vidrio
-            de las tarjetas tenga contra qué distorsionar. */}
-        {enExplorador && (
-          <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-            <HojasDecorativas />
-          </div>
-        )}
+        {/* Textura de fondo (03/08/2026, corrección técnica #2): el primer intento envolvía
+            HojasDecorativas en un div extra con su propio position:absolute — quedaba un
+            absolute-dentro-de-absolute con altura "auto" en ambos niveles, que algunos
+            navegadores no resuelven bien (la textura terminaba con altura 0 en la práctica,
+            visible solo donde por casualidad coincidía con la altura de la Portada). Se saca
+            el div intermedio: HojasDecorativas ahora se posiciona directo contra el wrapper
+            con position:relative (mismo patrón que ya funcionaba dentro de PortadaBanner). */}
+        {enExplorador && <HojasDecorativas zIndex={0} />}
         {enExplorador && (
           <PortadaBanner abierto={portadaLeerMas} onToggle={() => setPortadaLeerMas((v) => !v)} />
         )}
@@ -1612,7 +1629,7 @@ function App() {
 
         {view.screen === "log" && (
           <LogMealScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase}
-            tieneCondicionMedica={localStorage.getItem("reseteo_condicion_medica") === "true"} />
+            tieneCondicionMedica={lsGet("reseteo_condicion_medica") === "true"} />
         )}
 
         {view.screen === "category" && (() => {
@@ -1685,7 +1702,7 @@ function App() {
           </a>
           <span style={{ margin: "0 8px", color: TOKENS.border }}>·</span>
           <button
-            onClick={() => { localStorage.removeItem("reseteo_usuario"); localStorage.removeItem("reseteo_terminos_v1"); setUsuario(null); }}
+            onClick={() => { lsRemove("reseteo_usuario"); lsRemove("reseteo_terminos_v1"); setUsuario(null); }}
             style={{ background: "none", border: "none", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, cursor: "pointer", padding: 0 }}
           >
             Cerrar sesión ({usuario.email})
