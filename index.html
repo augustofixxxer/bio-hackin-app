@@ -548,7 +548,8 @@ const EXPLORADOR_TOKENS = {
   bg: "linear-gradient(180deg, #182923 0%, #0F1A16 100%)",
   cardBg: "linear-gradient(145deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))",
   cardBorder: "rgba(255,255,255,0.22)",
-  cardShadow: "0 8px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.25)",
+  cardShadow: "0 12px 24px -6px rgba(0,0,0,0.5), inset 0 1px 1px 0 rgba(255,255,255,0.3), inset 0 -2px 4px 0 rgba(0,0,0,0.4)",
+  cardBlur: "blur(16px) saturate(180%)",
   capsuleBg: "linear-gradient(145deg, #2C463C 0%, #1E332B 100%)",
   accent: "#C5A059",
   textPrimary: "#F2EFE9",
@@ -581,7 +582,7 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, pase }) {
   const tarjetaEstilo = {
     flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10,
     padding: "16px 16px", borderRadius: 18, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
-    background: EXPLORADOR_TOKENS.cardBg, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+    background: EXPLORADOR_TOKENS.cardBg, backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
     boxShadow: EXPLORADOR_TOKENS.cardShadow, cursor: "pointer", textAlign: "left",
   };
   const iconoBadge = {
@@ -597,12 +598,12 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, pase }) {
         Tu registro de hoy
       </p>
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onCargarComida} onPointerDown={vibrar} className="glass-press" style={tarjetaEstilo}>
+        <button onClick={() => { vibrar(); onCargarComida(); }} className="glass-press" style={tarjetaEstilo}>
           <span style={iconoBadge}><IconoComida size={20} /></span>
           <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>Cargar comida</span>
           <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.4 }}>Contanos qué comiste, en tus palabras</span>
         </button>
-        <button onClick={onRegistrarBienestar} onPointerDown={vibrar} className="glass-press" style={tarjetaEstilo}>
+        <button onClick={() => { vibrar(); onRegistrarBienestar(); }} className="glass-press" style={tarjetaEstilo}>
           <span style={iconoBadge}><IconoEstado size={20} /></span>
           <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>Cómo te sentís</span>
           <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.4 }}>Energía, sueño, agua, actividad — lo que quieras</span>
@@ -614,9 +615,9 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, pase }) {
           Augusto: no merece pantalla propia porque, a diferencia de registrar (hecho consumado),
           acá el usuario todavía puede decidir distinto. PlanificarPanel (el resultado en sí)
           sigue con su estilo claro actual — no estaba en el alcance de esta pasada de diseño. */}
-      <button onClick={() => setMostrarPlanificar((v) => !v)} onPointerDown={vibrar} className="glass-press" style={{
+      <button onClick={() => { vibrar(); setMostrarPlanificar((v) => !v); }} className="glass-press" style={{
         width: "100%", marginTop: 10, background: EXPLORADOR_TOKENS.cardBg,
-        border: `1px dashed rgba(197,160,89,0.4)`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+        border: `1px dashed rgba(197,160,89,0.4)`, backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
         borderRadius: 14, padding: "12px 16px", cursor: "pointer", textAlign: "left",
         display: "flex", alignItems: "center", gap: 10,
       }}>
@@ -1157,7 +1158,7 @@ function BarraBusqueda({ query, setQuery }) {
     <div style={{
       display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
       background: EXPLORADOR_TOKENS.cardBg, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
-      backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+      backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
       borderRadius: 16, padding: "12px 16px", boxShadow: EXPLORADOR_TOKENS.cardShadow,
     }}>
       <span style={{ color: EXPLORADOR_TOKENS.textSecondary, display: "flex", flexShrink: 0 }}><IconoBuscar size={17} /></span>
@@ -1174,11 +1175,11 @@ function BarraBusqueda({ query, setQuery }) {
 function TarjetaCategoria({ cat, onClick, compacta }) {
   function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
   return (
-    <button onClick={onClick} onPointerDown={vibrar} className="glass-press"
+    <button onClick={() => { vibrar(); onClick(); }} className="glass-press"
       style={{
         textAlign: "left", width: "100%", display: "flex", alignItems: "center", gap: 14,
         background: EXPLORADOR_TOKENS.cardBg, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
-        backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+        backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
         borderRadius: 14, padding: compacta ? "12px 16px" : "16px 20px", cursor: "pointer",
         boxShadow: EXPLORADOR_TOKENS.cardShadow,
       }}>
