@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Reseteo Propio — Explorador por problemática</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Rubik:wght@400;500;600;700;800&display=swap');
   * { box-sizing: border-box; }
   body { margin: 0; background: #FAFBFC; font-family: 'IBM Plex Sans', sans-serif; color: #101826; }
   #diagnostico { padding: 20px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word; color: #101826; }
@@ -17,6 +17,11 @@
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
     outline: 2px solid #1F4B6E; outline-offset: 2px;
   }
+  /* Pestaña Explorador — Glassmorphism 3D Bio-Hacking (03/08/2026): efecto "hundimiento"
+     al tocar. Inline styles no pueden expresar :active, por eso vive acá como única
+     excepción al patrón de estilos inline del resto del archivo. */
+  .glass-press { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+  .glass-press:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
@@ -523,46 +528,104 @@ function PlanificarPanel({ pase }) {
   );
 }
 
+// ============================================================
+// PESTAÑA 1 (EXPLORADOR) — GLASSMORPHISM 3D BIO-HACKING (03/08/2026)
+// Paleta y tokens aprobados por Augusto para esta pestaña únicamente. Deliberadamente
+// NO se tocan los TOKENS globales de arriba — esta paleta oscura queda acotada a los
+// componentes de Explorador (TableroAccesos, BarraBusqueda, ExploradorScreen,
+// TarjetaCategoria) para no afectar Bienestar/Mis Patrones/Carga de comida, que siguen
+// con el diseño claro hasta que se aprueben pestaña por pestaña.
+//
+// NOTA TÉCNICA (declarada por regla de cambios del DMC-D): el prompt de diseño sugería
+// Lucide Icons cargados en runtime (lucide.createIcons() sobre el DOM). Se reemplazó por
+// componentes SVG propios, inline, porque esta es una app React real con re-renders
+// frecuentes (togglear un acordeón, tocar "Leer más", etc.) — una librería que inyecta
+// SVG directo al DOM por fuera de React se pisa con la reconciliación de React en cada
+// re-render, dando el mismo tipo de fragilidad que el incidente de Sprint 16. El
+// resultado visual es equivalente; el riesgo de producción, cero.
+// ============================================================
+const EXPLORADOR_TOKENS = {
+  bg: "linear-gradient(180deg, #182923 0%, #0F1A16 100%)",
+  cardBg: "rgba(255,255,255,0.08)",
+  cardBorder: "rgba(255,255,255,0.15)",
+  cardShadow: "0 8px 32px 0 rgba(0,0,0,0.37), inset 0 1px 1px 0 rgba(255,255,255,0.2)",
+  capsuleBg: "#263E35",
+  accent: "#C5A059",
+  textPrimary: "#F2EFE9",
+  textSecondary: "rgba(242,239,233,0.62)",
+  font: "'Rubik', sans-serif",
+};
+
+function IconoGlass({ children, size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+const IconoComida = (p) => <IconoGlass {...p}><path d="M3 2v7c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2V2M6 2v20M15 2c-1.1 0-2 2.5-2 5.5S13.9 13 15 13s2-2.5 2-5.5S16.1 2 15 2Z" /><path d="M15 13v9" /></IconoGlass>;
+const IconoEstado = (p) => <IconoGlass {...p}><path d="M9.5 2A4.5 4.5 0 0 0 5 6.5c0 .9.26 1.74.7 2.45A4.5 4.5 0 0 0 4 12.9c0 1.5.75 2.82 1.9 3.6a4 4 0 0 0 3.6 4.5H12" /><path d="M14.5 2A4.5 4.5 0 0 1 19 6.5c0 .9-.26 1.74-.7 2.45A4.5 4.5 0 0 1 20 12.9c0 1.5-.75 2.82-1.9 3.6a4 4 0 0 1-3.6 4.5H12" /><circle cx="9" cy="9" r="0.5" fill="currentColor" /><circle cx="15" cy="9" r="0.5" fill="currentColor" /></IconoGlass>;
+const IconoBuscar = (p) => <IconoGlass {...p}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></IconoGlass>;
+const IconoChevron = ({ abierto, ...p }) => <IconoGlass {...p}><path d={abierto ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6"} /></IconoGlass>;
+const IconoBajarPeso = (p) => <IconoGlass {...p}><path d="M22 7 13.5 15.5 8.5 10.5 2 17" /><path d="M16 7h6v6" /></IconoGlass>;
+const IconoEnergia = (p) => <IconoGlass {...p}><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" /></IconoGlass>;
+const IconoRendimiento = (p) => <IconoGlass {...p}><path d="M6.5 6.5 4 4M17.5 6.5 20 4M6 15c0-3.5 2.5-6 6-6s6 2.5 6 6-2.5 4-6 4-6-.5-6-4Z" /><path d="M4 13c-1 1-1 3 0 4M20 13c1 1 1 3 0 4" /></IconoGlass>;
+const IconoBienestar = (p) => <IconoGlass {...p}><path d="M12 3v2M12 19v2M5 5l1.4 1.4M17.6 17.6 19 19M3 12h2M19 12h2M5 19l1.4-1.4M17.6 6.4 19 5" /><circle cx="12" cy="12" r="3.5" /></IconoGlass>;
+
 function TableroAccesos({ onCargarComida, onRegistrarBienestar, pase }) {
   const [mostrarPlanificar, setMostrarPlanificar] = useState(false);
-  const botonEstilo = {
-    flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4,
-    padding: "16px 16px", borderRadius: 10, border: `1px solid ${TOKENS.border}`,
-    background: TOKENS.surface, cursor: "pointer", textAlign: "left",
+
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
+
+  const tarjetaEstilo = {
+    flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10,
+    padding: "16px 16px", borderRadius: 18, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+    background: EXPLORADOR_TOKENS.cardBg, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+    boxShadow: EXPLORADOR_TOKENS.cardShadow, cursor: "pointer", textAlign: "left",
   };
+  const iconoBadge = {
+    width: 40, height: 40, borderRadius: 12,
+    background: `radial-gradient(circle at 30% 30%, rgba(197,160,89,0.35), rgba(197,160,89,0.08))`,
+    border: `1px solid rgba(197,160,89,0.4)`, display: "flex", alignItems: "center", justifyContent: "center",
+    boxShadow: "0 0 14px rgba(197,160,89,0.3)", color: EXPLORADOR_TOKENS.accent,
+  };
+
   return (
-    <div style={{ marginBottom: 28 }}>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase" }}>
+    <div style={{ marginBottom: 24 }}>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase", fontWeight: 600 }}>
         Tu registro de hoy
       </p>
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onCargarComida} style={botonEstilo}>
-          <span style={{ fontSize: 22 }}>🍽️</span>
-          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13.5, fontWeight: 700, color: TOKENS.ink }}>Cargar comida</span>
-          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: TOKENS.inkDim, lineHeight: 1.4 }}>Contanos qué comiste, en tus palabras</span>
+        <button onClick={onCargarComida} onPointerDown={vibrar} className="glass-press" style={tarjetaEstilo}>
+          <span style={iconoBadge}><IconoComida size={20} /></span>
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>Cargar comida</span>
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.4 }}>Contanos qué comiste, en tus palabras</span>
         </button>
-        <button onClick={onRegistrarBienestar} style={botonEstilo}>
-          <span style={{ fontSize: 22 }}>📋</span>
-          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13.5, fontWeight: 700, color: TOKENS.ink }}>Cómo te sentís</span>
-          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: TOKENS.inkDim, lineHeight: 1.4 }}>Energía, sueño, agua, actividad — lo que quieras</span>
+        <button onClick={onRegistrarBienestar} onPointerDown={vibrar} className="glass-press" style={tarjetaEstilo}>
+          <span style={iconoBadge}><IconoEstado size={20} /></span>
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>Cómo te sentís</span>
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.4 }}>Energía, sueño, agua, actividad — lo que quieras</span>
         </button>
       </div>
 
       {/* Planificar antes de comer (31/07/2026): plus del plan gratuito, no una pantalla propia
           — mismo motor que Cargar comida, en modo consulta, sin guardar nada. Definido con
           Augusto: no merece pantalla propia porque, a diferencia de registrar (hecho consumado),
-          acá el usuario todavía puede decidir distinto. */}
-      <button onClick={() => setMostrarPlanificar((v) => !v)} style={{
-        width: "100%", marginTop: 10, background: "none", border: `1px dashed ${TOKENS.border}`,
-        borderRadius: 10, padding: "12px 16px", cursor: "pointer", textAlign: "left",
+          acá el usuario todavía puede decidir distinto. PlanificarPanel (el resultado en sí)
+          sigue con su estilo claro actual — no estaba en el alcance de esta pasada de diseño. */}
+      <button onClick={() => setMostrarPlanificar((v) => !v)} onPointerDown={vibrar} className="glass-press" style={{
+        width: "100%", marginTop: 10, background: EXPLORADOR_TOKENS.cardBg,
+        border: `1px dashed rgba(197,160,89,0.4)`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+        borderRadius: 14, padding: "12px 16px", cursor: "pointer", textAlign: "left",
         display: "flex", alignItems: "center", gap: 10,
       }}>
-        <span style={{ fontSize: 18 }}>🔎</span>
+        <span style={{ color: EXPLORADOR_TOKENS.accent, display: "flex" }}><IconoBuscar size={18} /></span>
         <span style={{ flex: 1 }}>
-          <span style={{ display: "block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, fontWeight: 700, color: TOKENS.ink }}>Planificar antes de comer</span>
-          <span style={{ display: "block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 11.5, color: TOKENS.inkDim }}>Mirá qué te espera antes de decidir</span>
+          <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>Planificar antes de comer</span>
+          <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary }}>Mirá qué te espera antes de decidir</span>
         </span>
-        <span style={{ color: TOKENS.inkDim, fontSize: 13 }}>{mostrarPlanificar ? "▲" : "▼"}</span>
+        <span style={{ color: EXPLORADOR_TOKENS.accent, display: "flex" }}><IconoChevron abierto={mostrarPlanificar} size={16} /></span>
       </button>
       {mostrarPlanificar && <PlanificarPanel pase={pase} />}
     </div>
@@ -1011,9 +1074,16 @@ function TerminosGate({ pase, onAceptar }) {
   );
 }
 
+const GRUPO_ICONOS = {
+  bajar_peso: IconoBajarPeso, energia_foco: IconoEnergia,
+  rendimiento_fisico: IconoRendimiento, sentirme_mejor: IconoBienestar,
+};
+
 function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategory, grupoElegido }) {
   const [grupoAbierto, setGrupoAbierto] = useState(grupoElegido ? grupoElegido.val : null);
   const buscando = query.trim() !== "";
+
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
 
   // Buscando, la agrupación estorba — se muestra plano, como espera cualquier buscador.
   if (buscando) {
@@ -1036,23 +1106,32 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
   return (
     <div className="fade-in">
       <BarraBusqueda query={query} setQuery={setQuery} />
-      <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {GRUPOS_OBJETIVO.map((g) => {
           const catsDelGrupo = g.objetivos.map((o) => catsPorNombre[o]).filter(Boolean);
           if (catsDelGrupo.length === 0) return null;
           const abierto = grupoAbierto === g.val;
+          const IconoGrupo = GRUPO_ICONOS[g.val] || IconoEnergia;
           return (
-            <div key={g.val} style={{ border: `1px solid ${TOKENS.border}`, borderRadius: 10, background: TOKENS.surface, overflow: "hidden" }}>
-              <button onClick={() => setGrupoAbierto(abierto ? null : g.val)} style={{
-                width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12,
-                padding: "16px 18px", background: "none", border: "none", cursor: "pointer",
+            <div key={g.val} style={{
+              border: `1px solid rgba(197,160,89,0.35)`, borderRadius: 18, background: EXPLORADOR_TOKENS.capsuleBg,
+              overflow: "hidden", boxShadow: "0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}>
+              <button onClick={() => { setGrupoAbierto(abierto ? null : g.val); vibrar(); }} className="glass-press" style={{
+                width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 16px", background: "none", border: "none", cursor: "pointer",
               }}>
-                <span style={{ fontSize: 20 }}>{g.icon}</span>
-                <span style={{ flex: 1, fontFamily: "'Libre Franklin', sans-serif", fontSize: 16, fontWeight: 700, color: TOKENS.ink, letterSpacing: "-0.01em" }}>{g.label}</span>
-                <span style={{ color: TOKENS.inkDim, fontSize: 13 }}>{abierto ? "▲" : "▼"}</span>
+                <span style={{
+                  width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                  background: `radial-gradient(circle at 30% 30%, rgba(197,160,89,0.35), rgba(197,160,89,0.08))`,
+                  border: `1px solid rgba(197,160,89,0.4)`, display: "flex", alignItems: "center", justifyContent: "center",
+                  color: EXPLORADOR_TOKENS.accent,
+                }}><IconoGrupo size={19} /></span>
+                <span style={{ flex: 1, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14.5, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary, letterSpacing: "-0.01em" }}>{g.label}</span>
+                <span style={{ color: EXPLORADOR_TOKENS.accent, opacity: 0.85, display: "flex" }}><IconoChevron abierto={abierto} size={16} /></span>
               </button>
               {abierto && (
-                <div style={{ padding: "0 12px 12px", display: "grid", gap: 8 }} className="fade-in">
+                <div style={{ padding: "0 12px 14px", display: "grid", gap: 8 }} className="fade-in">
                   {catsDelGrupo.map((cat) => (
                     <TarjetaCategoria key={cat.name} cat={cat} onClick={() => onSelectCategory(cat.name)} compacta />
                   ))}
@@ -1062,7 +1141,7 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
           );
         })}
         {sinGrupo.length > 0 && (
-          <div style={{ marginTop: 6 }}>
+          <div style={{ marginTop: 6, display: "grid", gap: 10 }}>
             {sinGrupo.map((cat) => (
               <TarjetaCategoria key={cat.name} cat={cat} onClick={() => onSelectCategory(cat.name)} />
             ))}
@@ -1075,24 +1154,42 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
 
 function BarraBusqueda({ query, setQuery }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: "10px 14px" }}>
+    <div style={{
+      display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
+      background: EXPLORADOR_TOKENS.cardBg, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+      backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+      borderRadius: 16, padding: "12px 16px", boxShadow: EXPLORADOR_TOKENS.cardShadow,
+    }}>
+      <span style={{ color: EXPLORADOR_TOKENS.textSecondary, display: "flex", flexShrink: 0 }}><IconoBuscar size={17} /></span>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar un alimento o combinación..."
-        style={{ background: "transparent", border: "none", outline: "none", color: TOKENS.ink, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, width: "100%" }}
+        style={{ background: "transparent", border: "none", outline: "none", color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, width: "100%" }}
       />
     </div>
   );
 }
 
 function TarjetaCategoria({ cat, onClick, compacta }) {
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
   return (
-    <button onClick={onClick}
-      style={{ textAlign: "left", width: "100%", display: "flex", alignItems: "center", gap: 14, background: compacta ? TOKENS.bg : TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: compacta ? "12px 16px" : "16px 20px", cursor: "pointer" }}>
-      <CategoryIcon name={cat.name} />
+    <button onClick={onClick} onPointerDown={vibrar} className="glass-press"
+      style={{
+        textAlign: "left", width: "100%", display: "flex", alignItems: "center", gap: 14,
+        background: EXPLORADOR_TOKENS.cardBg, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+        backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+        borderRadius: 14, padding: compacta ? "12px 16px" : "16px 20px", cursor: "pointer",
+        boxShadow: EXPLORADOR_TOKENS.cardShadow,
+      }}>
+      <span style={{
+        width: 36, height: 36, borderRadius: 10,
+        background: `radial-gradient(circle at 30% 30%, rgba(197,160,89,0.3), rgba(197,160,89,0.08))`,
+        border: `1px solid rgba(197,160,89,0.35)`,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0,
+      }}>{CATEGORY_ICONS[cat.name] || "•"}</span>
       <span style={{ flex: 1 }}>
-        <span style={{ display: "block", fontFamily: "'Libre Franklin', sans-serif", fontSize: compacta ? 14.5 : 17, fontWeight: 700, color: TOKENS.ink, letterSpacing: "-0.01em" }}>{cat.name}</span>
+        <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: compacta ? 14 : 16, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary, letterSpacing: "-0.01em" }}>{cat.name}</span>
       </span>
     </button>
   );
@@ -1472,13 +1569,16 @@ function App() {
         )}
 
         {view.screen === "categories" && (
-          <React.Fragment>
+          <div style={{
+            background: EXPLORADOR_TOKENS.bg, borderRadius: 20, padding: "18px 14px 20px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          }}>
             <TableroAccesos
               onCargarComida={() => setView({ screen: "log" })}
               onRegistrarBienestar={() => setView({ screen: "bienestar" })}
               pase={usuario.pase}
             />
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase" }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase", fontWeight: 600 }}>
               Explora y descubre
             </p>
             <ExploradorScreen
@@ -1489,7 +1589,7 @@ function App() {
               onSelectCategory={(name) => setView({ screen: "category", name })}
               grupoElegido={grupoElegido}
             />
-          </React.Fragment>
+          </div>
         )}
 
         {view.screen === "log" && (
