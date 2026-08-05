@@ -627,7 +627,7 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, pase }) {
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase", fontWeight: 600 }}>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 12, textTransform: "uppercase", fontWeight: 700 }}>
         Tu registro de hoy
       </p>
       <div style={{ display: "flex", gap: 10 }}>
@@ -1276,13 +1276,16 @@ const GRUPOS_OBJETIVO = [
   },
 ];
 
+const IconoHackeo = (p) => <IconoGlass {...p}><path d="M17 3 21 7 17 11" /><path d="M3 7h18" /><path d="M7 21 3 17 7 13" /><path d="M21 17H3" /></IconoGlass>;
+
 function OnboardingProgreso({ paso }) {
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 24 }}>
       {[1, 2, 3].map((n) => (
         <div key={n} style={{
           height: 4, flex: 1, borderRadius: 999,
-          background: n <= paso ? TOKENS.primary : TOKENS.border,
+          background: n <= paso ? EXPLORADOR_TOKENS.accent : "rgba(255,255,255,0.15)",
+          boxShadow: n <= paso ? "0 0 8px rgba(197,160,89,0.5)" : "none",
         }} />
       ))}
     </div>
@@ -1292,19 +1295,25 @@ function OnboardingProgreso({ paso }) {
 function OnboardingEyebrow({ children }) {
   return (
     <p style={{
-      fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary,
-      letterSpacing: "0.08em", marginBottom: 10, marginTop: 0, textTransform: "uppercase",
+      fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent,
+      letterSpacing: "0.08em", marginBottom: 10, marginTop: 0, textTransform: "uppercase", fontWeight: 700,
     }}>{children}</p>
   );
 }
 
 function OnboardingBotonPrimario({ children, onClick, disabled }) {
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
   return (
-    <button onClick={onClick} disabled={disabled} style={{
-      width: "100%", border: "none", borderRadius: 8, padding: "13px", fontWeight: 600, fontSize: 14,
-      color: "#FFFFFF", cursor: disabled ? "not-allowed" : "pointer", marginBottom: 10,
-      background: disabled ? TOKENS.borderStrong : TOKENS.primary,
-      fontFamily: "'IBM Plex Sans', sans-serif",
+    <button onClick={() => { if (!disabled) { vibrar(); onClick(); } }} disabled={disabled} className={disabled ? "" : "glass-press"} style={{
+      width: "100%", borderRadius: 18, padding: "14px", fontWeight: 800, fontSize: 14,
+      color: disabled ? "rgba(242,239,233,0.4)" : "#2A1D08", cursor: disabled ? "not-allowed" : "pointer", marginBottom: 10,
+      background: disabled ? "rgba(255,255,255,0.08)" : `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+      borderTop: disabled ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(255,255,255,0.6)",
+      borderLeft: disabled ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(255,255,255,0.35)",
+      borderRight: disabled ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(120,85,20,0.5)",
+      borderBottom: disabled ? "1px solid rgba(255,255,255,0.1)" : "2.5px solid rgba(90,60,10,0.6)",
+      boxShadow: disabled ? "none" : "0 10px 22px -6px rgba(0,0,0,0.6)",
+      fontFamily: EXPLORADOR_TOKENS.font, textTransform: "uppercase", letterSpacing: "0.02em",
     }}>{children}</button>
   );
 }
@@ -1312,8 +1321,8 @@ function OnboardingBotonPrimario({ children, onClick, disabled }) {
 function OnboardingBotonFantasma({ children, onClick }) {
   return (
     <button onClick={onClick} style={{
-      width: "100%", background: "none", border: "none", color: TOKENS.inkDim,
-      fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, cursor: "pointer", padding: "6px", textAlign: "center",
+      width: "100%", background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary,
+      fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, cursor: "pointer", padding: "6px", textAlign: "center",
     }}>{children}</button>
   );
 }
@@ -1372,27 +1381,30 @@ function OnboardingFlow({ pase, onCompletar }) {
   }
 
   const cardStyle = {
-    maxWidth: 440, width: "100%", background: TOKENS.surface,
-    border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 28,
+    position: "relative", zIndex: 1, maxWidth: 440, width: "100%",
+    background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+    backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+    borderRadius: 26, padding: 28, boxShadow: EXPLORADOR_TOKENS.cardShadow,
   };
   const wrapStyle = {
-    minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-    padding: 24, background: TOKENS.bg,
+    position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex",
+    alignItems: "center", justifyContent: "center", padding: 24, background: EXPLORADOR_TOKENS.bg,
   };
   const h1Style = {
-    fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 22,
-    color: TOKENS.ink, marginBottom: 10, letterSpacing: "-0.02em",
+    fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22,
+    color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 10, letterSpacing: "-0.01em",
   };
-  const pStyle = { color: TOKENS.inkDim, fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 };
+  const pStyle = { color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 };
   const inputStyle = {
-    width: "100%", padding: "12px 14px", borderRadius: 8, marginBottom: 18,
-    border: `1.5px solid ${TOKENS.border}`, fontFamily: "'IBM Plex Sans', sans-serif",
-    fontSize: 14, color: TOKENS.ink, outline: "none",
+    width: "100%", padding: "13px 14px", borderRadius: 16, marginBottom: 18,
+    border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, background: "rgba(255,255,255,0.06)",
+    fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, color: EXPLORADOR_TOKENS.textPrimary, outline: "none",
   };
 
   if (paso === 1) {
     return (
       <div style={wrapStyle} className="fade-in">
+        <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
           <OnboardingProgreso paso={1} />
           <OnboardingEyebrow>Reseteo Propio · Paso 1 de 3</OnboardingEyebrow>
@@ -1414,26 +1426,40 @@ function OnboardingFlow({ pase, onCompletar }) {
   if (paso === 2) {
     return (
       <div style={wrapStyle} className="fade-in">
+        <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
           <OnboardingProgreso paso={2} />
           <OnboardingEyebrow>Reseteo Propio · Paso 2 de 3</OnboardingEyebrow>
           <h1 style={h1Style}>¿Qué objetivo le das a Reseteo Propio?</h1>
           <p style={pStyle}>No hay respuesta incorrecta. Con esto ordenamos lo que ves primero — podés cambiarlo cuando quieras.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
-            {GRUPOS_OBJETIVO.map((op) => (
-              <button key={op.val} onClick={() => setObjetivoGrupo(op.val)} style={{
-                padding: "14px 14px", borderRadius: 8, cursor: "pointer", textAlign: "left",
-                border: `1.5px solid ${objetivoGrupo === op.val ? TOKENS.primary : TOKENS.border}`,
-                background: objetivoGrupo === op.val ? TOKENS.primarySoft : TOKENS.surface,
-                display: "flex", alignItems: "flex-start", gap: 12,
-              }}>
-                <span style={{ fontSize: 20, lineHeight: 1.3 }}>{op.icon}</span>
-                <span>
-                  <span style={{ display: "block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13.5, fontWeight: 600, color: TOKENS.ink }}>{op.label}</span>
-                  <span style={{ display: "block", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: TOKENS.inkDim, marginTop: 2, lineHeight: 1.4 }}>{op.detalle}</span>
-                </span>
-              </button>
-            ))}
+            {GRUPOS_OBJETIVO.map((op) => {
+              const seleccionado = objetivoGrupo === op.val;
+              const IconoOp = GRUPO_ICONOS[op.val] || IconoEnergia;
+              return (
+                <button key={op.val} onClick={() => setObjetivoGrupo(op.val)} className="glass-press" style={{
+                  padding: "14px 14px", borderRadius: 18, cursor: "pointer", textAlign: "left",
+                  border: `1.5px solid ${seleccionado ? EXPLORADOR_TOKENS.accent : "rgba(255,255,255,0.15)"}`,
+                  background: seleccionado ? "rgba(197,160,89,0.14)" : "rgba(255,255,255,0.05)",
+                  boxShadow: seleccionado ? "0 0 0 1px rgba(197,160,89,0.4), 0 8px 18px rgba(0,0,0,0.35)" : "none",
+                  display: "flex", alignItems: "flex-start", gap: 12,
+                }}>
+                  <span style={{
+                    width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
+                    background: seleccionado
+                      ? `radial-gradient(circle at 32% 28%, rgba(255,240,210,0.9), rgba(197,160,89,0.55) 35%, rgba(197,160,89,0.12) 75%)`
+                      : "rgba(255,255,255,0.08)",
+                    border: `1.5px solid ${seleccionado ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.18)"}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: seleccionado ? "#3A2A0F" : EXPLORADOR_TOKENS.textSecondary,
+                  }}><IconoOp size={18} /></span>
+                  <span>
+                    <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>{op.label}</span>
+                    <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, marginTop: 2, lineHeight: 1.4 }}>{op.detalle}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
           <OnboardingBotonPrimario onClick={guardarObjetivoYAvanzar} disabled={!objetivoGrupo}>Continuar</OnboardingBotonPrimario>
           <OnboardingBotonFantasma onClick={() => setPaso(3)}>Prefiero verlo yo mismo, todavía no sé</OnboardingBotonFantasma>
@@ -1445,14 +1471,24 @@ function OnboardingFlow({ pase, onCompletar }) {
   if (paso === 3) {
     return (
       <div style={wrapStyle} className="fade-in">
+        <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
           <OnboardingProgreso paso={3} />
           <OnboardingEyebrow>Reseteo Propio · Paso 3 de 3</OnboardingEyebrow>
           <h1 style={h1Style}>Así funciona un "hackeo"</h1>
           <p style={pStyle}>No te vamos a decir qué no comer. Te mostramos cómo mejorar lo que ya elegiste.</p>
-          <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 14, marginBottom: 22, display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 20 }}>🍚</span>
-            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: TOKENS.ink }}>
+          <div style={{
+            background: "rgba(197,160,89,0.10)", border: `1px solid rgba(197,160,89,0.3)`,
+            borderRadius: 18, padding: 16, marginBottom: 22, display: "flex", gap: 12, alignItems: "flex-start",
+          }}>
+            <span style={{
+              width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+              background: `radial-gradient(circle at 32% 28%, rgba(255,240,210,0.9), rgba(197,160,89,0.55) 35%, rgba(197,160,89,0.12) 75%)`,
+              borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+              borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+              display: "flex", alignItems: "center", justifyContent: "center", color: "#3A2A0F",
+            }}><IconoHackeo size={18} /></span>
+            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, lineHeight: 1.55, color: EXPLORADOR_TOKENS.textPrimary }}>
               Registrás <b>"arroz con pollo"</b> → te contamos que si comés el arroz que sobra frío al otro día (por ejemplo en una ensalada), tu cuerpo lo procesa distinto y le hace mejor a tu flora intestinal. Mismo arroz, mejor resultado.
             </p>
           </div>
@@ -1634,7 +1670,7 @@ function App() {
               onRegistrarBienestar={() => setView({ screen: "bienestar" })}
               pase={usuario.pase}
             />
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase", fontWeight: 600 }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 12, textTransform: "uppercase", fontWeight: 700 }}>
               Explora y descubre
             </p>
             <ExploradorScreen
@@ -1717,14 +1753,14 @@ function App() {
           );
         })()}
 
-        <footer style={{ marginTop: 40, paddingTop: 16, borderTop: `1px solid ${TOKENS.border}`, textAlign: "center" }}>
-          <a href="privacidad.html" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, textDecoration: "none" }}>
+        <footer style={{ marginTop: 40, paddingTop: 16, borderTop: `1px solid ${enExplorador ? "rgba(255,255,255,0.18)" : TOKENS.border}`, textAlign: "center" }}>
+          <a href="privacidad.html" style={{ fontFamily: enExplorador ? EXPLORADOR_TOKENS.font : "'IBM Plex Mono', monospace", fontSize: 11, color: enExplorador ? EXPLORADOR_TOKENS.textSecondary : TOKENS.inkDim, textDecoration: "none" }}>
             Política de privacidad
           </a>
-          <span style={{ margin: "0 8px", color: TOKENS.border }}>·</span>
+          <span style={{ margin: "0 8px", color: enExplorador ? "rgba(255,255,255,0.25)" : TOKENS.border }}>·</span>
           <button
             onClick={() => { lsRemove("reseteo_usuario"); lsRemove("reseteo_terminos_v1"); setUsuario(null); }}
-            style={{ background: "none", border: "none", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, cursor: "pointer", padding: 0 }}
+            style={{ background: "none", border: "none", fontFamily: enExplorador ? EXPLORADOR_TOKENS.font : "'IBM Plex Mono', monospace", fontSize: 11, color: enExplorador ? EXPLORADOR_TOKENS.textSecondary : TOKENS.inkDim, cursor: "pointer", padding: 0 }}
           >
             Cerrar sesión ({usuario.email})
           </button>
