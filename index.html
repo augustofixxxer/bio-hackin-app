@@ -167,34 +167,44 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
   }
 
   return (
-    <div style={{ background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
-      <p style={{ color: TOKENS.ink, fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{b.combinacion}</p>
-      <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6, marginBottom: (b.solucion || b.invitacionPremium) ? 12 : 0 }}>{b.resultado}</p>
+    <div style={{
+      background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+      backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+      borderRadius: 20, padding: 18, boxShadow: EXPLORADOR_TOKENS.cardShadow,
+    }}>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{b.combinacion}</p>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 13, lineHeight: 1.6, marginBottom: (b.solucion || b.invitacionPremium) ? 12 : 0 }}>{b.resultado}</p>
 
       {!confirmado && (
-        <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
-          <p style={{ fontSize: 12.5, color: TOKENS.ink, lineHeight: 1.55, marginBottom: 10 }}>
+        <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12 }}>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.55, marginBottom: 10 }}>
             ⚠️ Este patrón tiene nivel de riesgo <b>{b.nivelRiesgo}</b>: implica más variabilidad individual, o mayor cuidado si aplica en tu caso.
             {tieneCondicionMedica && " Marcaste que tenés una condición médica preexistente — consultá con tu profesional antes de aplicar cualquier sugerencia."}
           </p>
-          <button onClick={confirmarRiesgo} disabled={enviando}
-            style={{ width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "10px", color: "#FFFFFF", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+          <button onClick={confirmarRiesgo} disabled={enviando} className={enviando ? "" : "glass-press"} style={{
+            width: "100%", padding: "11px", borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: enviando ? "default" : "pointer",
+            fontFamily: EXPLORADOR_TOKENS.font, color: "#2A1D08",
+            background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+            borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+            borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+            boxShadow: "0 6px 14px -3px rgba(0,0,0,0.55)",
+          }}>
             {enviando ? "..." : "Entiendo, ver la sugerencia"}
           </button>
         </div>
       )}
 
       {confirmado && b.solucion && (
-        <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12 }}>
-          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: TOKENS.primary, marginBottom: 4, letterSpacing: "0.05em", textTransform: "uppercase" }}>Solución</p>
-          <p style={{ color: TOKENS.ink, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
+        <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12 }}>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10, color: EXPLORADOR_TOKENS.accent, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>Solución</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
         </div>
       )}
 
       {confirmado && !b.solucion && b.invitacionPremium && (
-        <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 12, marginTop: 4 }}>
-          <div style={{ background: TOKENS.primarySoft, borderRadius: 8, padding: "12px 14px" }}>
-            <p style={{ color: TOKENS.ink, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
+        <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12, marginTop: 4 }}>
+          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px" }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
               💡 {b.invitacionPremium}
             </p>
           </div>
@@ -244,10 +254,10 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
     const sugerencias = resultado.sugerencias || [];
     return (
       <div className="fade-in">
-        <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
           ← Categorías
         </button>
-        <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 21, color: TOKENS.ink, marginBottom: 16, letterSpacing: "-0.01em" }}>
+        <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 21, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 16, letterSpacing: "-0.01em" }}>
           {bloqueos.length > 0
             ? "Esto vale la pena mirarlo"
             : resueltos.length > 0
@@ -255,15 +265,18 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
             : "Bien ahí, sin nada para ajustar"}
         </h2>
         {bloqueos.length === 0 && resueltos.length === 0 && sugerencias.length === 0 && (
-          <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.6 }}>No encontramos nada que valga la pena señalarte en lo que registraste. Igual quedó guardado en tu historial.</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 14, lineHeight: 1.6 }}>No encontramos nada que valga la pena señalarte en lo que registraste. Igual quedó guardado en tu historial.</p>
         )}
         {resueltos.length > 0 && (
           <div style={{ display: "grid", gap: 12, marginBottom: bloqueos.length ? 16 : 0 }}>
             {resueltos.map((r, i) => (
-              <div key={"resuelto-" + i} style={{ background: TOKENS.alto + "0D", border: `1px solid ${TOKENS.alto}55`, borderRadius: 8, padding: 18 }}>
-                <p style={{ color: TOKENS.alto, fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 6 }}>✓ Hackeo ya aplicado</p>
-                <p style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{r.combinacion}</p>
-                <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6 }}>{r.mensaje}</p>
+              <div key={"resuelto-" + i} style={{
+                background: "rgba(143,168,155,0.12)", border: `1px solid rgba(143,168,155,0.4)`,
+                borderRadius: 18, padding: 18, boxShadow: EXPLORADOR_TOKENS.cardShadow,
+              }}>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.menta, fontSize: 11, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>✓ Hackeo ya aplicado</p>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{r.combinacion}</p>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 13, lineHeight: 1.6 }}>{r.mensaje}</p>
               </div>
             ))}
           </div>
@@ -276,10 +289,14 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
         {sugerencias.length > 0 && (
           <div style={{ display: "grid", gap: 12, marginTop: bloqueos.length ? 16 : 0 }}>
             {sugerencias.map((s, i) => (
-              <div key={"sugerencia-" + i} style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 18 }}>
-                <p style={{ color: TOKENS.primary, fontSize: 12, fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", marginBottom: 6 }}>💡 Tip relacionado</p>
-                <p style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{s.nombre}</p>
-                <p style={{ color: TOKENS.inkDim, fontSize: 13, lineHeight: 1.6 }}>{s.mecanismo}</p>
+              <div key={"sugerencia-" + i} style={{
+                background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+                backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+                borderRadius: 18, padding: 18, boxShadow: EXPLORADOR_TOKENS.cardShadow,
+              }}>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.accent, fontSize: 11, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>💡 Tip relacionado</p>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, fontWeight: 700, marginBottom: 6 }}>{s.nombre}</p>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 13, lineHeight: 1.6 }}>{s.mecanismo}</p>
               </div>
             ))}
           </div>
@@ -292,8 +309,15 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
             componente independiente y reutilizable — solo falta decidir, con la Especificación
             Funcional de Arquitectura, si se renderiza inline acá o se navega a él. No implementado
             todavía por instrucción explícita del Sprint. */}
-        <button onClick={() => { setResultado(null); setTexto(""); setMomento(""); }}
-          style={{ marginTop: 20, width: "100%", background: TOKENS.primary, border: "none", borderRadius: 8, padding: "13px", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+        <button onClick={() => { setResultado(null); setTexto(""); setMomento(""); }} className="glass-press" style={{
+          marginTop: 20, width: "100%", padding: "15px", borderRadius: 18, cursor: "pointer",
+          fontWeight: 800, fontSize: 14, fontFamily: EXPLORADOR_TOKENS.font, textTransform: "uppercase", letterSpacing: "0.03em",
+          color: "#2A1D08",
+          background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+          borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+          borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2.5px solid rgba(90,60,10,0.6)",
+          boxShadow: "0 10px 22px -6px rgba(0,0,0,0.6)",
+        }}>
           Registrar otra comida
         </button>
       </div>
@@ -302,13 +326,13 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
 
   return (
     <div className="fade-in">
-      <button onClick={onBack} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
         ← Categorías
       </button>
-      <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 23, color: TOKENS.ink, marginBottom: 8, letterSpacing: "-0.01em" }}>
+      <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 23, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 8, letterSpacing: "-0.01em" }}>
         Cargar comida
       </h2>
-      <p style={{ color: TOKENS.inkDim, fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "rgba(242,239,233,0.85)", fontSize: 13.5, marginBottom: 20, lineHeight: 1.5 }}>
         Contanos qué comiste, en tus palabras. Buscamos combinaciones conocidas automáticamente.
       </p>
       <textarea
@@ -316,22 +340,39 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
         onChange={(e) => setTexto(e.target.value)}
         placeholder="Ej: fideos con salsa de carne y queso rallado"
         rows={4}
-        style={{ width: "100%", background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 14, color: TOKENS.ink, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, marginBottom: 14, resize: "vertical" }}
+        style={{
+          width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+          borderRadius: 16, padding: 14, color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font,
+          fontSize: 14, marginBottom: 14, resize: "vertical", outline: "none",
+        }}
       />
       <select
         value={momento}
         onChange={(e) => setMomento(e.target.value)}
-        style={{ width: "100%", background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 12, color: TOKENS.ink, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 14, marginBottom: 16 }}
+        style={{
+          width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+          borderRadius: 16, padding: 12, color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font,
+          fontSize: 14, marginBottom: 16, outline: "none",
+        }}
       >
-        <option value="">Momento del día (opcional)</option>
-        <option value="Desayuno">Desayuno</option>
-        <option value="Almuerzo">Almuerzo</option>
-        <option value="Cena">Cena</option>
-        <option value="Snack">Snack</option>
+        <option value="" style={{ color: "#101826" }}>Momento del día (opcional)</option>
+        <option value="Desayuno" style={{ color: "#101826" }}>Desayuno</option>
+        <option value="Almuerzo" style={{ color: "#101826" }}>Almuerzo</option>
+        <option value="Cena" style={{ color: "#101826" }}>Cena</option>
+        <option value="Snack" style={{ color: "#101826" }}>Snack</option>
       </select>
-      {error && <p style={{ color: "#B3453D", fontSize: 13, marginBottom: 12 }}>{error}</p>}
-      <button onClick={enviar} disabled={enviando || !texto.trim()}
-        style={{ width: "100%", background: enviando || !texto.trim() ? TOKENS.borderStrong : TOKENS.primary, border: "none", borderRadius: 8, padding: "13px", color: "#FFFFFF", fontWeight: 600, fontSize: 14, cursor: enviando ? "default" : "pointer" }}>
+      {error && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "#F0958A", fontSize: 13, marginBottom: 12 }}>{error}</p>}
+      <button onClick={enviar} disabled={enviando || !texto.trim()} className={enviando || !texto.trim() ? "" : "glass-press"} style={{
+        width: "100%", padding: "15px", borderRadius: 18, cursor: enviando ? "default" : "pointer",
+        fontWeight: 800, fontSize: 14, fontFamily: EXPLORADOR_TOKENS.font, textTransform: "uppercase", letterSpacing: "0.03em",
+        color: enviando || !texto.trim() ? "rgba(242,239,233,0.45)" : "#2A1D08",
+        background: enviando || !texto.trim() ? "rgba(255,255,255,0.08)" : `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+        borderTop: enviando || !texto.trim() ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(255,255,255,0.6)",
+        borderLeft: enviando || !texto.trim() ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(255,255,255,0.35)",
+        borderRight: enviando || !texto.trim() ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(120,85,20,0.5)",
+        borderBottom: enviando || !texto.trim() ? "1px solid rgba(255,255,255,0.1)" : "2.5px solid rgba(90,60,10,0.6)",
+        boxShadow: enviando || !texto.trim() ? "none" : "0 10px 22px -6px rgba(0,0,0,0.6)",
+      }}>
         {enviando ? "Buscando bloqueos..." : "Registrar comida"}
       </button>
     </div>
@@ -1237,55 +1278,74 @@ function TerminosGate({ pase, onAceptar }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: TOKENS.bg }}>
-      <div style={{ maxWidth: 440, width: "100%" }}>
-        <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 22, color: TOKENS.ink, marginBottom: 12, letterSpacing: "-0.02em" }}>
+    <div style={{
+      position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex",
+      alignItems: "center", justifyContent: "center", padding: 24, background: EXPLORADOR_TOKENS.bg,
+    }}>
+      <HojasDecorativas zIndex={0} />
+      <div style={{
+        position: "relative", zIndex: 1, maxWidth: 440, width: "100%",
+        background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+        backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+        borderRadius: 26, padding: 28, boxShadow: EXPLORADOR_TOKENS.cardShadow,
+      }}>
+        <h1 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 12, letterSpacing: "-0.01em" }}>
           Antes de arrancar
         </h1>
-        <p style={{ color: TOKENS.inkDim, fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
-          Reseteo Propio es una herramienta de auto-observación de patrones alimentarios. <b>No diagnostica ni trata condiciones médicas</b>, y no reemplaza la consulta con un profesional de la salud.
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "rgba(242,239,233,0.85)", fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
+          Reseteo Propio es una herramienta de auto-observación de patrones alimentarios. <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>No diagnostica ni trata condiciones médicas</b>, y no reemplaza la consulta con un profesional de la salud.
         </p>
 
         <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 18, cursor: "pointer" }}>
-          <input type="checkbox" checked={checkTerminos} onChange={(e) => setCheckTerminos(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
-          <span style={{ fontSize: 13.5, color: TOKENS.ink, lineHeight: 1.5 }}>
-            Leí y acepto los <a href="/privacidad.html" target="_blank" style={{ color: TOKENS.primary }}>Términos y la Política de Privacidad</a>. Entiendo que las sugerencias de la app son informativas, no médicas.
+          <input type="checkbox" checked={checkTerminos} onChange={(e) => setCheckTerminos(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0, accentColor: EXPLORADOR_TOKENS.accent }} />
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.5 }}>
+            Leí y acepto los <a href="/privacidad.html" target="_blank" style={{ color: EXPLORADOR_TOKENS.accent }}>Términos y la Política de Privacidad</a>. Entiendo que las sugerencias de la app son informativas, no médicas.
           </span>
         </label>
 
-        <p style={{ fontSize: 13.5, color: TOKENS.ink, marginBottom: 10, fontWeight: 600 }}>
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 10, fontWeight: 700 }}>
           ¿Tenés algún diagnóstico médico preexistente (ej. diabetes, hipotiroidismo, patologías cardíacas, renales, etc.)?
         </p>
         <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
-          {[{ label: "No", val: false }, { label: "Sí", val: true }].map((op) => (
-            <button key={op.label} onClick={() => setCondicionMedica(op.val)}
-              style={{
-                flex: 1, padding: "12px", borderRadius: 8, cursor: "pointer",
-                border: `1.5px solid ${condicionMedica === op.val ? TOKENS.primary : TOKENS.border}`,
-                background: condicionMedica === op.val ? TOKENS.primarySoft : TOKENS.surface,
-                color: TOKENS.ink, fontWeight: 600, fontSize: 14,
+          {[{ label: "No", val: false }, { label: "Sí", val: true }].map((op) => {
+            const activo = condicionMedica === op.val;
+            return (
+              <button key={op.label} onClick={() => setCondicionMedica(op.val)} className="glass-press" style={{
+                flex: 1, padding: "12px", borderRadius: 16, cursor: "pointer",
+                background: activo ? "linear-gradient(180deg, rgba(143,168,155,0.55) 0%, rgba(143,168,155,0.25) 100%)" : "rgba(255,255,255,0.05)",
+                border: `1.5px solid ${activo ? EXPLORADOR_TOKENS.menta : "rgba(255,255,255,0.15)"}`,
+                boxShadow: activo ? "inset 0 1px 1px 0 rgba(255,255,255,0.4), 0 0 14px 1px rgba(143,168,155,0.55)" : "none",
+                color: activo ? "#0F1A16" : EXPLORADOR_TOKENS.textPrimary,
+                fontFamily: EXPLORADOR_TOKENS.font, fontWeight: activo ? 800 : 700, fontSize: 14,
               }}>
-              {op.label}
-            </button>
-          ))}
+                {op.label}
+              </button>
+            );
+          })}
         </div>
 
         {condicionMedica === true && (
-          <div style={{ background: TOKENS.primarySoft, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 14, marginBottom: 18 }}>
-            <p style={{ fontSize: 13, color: TOKENS.ink, lineHeight: 1.5, margin: 0 }}>
+          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: 14, marginBottom: 18 }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.5, margin: 0 }}>
               Por seguridad, te vamos a mostrar una confirmación extra cada vez que aparezca una sugerencia que amerite más cuidado en tu caso. Igual, consultá siempre con tu profesional antes de aplicar cambios.
             </p>
           </div>
         )}
 
-        {error && <p style={{ color: "#B3453D", fontSize: 13, marginBottom: 12 }}>{error}</p>}
+        {error && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "#F0958A", fontSize: 13, marginBottom: 12 }}>{error}</p>}
 
-        <button onClick={confirmar} disabled={!puedeContinuar || enviando}
-          style={{
-            width: "100%", border: "none", borderRadius: 8, padding: "13px", fontWeight: 600, fontSize: 14,
-            color: "#FFFFFF", cursor: puedeContinuar && !enviando ? "pointer" : "not-allowed",
-            background: puedeContinuar && !enviando ? TOKENS.primary : TOKENS.borderStrong,
-          }}>
+        <button onClick={confirmar} disabled={!puedeContinuar || enviando} className={puedeContinuar && !enviando ? "glass-press" : ""} style={{
+          width: "100%", borderRadius: 18, padding: "14px", fontWeight: 800, fontSize: 14, fontFamily: EXPLORADOR_TOKENS.font,
+          textTransform: "uppercase", letterSpacing: "0.03em",
+          color: puedeContinuar && !enviando ? "#2A1D08" : "rgba(242,239,233,0.4)",
+          cursor: puedeContinuar && !enviando ? "pointer" : "not-allowed",
+          background: puedeContinuar && !enviando ? `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)` : "rgba(255,255,255,0.08)",
+          borderTop: puedeContinuar && !enviando ? "1.5px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.1)",
+          borderLeft: puedeContinuar && !enviando ? "1.5px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
+          borderRight: puedeContinuar && !enviando ? "1.5px solid rgba(120,85,20,0.5)" : "1px solid rgba(255,255,255,0.1)",
+          borderBottom: puedeContinuar && !enviando ? "2.5px solid rgba(90,60,10,0.6)" : "1px solid rgba(255,255,255,0.1)",
+          boxShadow: puedeContinuar && !enviando ? "0 10px 22px -6px rgba(0,0,0,0.6)" : "none",
+        }}>
           {enviando ? "Guardando..." : "Continuar"}
         </button>
       </div>
@@ -1771,7 +1831,8 @@ function App() {
     }))
     .filter((c) => query === "" || c.entries.length > 0);
 
-  const temaOscuro = view.screen === "categories" || view.screen === "bienestar" || view.screen === "patrones";
+  const temaOscuro = view.screen === "categories" || view.screen === "bienestar" || view.screen === "patrones"
+    || view.screen === "log" || view.screen === "category" || view.screen === "entry";
 
   return (
     <div style={{ minHeight: "100vh", background: TOKENS.bg }}>
@@ -1894,18 +1955,23 @@ function App() {
           const cat = grupos[view.name] || [];
           return (
             <div className="fade-in">
-              <button onClick={() => setView({ screen: "categories" })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+              <button onClick={() => setView({ screen: "categories" })} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
                 ← Categorías
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                 <CategoryIcon name={view.name} />
-                <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 700, fontSize: 22, color: TOKENS.ink, letterSpacing: "-0.01em", margin: 0 }}>{view.name}</h2>
+                <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22, color: EXPLORADOR_TOKENS.textPrimary, letterSpacing: "-0.01em", margin: 0 }}>{view.name}</h2>
               </div>
               <div style={{ display: "grid", gap: 10 }}>
                 {cat.map((entry) => (
-                  <button key={entry.id} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })}
-                    style={{ textAlign: "left", width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: TOKENS.surface, border: `1px solid ${TOKENS.border}`, borderRadius: 8, padding: 16, cursor: "pointer" }}>
-                    <span style={{ color: TOKENS.ink, fontSize: 14 }}>{entry.combinacion}</span>
+                  <button key={entry.id} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })} className="glass-press"
+                    style={{
+                      textAlign: "left", width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+                      background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+                      backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+                      borderRadius: 18, padding: 16, cursor: "pointer", boxShadow: EXPLORADOR_TOKENS.cardShadow,
+                    }}>
+                    <span style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, fontWeight: 600 }}>{entry.combinacion}</span>
                     <EvidenceStamp level={entry.evidencia} />
                   </button>
                 ))}
@@ -1921,30 +1987,30 @@ function App() {
           const esPremium = usuario.nivelAcceso === "Premium";
           return (
             <div className="fade-in">
-              <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: TOKENS.inkDim, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 13, marginBottom: 24, cursor: "pointer", padding: 0 }}>
+              <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
                 ← Volver
               </button>
-              <h2 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 25, color: TOKENS.ink, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
+              <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 25, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
                 <EvidenceStamp level={entry.evidencia} />
               </div>
               {esPremium ? (
                 <React.Fragment>
-                  <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
-                    {entry.mecanismo && <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.inkDim, marginBottom: 10 }}>{entry.mecanismo}</p>}
-                    <p style={{ color: TOKENS.inkDim, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+                  <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
+                    {entry.mecanismo && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 10, letterSpacing: "0.03em" }}>{entry.mecanismo}</p>}
+                    <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
                   </div>
                   {entry.frecuencia && (
-                    <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18, marginTop: 18 }}>
-                      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: TOKENS.primary, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>Frecuencia</p>
-                      <p style={{ color: TOKENS.ink, fontSize: 14 }}>{entry.frecuencia}</p>
+                    <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Frecuencia</p>
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14 }}>{entry.frecuencia}</p>
                     </div>
                   )}
                 </React.Fragment>
               ) : (
-                <div style={{ borderTop: `1px solid ${TOKENS.border}`, paddingTop: 18 }}>
-                  <div style={{ background: TOKENS.primarySoft, borderRadius: 8, padding: "12px 14px" }}>
-                    <p style={{ color: TOKENS.ink, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
+                <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
+                  <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px" }}>
+                    <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
                       💡 Esta herramienta sí tiene una forma concreta de aplicarse. Te mostramos el paso a paso en la sección Premium.
                     </p>
                   </div>
