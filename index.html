@@ -709,6 +709,16 @@ const IconoCorona = (p) => <IconoGlass {...p}><path d="M3 8l4 3 5-6 5 6 4-3-2 10
 
 function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones, pase }) {
   const [mostrarPlanificar, setMostrarPlanificar] = useState(false);
+  // Progreso de hoy (05/08/2026): extiende /api/patrones-observacionales (mismo endpoint,
+  // sin costo de IA) para traer comidaHoy + bienestarHoy sin crear ningún endpoint nuevo.
+  const [hoy, setHoy] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/patrones-observacionales", { headers: { Authorization: `Bearer ${pase || ""}` } })
+      .then((r) => r.json())
+      .then((d) => setHoy(d.hoy || { comidaRegistrada: false, bienestarCampos: 0 }))
+      .catch(() => setHoy({ comidaRegistrada: false, bienestarCampos: 0 }));
+  }, []);
 
   function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
 
@@ -733,10 +743,51 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 12, textTransform: "uppercase", fontWeight: 700 }}>
+      {/* Planificar antes de comer (05/08/2026, subida de jerarquía por Marketing): pasa de
+          acordeón punteado al final, a card principal arriba de todo — es la feature de
+          mayor intención de uso (el momento exacto en que el usuario está por decidir).
+          Mismo PlanificarPanel de siempre, ninguna llamada nueva a IA, solo cambia
+          posición/estilo/copy. NOTA: la especificación pedía "fondo blanco" — no lo apliqué
+          literal porque un card blanco sólido rompería contra el resto de la pantalla, que
+          ya es 100% oscura/glass. Interpreté la intención ("sólido, no punteado, borde
+          dorado 1px") con nuestra propia paleta oscura en vez del blanco literal. */}
+      <button onClick={() => { vibrar(); setMostrarPlanificar((v) => !v); }} className="glass-press" style={{
+        width: "100%", marginBottom: 20, textAlign: "left", cursor: "pointer",
+        background: "linear-gradient(180deg, #263E35 0%, #1A2B22 100%)",
+        border: `1px solid ${EXPLORADOR_TOKENS.accent}`,
+        borderRadius: 22, padding: "18px 18px", boxShadow: "0 14px 28px -6px rgba(0,0,0,0.6)",
+      }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <span style={{ color: EXPLORADOR_TOKENS.accent, display: "flex" }}><IconoBuscar size={20} /></span>
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 16, fontWeight: 800, color: EXPLORADOR_TOKENS.textPrimary }}>¿Estás por comer?</span>
+        </span>
+        <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 14, lineHeight: 1.5 }}>
+          Escribí qué vas a comer y te digo qué observar.
+        </span>
+        <span onClick={(e) => e.stopPropagation()} style={{ display: mostrarPlanificar ? "none" : "inline-flex" }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 14,
+            fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 12.5, textTransform: "uppercase", letterSpacing: "0.02em",
+            color: "#2A1D08",
+            background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+            borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+            borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+          }}>
+            Consultar mi laboratorio
+          </span>
+        </span>
+      </button>
+      {mostrarPlanificar && <PlanificarPanel pase={pase} onVerMisPatrones={onVerMisPatrones} />}
+
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 4, textTransform: "uppercase", fontWeight: 700 }}>
         Tu registro de hoy
       </p>
-      <div style={{ display: "flex", gap: 10 }}>
+      {hoy && (
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 12 }}>
+          Hoy: Comida {hoy.comidaRegistrada ? "✓" : "–"} · Bienestar {hoy.bienestarCampos}/5
+        </p>
+      )}
+      <div style={{ display: "flex", gap: 10, marginTop: hoy ? 0 : 12 }}>
         <button onClick={() => { vibrar(); onCargarComida(); }} className="glass-press" style={tarjetaEstilo}>
           <span style={iconoBadge}><IconoComida size={26} /></span>
           <span style={tituloTarjeta}>Cargar comida</span>
@@ -748,26 +799,6 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones
           <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.4 }}>Energía, sueño, agua, actividad — lo que quieras</span>
         </button>
       </div>
-
-      {/* Planificar antes de comer (31/07/2026): plus del plan gratuito, no una pantalla propia
-          — mismo motor que Cargar comida, en modo consulta, sin guardar nada. Definido con
-          Augusto: no merece pantalla propia porque, a diferencia de registrar (hecho consumado),
-          acá el usuario todavía puede decidir distinto. PlanificarPanel (el resultado en sí)
-          sigue con su estilo claro actual — no estaba en el alcance de esta pasada de diseño. */}
-      <button onClick={() => { vibrar(); setMostrarPlanificar((v) => !v); }} className="glass-press" style={{
-        width: "100%", marginTop: 10, background: EXPLORADOR_TOKENS.cardBg,
-        border: `1.5px dashed rgba(197,160,89,0.5)`, backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
-        borderRadius: 18, padding: "13px 16px", cursor: "pointer", textAlign: "left",
-        display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 18px rgba(0,0,0,0.35)",
-      }}>
-        <span style={{ color: EXPLORADOR_TOKENS.accent, display: "flex" }}><IconoBuscar size={18} /></span>
-        <span style={{ flex: 1 }}>
-          <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, fontWeight: 700, color: EXPLORADOR_TOKENS.textPrimary }}>Planificar antes de comer</span>
-          <span style={{ display: "block", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary }}>Mirá qué te espera antes de decidir</span>
-        </span>
-        <span style={{ color: EXPLORADOR_TOKENS.accent, display: "flex" }}><IconoChevron abierto={mostrarPlanificar} size={16} /></span>
-      </button>
-      {mostrarPlanificar && <PlanificarPanel pase={pase} onVerMisPatrones={onVerMisPatrones} />}
     </div>
   );
 }
@@ -1673,8 +1704,8 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
 // definido con Augusto el 30/07/2026:
 const GRUPOS_OBJETIVO = [
   {
-    val: "bajar_peso", label: "Bajar de peso", icon: "📉",
-    detalle: "El peso rara vez es solo comida — también pesa lo hormonal.",
+    val: "bajar_peso", label: "Peso y medidas", icon: "📉",
+    detalle: "Tu evolución, sin dietas.",
     objetivos: ["perdida de peso y definición", "Balance Hormonal y Estrés"],
   },
   {
