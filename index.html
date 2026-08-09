@@ -904,15 +904,35 @@ function BienestarScreen({ onBack, pase }) {
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
+  // totalRegistros del "laboratorio" (comida+bienestar, mismo conteo que Mis Patrones) —
+  // se pide una sola vez al entrar, se actualiza localmente +1 tras cada guardado exitoso.
+  // Reutiliza /api/patrones-observacionales SOLO por su campo totalRegistros — no duplica
+  // lógica de conteo en dos lugares. 0 costo LLM (ese endpoint ya es sin IA).
+  const [totalRegistros, setTotalRegistros] = useState(null);
 
-  // Registro unificado, no obligatorio (30/07/2026): cargás lo que quieras, no las 5
-  // cosas a la fuerza — alcanza con que haya al menos un dato para poder guardar.
-  const hayAlgo = energia || digestion || sueno || hidratacion || actividadFisica;
+  useEffect(() => {
+    fetch("/api/patrones-observacionales", { headers: { Authorization: `Bearer ${pase || ""}` } })
+      .then((r) => r.json())
+      .then((d) => setTotalRegistros(typeof d.totalRegistros === "number" ? d.totalRegistros : 0))
+      .catch(() => setTotalRegistros(0));
+  }, []);
+
+  // N = campos del formulario actual con dato cargado (0 a 5) — distinto de totalRegistros
+  // (que cuenta registros guardados en otros días). Nunca exige todos los 5: alcanza con 1.
+  const campos = [energia, digestion, sueno, hidratacion, actividadFisica];
+  const n = campos.filter(Boolean).length;
+  const pctFormulario = n * 20;
+
+  function pctLaboratorio(total) {
+    return Math.min(100, Math.round(((total || 0) / 3) * 100));
+  }
 
   async function enviar() {
+    if (n === 0) return; // botón nunca se deshabilita visualmente, pero sin datos no hay nada que guardar
     setEnviando(true);
     setError(null);
     setResultado(null);
+    const prevTotal = totalRegistros || 0;
     try {
       const resp = await fetch("/api/registrar-bienestar", {
         method: "POST",
@@ -927,7 +947,9 @@ function BienestarScreen({ onBack, pase }) {
       });
       const data = await resp.json();
       if (!resp.ok || data.error) throw new Error(data.error || "Error al guardar");
-      setResultado("¡Registrado! Gracias por sumarlo.");
+      const nuevoTotal = prevTotal + 1;
+      setTotalRegistros(nuevoTotal);
+      setResultado({ n, prevPct: pctLaboratorio(prevTotal), nuevoPct: pctLaboratorio(nuevoTotal), faltan: Math.max(0, 3 - nuevoTotal) });
       setEnergia(null);
       setDigestion(null);
       setSueno(null);
@@ -946,36 +968,51 @@ function BienestarScreen({ onBack, pase }) {
         ← Categorías
       </button>
 
-      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", marginBottom: 22, lineHeight: 1.55 }}>
-        Cargá lo que quieras — no hace falta completar todo. Cuantos más datos sumes con el tiempo, más afinado va a ser lo que te devolvamos.
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", marginBottom: 14, lineHeight: 1.55 }}>
+        Cada dato afina tu laboratorio. Con 1 ya sirve. Hoy llevás {n}/5.
       </p>
 
+      {/* Barra de progreso del formulario actual (0-100%, 20% por campo cargado) */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ width: "100%", height: 8, borderRadius: 999, overflow: "hidden", background: "rgba(255,255,255,0.12)", marginBottom: 6 }}>
+          <div style={{ width: `${pctFormulario}%`, height: "100%", background: EXPLORADOR_TOKENS.menta, boxShadow: pctFormulario > 0 ? "0 0 8px rgba(143,168,155,0.5)" : "none", transition: "width 0.25s ease" }} />
+        </div>
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, letterSpacing: "0.03em", margin: 0 }}>
+          {n}/5 datos de hoy
+        </p>
+      </div>
+
       <EscalaBienestar etiqueta="Energía (1 = muy baja · 5 = muy alta)" valor={energia} onChange={setEnergia} />
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, textAlign: "center", marginTop: -10, marginBottom: 16 }}>
+        Tocá para elegir 1 a 5
+      </p>
       <EscalaBienestar etiqueta="Digestión (1 = muy mala · 5 = muy buena)" valor={digestion} onChange={setDigestion} />
       <SelectorCategoria etiqueta="Horas de sueño anoche" opciones={OPCIONES_SUENO} valor={sueno} onChange={setSueno} />
       <SelectorCategoria etiqueta="Agua que tomaste hoy (sin contar gaseosas, café, alcohol)" opciones={OPCIONES_HIDRATACION} valor={hidratacion} onChange={setHidratacion} />
       <SelectorCategoria etiqueta="Actividad física esta semana" opciones={OPCIONES_ACTIVIDAD} valor={actividadFisica} onChange={setActividadFisica} />
 
+      {/* Botón guardar (04/08/2026, fix crítico de Marketing/UX): NUNCA se deshabilita ni
+          se pone gris — eso empujaba a completar los 5 campos para "desbloquear" el botón,
+          exactamente lo contrario de lo que queremos (1 solo dato ya es útil y guardable).
+          Con 0 campos, el botón sigue dorado pero el texto invita a elegir uno; el clic no
+          dispara guardado vacío (no hay endpoint que llamar sin datos). */}
       <button
-        onClick={() => { if (hayAlgo && !enviando) { if (navigator.vibrate) navigator.vibrate(12); enviar(); } }}
-        disabled={!hayAlgo || enviando}
-        className={hayAlgo && !enviando ? "glass-press" : ""}
+        onClick={() => { if (n > 0 && !enviando) { if (navigator.vibrate) navigator.vibrate(12); enviar(); } }}
+        className={n > 0 && !enviando ? "glass-press" : ""}
         style={{
-          width: "100%", padding: "17px 0", borderRadius: 20, cursor: hayAlgo ? "pointer" : "not-allowed",
+          width: "100%", padding: "17px 0", borderRadius: 20, cursor: n > 0 ? "pointer" : "default",
           fontWeight: 800, fontSize: 16, marginTop: 10, fontFamily: EXPLORADOR_TOKENS.font,
-          textTransform: "uppercase", letterSpacing: "0.05em",
+          textTransform: "uppercase", letterSpacing: "0.04em",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          color: hayAlgo ? "#2A1D08" : "rgba(242,239,233,0.45)",
-          background: hayAlgo ? `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)` : "rgba(255,255,255,0.08)",
-          borderTop: hayAlgo ? "2px solid rgba(255,255,255,0.65)" : "1px solid rgba(255,255,255,0.12)",
-          borderLeft: hayAlgo ? "2px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.12)",
-          borderRight: hayAlgo ? "2px solid rgba(120,85,20,0.55)" : "1px solid rgba(255,255,255,0.12)",
-          borderBottom: hayAlgo ? "3px solid rgba(90,60,10,0.65)" : "1px solid rgba(255,255,255,0.12)",
-          boxShadow: hayAlgo ? "0 14px 28px -6px rgba(0,0,0,0.65)" : "none",
+          color: "#2A1D08",
+          background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+          borderTop: "2px solid rgba(255,255,255,0.65)", borderLeft: "2px solid rgba(255,255,255,0.4)",
+          borderRight: "2px solid rgba(120,85,20,0.55)", borderBottom: "3px solid rgba(90,60,10,0.65)",
+          boxShadow: "0 14px 28px -6px rgba(0,0,0,0.65)",
         }}
       >
-        {hayAlgo && <IconoGuardar size={19} />}
-        {enviando ? "Guardando..." : "Guardar registro"}
+        {n > 0 && <IconoGuardar size={19} />}
+        {enviando ? "Guardando..." : n === 0 ? "Elegí al menos 1 dato" : `Guardar registro - ${n}/5`}
       </button>
 
       {resultado && (
@@ -996,11 +1033,20 @@ function BienestarScreen({ onBack, pase }) {
             <IconoGuardar size={30} />
           </div>
           <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 18, color: EXPLORADOR_TOKENS.textPrimary, margin: "0 0 6px", letterSpacing: "-0.01em" }}>
-            ¡Registrado!
+            ¡Dato guardado! {resultado.n}/5
           </p>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: 0, lineHeight: 1.5 }}>
-            Gracias por sumarlo — cada registro te acerca a entender mejor tu propio cuerpo.
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: "0 0 16px", lineHeight: 1.5 }}>
+            Laboratorio: {resultado.prevPct}% → {resultado.nuevoPct}%.{" "}
+            {resultado.faltan > 0
+              ? `Te faltan ${resultado.faltan} para tu primer patrón.`
+              : "Ya tenés suficientes registros para ver tu primer patrón."}
           </p>
+          <button onClick={() => setResultado(null)} style={{
+            background: "none", border: "none", color: EXPLORADOR_TOKENS.menta,
+            fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0,
+          }}>
+            Seguir sumando
+          </button>
         </div>
       )}
       {error && <p style={{ color: "#F0958A", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginTop: 14 }}>{error}</p>}
