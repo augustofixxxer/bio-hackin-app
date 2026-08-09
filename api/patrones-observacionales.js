@@ -75,6 +75,28 @@ function sumarUnDia(fechaStr) {
   return d.toISOString().slice(0, 10);
 }
 
+// "Hoy" en huso horario Argentina (05/08/2026, extensión para TableroAccesos — Marketing
+// pidió explícitamente reusar este endpoint en vez de crear uno nuevo). Server de Vercel
+// corre en UTC; sin este ajuste, alguien cargando datos después de las 21hs en Tucumán ya
+// vería "mañana" del lado del servidor. Sin costo extra: son los mismos datos que ya se
+// traen abajo, solo se filtran también por fecha de hoy.
+const CAMPOS_BIENESTAR = ["energia", "digestion", "sueno", "hidratacion", "actividad_fisica"];
+
+function fechaHoyArgentina() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+}
+
+function calcularHoy(comidas, bienestares) {
+  const hoyStr = fechaHoyArgentina();
+  const comidaRegistrada = comidas.some((c) => c.fecha === hoyStr);
+  const filasHoy = bienestares.filter((b) => String(b.fecha_hora).slice(0, 10) === hoyStr);
+  let bienestarCampos = 0;
+  for (const campo of CAMPOS_BIENESTAR) {
+    if (filasHoy.some((b) => b[campo] !== null && b[campo] !== undefined)) bienestarCampos++;
+  }
+  return { comidaRegistrada, bienestarCampos };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Método no permitido, usar GET." });
@@ -100,13 +122,14 @@ export default async function handler(req, res) {
   try {
     const [comidas, bienestares] = await Promise.all([
       supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&select=fecha,comida_registrada,momento_dia`),
-      supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia`),
+      supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion,sueno,hidratacion,actividad_fisica`),
     ]);
 
     const totalRegistros = comidas.length + bienestares.length;
+    const hoy = calcularHoy(comidas, bienestares);
 
     if (totalRegistros < 3) {
-      return res.status(200).json({ estado: "A", totalRegistros, patron: null });
+      return res.status(200).json({ estado: "A", totalRegistros, patron: null, hoy });
     }
 
     // fecha (YYYY-MM-DD) -> energía promedio registrada ese día.
@@ -146,7 +169,7 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ estado: "B", totalRegistros, patron });
+    return res.status(200).json({ estado: "B", totalRegistros, patron, hoy });
   } catch (err) {
     console.error("Error en patrones-observacionales:", err);
     return res.status(500).json({ error: "Error calculando el laboratorio", detail: String(err) });
