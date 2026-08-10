@@ -1721,6 +1721,54 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
   );
 }
 
+// CardExploraV2 (Fase 1 Saneamiento P0, 10/08/2026) — reemplaza el botón único sin
+// diferenciar que había en view.screen === "category". 4 variantes por tipo_card,
+// fallback a Tipo C/Combinación si tipo_card viene null (dato aún no cargado en
+// alternativas_locales/reglas). Reusa EVIDENCE_STYLES/EvidenceStamp existentes, no
+// duplica el sistema de color de evidencia.
+const CARD_TIPO_STYLES = {
+  A: { color: EXPLORADOR_TOKENS.accent, badgeDefault: "Tradición NOA" },
+  B: { color: EXPLORADOR_TOKENS.menta, badgeDefault: "Técnica" },
+  C: { color: TOKENS.alto, badgeDefault: "Combinación" },
+  D: { color: TOKENS.especulativo, badgeDefault: "Hábito" },
+};
+
+function CardExploraV2({ entry, onClick }) {
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
+  const tipo = (entry.tipo_card && CARD_TIPO_STYLES[entry.tipo_card]) ? entry.tipo_card : "C";
+  const estilo = CARD_TIPO_STYLES[tipo];
+  const badgeTexto = entry.badge_principal || estilo.badgeDefault;
+  return (
+    <button onClick={() => { vibrar(); onClick(); }} className="glass-press"
+      style={{
+        textAlign: "left", width: "100%", display: "flex", flexDirection: "column", gap: 10,
+        background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+        backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+        borderRadius: 18, padding: 16, cursor: "pointer", boxShadow: EXPLORADOR_TOKENS.cardShadow,
+      }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          background: estilo.color + "22", border: `1px solid ${estilo.color}55`,
+          borderRadius: 999, padding: "3px 10px",
+          fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10.5, fontWeight: 700,
+          letterSpacing: "0.04em", textTransform: "uppercase", color: estilo.color,
+        }}>{badgeTexto}</span>
+        {entry.tag_frio_calor && (
+          <span style={{
+            fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10.5, color: EXPLORADOR_TOKENS.textSecondary,
+            letterSpacing: "0.03em",
+          }}>{entry.tag_frio_calor}</span>
+        )}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <span style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, fontWeight: 600, flex: 1 }}>{entry.combinacion}</span>
+        <EvidenceStamp level={entry.evidencia} />
+      </div>
+    </button>
+  );
+}
+
 // ============================================================
 // ONBOARDING — Primer Recorrido del Usuario, Etapa "Identificación" (Sprint 9 gap)
 // Integrado en el PUNTO DE INTEGRACIÓN ya marcado dentro de App() (ver más abajo).
@@ -2205,17 +2253,13 @@ function App() {
                 <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22, color: EXPLORADOR_TOKENS.textPrimary, letterSpacing: "-0.01em", margin: 0 }}>{view.name}</h2>
               </div>
               <div style={{ display: "grid", gap: 10 }}>
-                {cat.map((entry) => (
-                  <button key={entry.id} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })} className="glass-press"
-                    style={{
-                      textAlign: "left", width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
-                      background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
-                      backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
-                      borderRadius: 18, padding: 16, cursor: "pointer", boxShadow: EXPLORADOR_TOKENS.cardShadow,
-                    }}>
-                    <span style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, fontWeight: 600 }}>{entry.combinacion}</span>
-                    <EvidenceStamp level={entry.evidencia} />
-                  </button>
+                {[...cat].sort((a, b) => {
+                  const esAa = a.tipo_card === "A" ? 0 : 1;
+                  const esAb = b.tipo_card === "A" ? 0 : 1;
+                  if (esAa !== esAb) return esAa - esAb;
+                  return (a.orden_prioridad ?? Infinity) - (b.orden_prioridad ?? Infinity);
+                }).map((entry) => (
+                  <CardExploraV2 key={entry.id} entry={entry} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })} />
                 ))}
               </div>
             </div>
