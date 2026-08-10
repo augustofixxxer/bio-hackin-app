@@ -214,12 +214,15 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
   );
 }
 
-function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
+function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar }) {
   const [texto, setTexto] = useState("");
   const [momento, setMomento] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
+  // Cierre de loop Comida -> Bienestar (05/08/2026): progreso pedido al mismo endpoint
+  // extendido que ya usa TableroAccesos/Mis Patrones — sin IA, sin endpoint nuevo.
+  const [progreso, setProgreso] = useState(null);
 
   const enviar = async () => {
     if (!texto.trim()) return;
@@ -241,6 +244,11 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
         throw new Error(data.error);
       }
       setResultado(data);
+      // La comida ya quedó guardada en Supabase en el paso anterior — este fetch la cuenta.
+      fetch("/api/patrones-observacionales", { headers: { Authorization: `Bearer ${pase || ""}` } })
+        .then((r) => r.json())
+        .then((d) => setProgreso({ comidasHoy: d.hoy?.comidasHoy ?? 1, totalRegistros: d.totalRegistros ?? 0 }))
+        .catch(() => setProgreso({ comidasHoy: 1, totalRegistros: 0 }));
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -301,25 +309,53 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica }) {
             ))}
           </div>
         )}
-        {/* PUNTO DE INTEGRACIÓN — Primer Recorrido del Usuario (Sprint 9):
-            Acá, inmediatamente después de mostrar el resultado del primer registro de comida,
-            podrá insertarse la invitación opcional a registrar bienestar (energía, digestión,
-            sueño, hidratación, actividad física — actualizado 30/07/2026, ver BienestarScreen)
-            sin rehacer este flujo. BienestarScreen ya existe como
-            componente independiente y reutilizable — solo falta decidir, con la Especificación
-            Funcional de Arquitectura, si se renderiza inline acá o se navega a él. No implementado
-            todavía por instrucción explícita del Sprint. */}
-        <button onClick={() => { setResultado(null); setTexto(""); setMomento(""); }} className="glass-press" style={{
-          marginTop: 20, width: "100%", padding: "15px", borderRadius: 18, cursor: "pointer",
-          fontWeight: 800, fontSize: 14, fontFamily: EXPLORADOR_TOKENS.font, textTransform: "uppercase", letterSpacing: "0.03em",
-          color: "#2A1D08",
-          background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
-          borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
-          borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2.5px solid rgba(90,60,10,0.6)",
-          boxShadow: "0 10px 22px -6px rgba(0,0,0,0.6)",
-        }}>
-          Registrar otra comida
-        </button>
+        {/* Cierre de loop Comida -> Bienestar (05/08/2026, especificación Marketing):
+            reemplaza el botón "Registrar otra comida" — el siguiente paso natural ahora es
+            invitar a cerrar el círculo con Bienestar, no simplemente resetear el formulario.
+            NOTA sobre "faltan X": el prompt pedía "3 - totalBienestarHistorico" (solo
+            bienestar). Uso en cambio la MISMA cuenta combinada (comida+bienestar) que ya
+            gatea el Estado A/B en Mis Patrones — la propia instrucción habilitaba esto
+            ("si ya tenés lógica, usar esa"). Con la fórmula bienestar-only el número mostrado
+            acá podía no coincidir con cuándo el usuario realmente desbloquea su primer
+            patrón, mostrando una cuenta regresiva incorrecta. */}
+        {progreso && (
+          <div className="celebrar" style={{
+            marginTop: 20, padding: "22px 20px", borderRadius: 24, textAlign: "center",
+            background: "linear-gradient(180deg, rgba(197,160,89,0.18) 0%, rgba(197,160,89,0.06) 100%)",
+            ...EXPLORADOR_TOKENS.cardBevel,
+            backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+            boxShadow: EXPLORADOR_TOKENS.cardShadow,
+          }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 17, color: EXPLORADOR_TOKENS.textPrimary, margin: "0 0 8px", letterSpacing: "-0.01em" }}>
+              ¡Comida registrada! Hoy llevás {progreso.comidasHoy} {progreso.comidasHoy === 1 ? "comida" : "comidas"}
+            </p>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: "0 0 6px", lineHeight: 1.5 }}>
+              ¿Querés cerrar el círculo? Registrar cómo te sentís ahora nos da tu Patrón #1 más rápido.
+            </p>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, margin: "0 0 18px" }}>
+              {Math.max(0, 3 - progreso.totalRegistros) > 0
+                ? `Te faltan ${Math.max(0, 3 - progreso.totalRegistros)} registros para tu primer patrón.`
+                : "Ya tenés suficientes registros para tu primer patrón."}
+            </p>
+            <button onClick={() => { if (navigator.vibrate) navigator.vibrate(12); onIrABienestar && onIrABienestar(); }} className="glass-press" style={{
+              width: "100%", padding: "15px", borderRadius: 18, cursor: "pointer", marginBottom: 10,
+              fontWeight: 800, fontSize: 14, fontFamily: EXPLORADOR_TOKENS.font, textTransform: "uppercase", letterSpacing: "0.02em",
+              color: "#2A1D08",
+              background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+              borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+              borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2.5px solid rgba(90,60,10,0.6)",
+              boxShadow: "0 10px 22px -6px rgba(0,0,0,0.6)",
+            }}>
+              Sí, cómo me siento - 10 seg
+            </button>
+            <button onClick={onBack} style={{
+              background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary,
+              fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0,
+            }}>
+              Después
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -2153,7 +2189,8 @@ function App() {
 
         {view.screen === "log" && (
           <LogMealScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase}
-            tieneCondicionMedica={lsGet("reseteo_condicion_medica") === "true"} />
+            tieneCondicionMedica={lsGet("reseteo_condicion_medica") === "true"}
+            onIrABienestar={() => setView({ screen: "bienestar" })} />
         )}
 
         {view.screen === "category" && (() => {
