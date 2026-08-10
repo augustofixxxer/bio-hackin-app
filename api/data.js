@@ -39,7 +39,7 @@ export default async function handler(req, res) {
 
   try {
     const alternativas = await supabaseFetch(
-      `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia`
+      `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia,tipo_card,badge_principal,tag_frio_calor,orden_prioridad`
     );
 
     const entradas = alternativas.map((a) => {
@@ -54,6 +54,10 @@ export default async function handler(req, res) {
         nutriente: a.compuesto_activo || null,
         categorias: a.objetivo || [],
         evidencia: a.nivel_evidencia || null,
+        tipo_card: a.tipo_card || null,
+        badge_principal: a.badge_principal || null,
+        tag_frio_calor: a.tag_frio_calor || null,
+        orden_prioridad: a.orden_prioridad ?? null,
       };
     });
 
