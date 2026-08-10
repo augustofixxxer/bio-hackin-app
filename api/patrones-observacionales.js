@@ -88,13 +88,13 @@ function fechaHoyArgentina() {
 
 function calcularHoy(comidas, bienestares) {
   const hoyStr = fechaHoyArgentina();
-  const comidaRegistrada = comidas.some((c) => c.fecha === hoyStr);
+  const comidasHoy = comidas.filter((c) => c.fecha === hoyStr).length;
   const filasHoy = bienestares.filter((b) => String(b.fecha_hora).slice(0, 10) === hoyStr);
   let bienestarCampos = 0;
   for (const campo of CAMPOS_BIENESTAR) {
     if (filasHoy.some((b) => b[campo] !== null && b[campo] !== undefined)) bienestarCampos++;
   }
-  return { comidaRegistrada, bienestarCampos };
+  return { comidaRegistrada: comidasHoy > 0, comidasHoy, bienestarCampos };
 }
 
 export default async function handler(req, res) {
