@@ -1721,6 +1721,190 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
   );
 }
 
+// Pantalla de detalle de una Alternativa + los 3 CTAs de Fase 2 (10/08/2026).
+// Separada en componente propio (antes era JSX inline en App()) porque ahora necesita
+// su propio estado: la reacción guardada (para CTA1 mostrar el toggle activo y CTA3
+// leerla) y si el modal de CTA3 está abierto.
+function EntryDetalleFase2({ entry, esPremium, pase, onVolver }) {
+  const [reaccion, setReaccion] = useState(undefined); // undefined = cargando, null = no hay, {} = hay
+  const [modalAbierto, setModalAbierto] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    setReaccion(undefined);
+    fetch(`/api/registrar-reaccion?alternativaId=${entry.id}`, { headers: { Authorization: `Bearer ${pase || ""}` } })
+      .then((r) => (r.ok ? r.json() : { reaccion: null }))
+      .then((d) => { if (vivo) setReaccion(d.reaccion || null); })
+      .catch(() => { if (vivo) setReaccion(null); });
+    return () => { vivo = false; };
+  }, [entry.id, pase]);
+
+  return (
+    <div className="fade-in">
+      <button onClick={onVolver} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+        ← Volver
+      </button>
+      <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 25, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+        <EvidenceStamp level={entry.evidencia} />
+      </div>
+      {esPremium ? (
+        <React.Fragment>
+          <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
+            {entry.mecanismo && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 10, letterSpacing: "0.03em" }}>{entry.mecanismo}</p>}
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+          </div>
+          {entry.frecuencia && (
+            <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
+              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Frecuencia</p>
+              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14 }}>{entry.frecuencia}</p>
+            </div>
+          )}
+        </React.Fragment>
+      ) : (
+        <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
+          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px" }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
+              💡 Esta herramienta sí tiene una forma concreta de aplicarse. Te mostramos el paso a paso en la sección Premium.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* FASE 2 — Loop anti-migración (10/08/2026). CTA2 usa entry.combinacion (el título,
+          siempre visible) y NO entry.resultado (gateado a Premium) — postear el texto
+          gateado acá sería filtrar contenido Premium por una vía lateral para gratuitos. */}
+      <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18, display: "grid", gap: 14 }}>
+        <CTAComoTeCae entry={entry} pase={pase} reaccion={reaccion} onGuardada={setReaccion} />
+        <CTASumarDia entry={entry} pase={pase} />
+        <button onClick={() => setModalAbierto(true)} className="glass-press" style={{
+          width: "100%", borderRadius: 16, padding: "12px", fontWeight: 700, fontSize: 13,
+          fontFamily: EXPLORADOR_TOKENS.font, cursor: "pointer", color: EXPLORADOR_TOKENS.textPrimary,
+          background: "rgba(255,255,255,0.06)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+        }}>¿Y esto en mi caso?</button>
+      </div>
+
+      {modalAbierto && (
+        <ModalYEstoEnMiCaso entry={entry} pase={pase} reaccion={reaccion} cargando={reaccion === undefined}
+          onCerrar={() => setModalAbierto(false)}
+          onIrACTA1={() => setModalAbierto(false)} />
+      )}
+    </div>
+  );
+}
+
+// CTA1 "¿Cómo te cae?" (Fase 2, 10/08/2026) — 2 toggles independientes, upsert vía
+// /api/registrar-reaccion. Cada toggle guarda apenas se toca (no espera un botón
+// "Guardar" aparte, mismo espíritu de fricción mínima que el resto de Fase 2).
+function CTAComoTeCae({ entry, pase, reaccion, onGuardada }) {
+  const [guardando, setGuardando] = useState(null); // "frioCalor" | "livianoPesado" | null
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
+
+  async function marcar(campo, valor) {
+    setGuardando(campo);
+    vibrar();
+    try {
+      const body = { alternativaId: entry.id };
+      if (campo === "frioCalor") body.frioCalor = valor; else body.livianoPesado = valor;
+      const resp = await fetch("/api/registrar-reaccion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) throw new Error("No se pudo guardar");
+      const data = await resp.json();
+      onGuardada(data.reaccion);
+    } catch (e) {
+      // silencioso a propósito: no es un flujo crítico, el usuario puede reintentar tocando de nuevo.
+    } finally {
+      setGuardando(null);
+    }
+  }
+
+  function Toggle({ campo, opciones }) {
+    const valorActual = campo === "frioCalor" ? reaccion?.frio_calor : reaccion?.liviano_pesado;
+    return (
+      <div style={{ display: "flex", gap: 8 }}>
+        {opciones.map((op) => {
+          const activo = valorActual === op;
+          return (
+            <button key={op} onClick={() => marcar(campo, op)} disabled={guardando === campo} className="glass-press"
+              style={{
+                flex: 1, borderRadius: 12, padding: "9px 10px", fontFamily: EXPLORADOR_TOKENS.font,
+                fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+                color: activo ? "#2A1D08" : EXPLORADOR_TOKENS.textSecondary,
+                background: activo ? EXPLORADOR_TOKENS.accent : "rgba(255,255,255,0.06)",
+                border: `1px solid ${activo ? EXPLORADOR_TOKENS.accent : EXPLORADOR_TOKENS.cardBorder}`,
+              }}>{op}</button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>¿Cómo te cae?</p>
+      <div style={{ display: "grid", gap: 8 }}>
+        <Toggle campo="frioCalor" opciones={VALORES_FRIO_CALOR} />
+        <Toggle campo="livianoPesado" opciones={VALORES_LIVIANO_PESADO} />
+      </div>
+    </div>
+  );
+}
+const VALORES_FRIO_CALOR = ["Fresco", "Cálido"];
+const VALORES_LIVIANO_PESADO = ["Liviano", "Pesado"];
+
+// CTA3 "¿Y esto en mi caso?" (Fase 2, 10/08/2026) — modal local, cero IA, solo lee la
+// reacción propia ya guardada (GET /api/registrar-reaccion). Si no hay reacción todavía,
+// invita a usar el CTA1 en vez de mostrar un dato vacío (fallback pedido por Marketing).
+// A propósito NO inventa una correlación con el historial de bienestar todavía — mostrar
+// "te suele ir mejor" requeriría el mismo umbral de evidencia que ya aplica
+// patrones-observacionales.js (mínimo de ocurrencias + diferencia real), y hoy esta tabla
+// recién nace. Ver informe a Marketing: queda como paso 2 explícito, no fabricado ahora.
+function ModalYEstoEnMiCaso({ entry, pase, reaccion, cargando, onCerrar, onIrACTA1 }) {
+  return (
+    <div onClick={onCerrar} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 50,
+      display: "flex", alignItems: "flex-end", justifyContent: "center",
+    }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        width: "100%", maxWidth: 480, background: EXPLORADOR_TOKENS.capsuleBg,
+        borderRadius: "24px 24px 0 0", padding: "22px 20px 28px",
+        borderTop: `1.5px solid rgba(255,255,255,0.22)`,
+        boxShadow: "0 -10px 30px rgba(0,0,0,0.5)",
+      }} className="fade-in">
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 16, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 14 }}>¿Y esto en mi caso?</p>
+        {cargando ? (
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.textSecondary }}>Buscando en tu historial...</p>
+        ) : reaccion ? (
+          <React.Fragment>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.6, marginBottom: 4 }}>
+              Vos marcaste "{entry.combinacion}" como {[reaccion.frio_calor, reaccion.liviano_pesado].filter(Boolean).join(" y ")}.
+            </p>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.6 }}>
+              Todavía no tenemos suficiente historial cruzado con tu bienestar para decirte si te suele ir mejor — a medida que sigas registrando, esto se va a ir afinando.
+            </p>
+          </React.Fragment>
+        ) : (
+          <React.Fragment>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.6, marginBottom: 16 }}>
+              Todavía no tenés registro de esto. ¿Querés marcar cómo te cae?
+            </p>
+            <button onClick={onIrACTA1} className="glass-press" style={{
+              width: "100%", borderRadius: 16, padding: "12px", fontWeight: 800, fontSize: 13.5,
+              fontFamily: EXPLORADOR_TOKENS.font, cursor: "pointer", color: "#2A1D08",
+              background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+              border: "none", marginBottom: 10,
+            }}>Marcar cómo me cae</button>
+          </React.Fragment>
+        )}
+        <button onClick={onCerrar} style={{ width: "100%", background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, padding: "8px 0", cursor: "pointer", marginTop: 6 }}>Cerrar</button>
+      </div>
+    </div>
+  );
+}
+
 // CTA2 "Sumar a mi día" (Fase 2, 10/08/2026) — reusa /api/registrar-comida tal cual lo
 // usa LogMealScreen (mismo header Authorization Bearer pase). Loguea entry.combinacion,
 // no entry.resultado (ver nota en view.screen === "entry").
@@ -2316,44 +2500,8 @@ function App() {
           if (!entry) return null;
           const esPremium = usuario.nivelAcceso === "Premium";
           return (
-            <div className="fade-in">
-              <button onClick={() => setView({ screen: "category", name: view.catName })} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
-                ← Volver
-              </button>
-              <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 25, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.2, marginBottom: 14, letterSpacing: "-0.01em" }}>{entry.combinacion}</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-                <EvidenceStamp level={entry.evidencia} />
-              </div>
-              {esPremium ? (
-                <React.Fragment>
-                  <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
-                    {entry.mecanismo && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 10, letterSpacing: "0.03em" }}>{entry.mecanismo}</p>}
-                    <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
-                  </div>
-                  {entry.frecuencia && (
-                    <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
-                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Frecuencia</p>
-                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14 }}>{entry.frecuencia}</p>
-                    </div>
-                  )}
-                </React.Fragment>
-              ) : (
-                <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
-                  <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px" }}>
-                    <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
-                      💡 Esta herramienta sí tiene una forma concreta de aplicarse. Te mostramos el paso a paso en la sección Premium.
-                    </p>
-                  </div>
-                </div>
-              )}
-              {/* FASE 2 — CTA "Sumar a mi día" (10/08/2026). Usa entry.combinacion (el título,
-                  siempre visible) y NO entry.resultado (gateado a Premium) — postear el texto
-                  gateado acá sería filtrar contenido Premium por una vía lateral para usuarios
-                  gratuitos. CTA1/CTA3 quedan pendientes de una tabla nueva, ver informe. */}
-              <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
-                <CTASumarDia entry={entry} pase={usuario.pase} />
-              </div>
-            </div>
+            <EntryDetalleFase2 entry={entry} esPremium={esPremium} pase={usuario.pase}
+              onVolver={() => setView({ screen: "category", name: view.catName })} />
           );
         })()}
 
