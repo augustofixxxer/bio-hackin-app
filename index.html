@@ -1721,6 +1721,50 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
   );
 }
 
+// CTA2 "Sumar a mi día" (Fase 2, 10/08/2026) — reusa /api/registrar-comida tal cual lo
+// usa LogMealScreen (mismo header Authorization Bearer pase). Loguea entry.combinacion,
+// no entry.resultado (ver nota en view.screen === "entry").
+function CTASumarDia({ entry, pase }) {
+  const [estado, setEstado] = useState("idle"); // idle | cargando | ok | error
+  function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
+  async function sumar() {
+    if (estado === "cargando" || estado === "ok") return;
+    setEstado("cargando");
+    vibrar();
+    try {
+      const resp = await fetch("/api/registrar-comida", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+        body: JSON.stringify({ texto: entry.combinacion }),
+      });
+      if (!resp.ok) throw new Error("No se pudo guardar");
+      setEstado("ok");
+    } catch (e) {
+      setEstado("error");
+    }
+  }
+  return (
+    <div>
+      <button onClick={sumar} disabled={estado === "cargando" || estado === "ok"} className={estado === "cargando" || estado === "ok" ? "" : "glass-press"}
+        style={{
+          width: "100%", borderRadius: 16, padding: "13px", fontWeight: 800, fontSize: 13.5,
+          fontFamily: EXPLORADOR_TOKENS.font, cursor: estado === "idle" || estado === "error" ? "pointer" : "default",
+          color: estado === "ok" ? EXPLORADOR_TOKENS.menta : "#2A1D08",
+          background: estado === "ok" ? "rgba(143,168,155,0.14)" : `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+          border: estado === "ok" ? `1px solid ${EXPLORADOR_TOKENS.menta}55` : "none",
+          boxShadow: estado === "ok" ? "none" : "0 10px 22px -6px rgba(0,0,0,0.6)",
+        }}>
+        {estado === "ok" ? "✓ Sumado a tu día" : estado === "cargando" ? "Sumando..." : "Sumar a mi día"}
+      </button>
+      {estado === "error" && (
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: "#D97757", marginTop: 8, marginBottom: 0 }}>
+          No se pudo guardar. Probá de nuevo.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // CardExploraV2 (Fase 1 Saneamiento P0, 10/08/2026) — reemplaza el botón único sin
 // diferenciar que había en view.screen === "category". 4 variantes por tipo_card,
 // fallback a Tipo C/Combinación si tipo_card viene null (dato aún no cargado en
@@ -2302,6 +2346,13 @@ function App() {
                   </div>
                 </div>
               )}
+              {/* FASE 2 — CTA "Sumar a mi día" (10/08/2026). Usa entry.combinacion (el título,
+                  siempre visible) y NO entry.resultado (gateado a Premium) — postear el texto
+                  gateado acá sería filtrar contenido Premium por una vía lateral para usuarios
+                  gratuitos. CTA1/CTA3 quedan pendientes de una tabla nueva, ver informe. */}
+              <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
+                <CTASumarDia entry={entry} pase={usuario.pase} />
+              </div>
             </div>
           );
         })()}
