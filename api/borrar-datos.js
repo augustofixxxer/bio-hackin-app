@@ -6,6 +6,8 @@
 // - Todos los "bloqueos" vinculados a esos registros
 // - Todos sus registros en "bienestar_diario_real"
 // - Todos sus registros en "insights_generados"
+// - Todos sus registros en "reacciones_alternativas" (Fase 2, 10/08/2026 — tabla creada
+//   ya con FK ON DELETE CASCADE hacia usuarios, no requirió tocar este archivo)
 //
 // A PROPÓSITO NO se borran "log_aceptacion_terminos" ni "log_consentimiento_riesgo":
 // son la prueba de que la app cumplió con el blindaje legal (Compliance by Design).
