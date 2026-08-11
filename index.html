@@ -1727,14 +1727,16 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
 // leerla) y si el modal de CTA3 está abierto.
 function EntryDetalleFase2({ entry, esPremium, pase, onVolver }) {
   const [reaccion, setReaccion] = useState(undefined); // undefined = cargando, null = no hay, {} = hay
+  const [patron, setPatron] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
 
   useEffect(() => {
     let vivo = true;
     setReaccion(undefined);
+    setPatron(null);
     fetch(`/api/registrar-reaccion?alternativaId=${entry.id}`, { headers: { Authorization: `Bearer ${pase || ""}` } })
-      .then((r) => (r.ok ? r.json() : { reaccion: null }))
-      .then((d) => { if (vivo) setReaccion(d.reaccion || null); })
+      .then((r) => (r.ok ? r.json() : { reaccion: null, patron: null }))
+      .then((d) => { if (vivo) { setReaccion(d.reaccion || null); setPatron(d.patron || null); } })
       .catch(() => { if (vivo) setReaccion(null); });
     return () => { vivo = false; };
   }, [entry.id, pase]);
@@ -1785,7 +1787,7 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver }) {
       </div>
 
       {modalAbierto && (
-        <ModalYEstoEnMiCaso entry={entry} pase={pase} reaccion={reaccion} cargando={reaccion === undefined}
+        <ModalYEstoEnMiCaso entry={entry} pase={pase} reaccion={reaccion} patron={patron} cargando={reaccion === undefined}
           onCerrar={() => setModalAbierto(false)}
           onIrACTA1={() => setModalAbierto(false)} />
       )}
@@ -1862,7 +1864,7 @@ const VALORES_LIVIANO_PESADO = ["Liviano", "Pesado"];
 // "te suele ir mejor" requeriría el mismo umbral de evidencia que ya aplica
 // patrones-observacionales.js (mínimo de ocurrencias + diferencia real), y hoy esta tabla
 // recién nace. Ver informe a Marketing: queda como paso 2 explícito, no fabricado ahora.
-function ModalYEstoEnMiCaso({ entry, pase, reaccion, cargando, onCerrar, onIrACTA1 }) {
+function ModalYEstoEnMiCaso({ entry, pase, reaccion, patron, cargando, onCerrar, onIrACTA1 }) {
   return (
     <div onClick={onCerrar} style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 50,
@@ -1882,9 +1884,15 @@ function ModalYEstoEnMiCaso({ entry, pase, reaccion, cargando, onCerrar, onIrACT
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.6, marginBottom: 4 }}>
               Vos marcaste "{entry.combinacion}" como {[reaccion.frio_calor, reaccion.liviano_pesado].filter(Boolean).join(" y ")}.
             </p>
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.6 }}>
-              Todavía no tenemos suficiente historial cruzado con tu bienestar para decirte si te suele ir mejor — a medida que sigas registrando, esto se va a ir afinando.
-            </p>
+            {patron ? (
+              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6 }}>
+                En tu historial, los días que sumaste "{entry.combinacion}" marcaste una energía de {patron.promedioConAlternativa} en promedio, vs {patron.promedioGeneral} tu promedio general ({patron.ocurrencias} veces registrado).
+              </p>
+            ) : (
+              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.6 }}>
+                Todavía no tenemos suficiente cruce con tu bienestar para decirte si te suele ir mejor — a medida que sigas registrando, esto se va a ir afinando.
+              </p>
+            )}
           </React.Fragment>
         ) : (
           <React.Fragment>
@@ -1919,7 +1927,7 @@ function CTASumarDia({ entry, pase }) {
       const resp = await fetch("/api/registrar-comida", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
-        body: JSON.stringify({ texto: entry.combinacion }),
+        body: JSON.stringify({ texto: entry.combinacion, alternativaId: entry.id }),
       });
       if (!resp.ok) throw new Error("No se pudo guardar");
       setEstado("ok");
