@@ -169,9 +169,15 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { texto, momento, soloVista } = req.body || {};
+  const { texto, momento, soloVista, alternativaId } = req.body || {};
   if (!texto || typeof texto !== "string" || texto.trim().length === 0) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
+    return;
+  }
+  // Fase 4 (10/08/2026) — opcional, viene de CTA2 "Sumar a mi día". Si viene, tiene que
+  // ser un UUID válido; si no viene, sigue siendo un registro de texto libre normal.
+  if (alternativaId !== undefined && alternativaId !== null && !esUUIDValido(alternativaId)) {
+    res.status(400).json({ error: "alternativaId inválido." });
     return;
   }
 
@@ -277,6 +283,7 @@ export default async function handler(req, res) {
           comida_registrada: texto,
           ...(momento ? { momento_dia: momento } : {}),
           ...(usuarioId ? { usuario_id: usuarioId } : {}),
+          ...(alternativaId ? { alternativa_id: alternativaId } : {}),
         }),
       });
       registroId = registroCreado[0].id;
