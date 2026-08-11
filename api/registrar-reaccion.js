@@ -76,42 +76,43 @@ export default async function handler(req, res) {
       const [reaccionRows, comidas, bienestares] = await Promise.all([
         supabaseFetch(`reacciones_alternativas?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=frio_calor,liviano_pesado,updated_at`),
         supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=fecha`),
-        supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia`),
+        supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion`),
       ]);
 
-      // fecha (YYYY-MM-DD) -> energía promedio ese día (mismo cálculo que patrones-observacionales.js).
-      const energiaPorFecha = {};
-      const conteoPorFecha = {};
-      for (const b of bienestares) {
-        if (b.energia === null || b.energia === undefined) continue;
-        const fecha = String(b.fecha_hora).slice(0, 10);
-        energiaPorFecha[fecha] = (energiaPorFecha[fecha] || 0) + b.energia;
-        conteoPorFecha[fecha] = (conteoPorFecha[fecha] || 0) + 1;
-      }
-      for (const fecha of Object.keys(energiaPorFecha)) {
-        energiaPorFecha[fecha] = energiaPorFecha[fecha] / conteoPorFecha[fecha];
-      }
-
       const fechasConAlternativa = new Set(comidas.map((c) => c.fecha));
-      const grupoConAlternativa = [...fechasConAlternativa]
-        .filter((f) => energiaPorFecha[f] !== undefined)
-        .map((f) => energiaPorFecha[f]);
-      const grupoBase = Object.entries(energiaPorFecha)
-        .filter(([fecha]) => !fechasConAlternativa.has(fecha))
-        .map(([, valor]) => valor);
 
-      let patron = null;
-      if (grupoConAlternativa.length >= OCURRENCIAS_MINIMAS && grupoBase.length >= 1) {
-        const promedioCon = grupoConAlternativa.reduce((a, b) => a + b, 0) / grupoConAlternativa.length;
-        const promedioBase = grupoBase.reduce((a, b) => a + b, 0) / grupoBase.length;
-        if (Math.abs(promedioCon - promedioBase) >= DIFERENCIA_MINIMA) {
-          patron = {
-            promedioConAlternativa: Math.round(promedioCon * 10) / 10,
-            promedioGeneral: Math.round(promedioBase * 10) / 10,
-            ocurrencias: grupoConAlternativa.length,
-          };
+      // Fase 5 (10/08/2026) — misma lógica que Fase 4, ahora factorizada para poder
+      // aplicarla a más de un campo de bienestar sin duplicar código. Mismo umbral para
+      // los dos: 2 ocurrencias + diferencia >= 1 (escala 1-5, igual que patrones-observacionales.js).
+      function calcularPatronMetrica(campo) {
+        const promedioPorFecha = {};
+        const conteoPorFecha = {};
+        for (const b of bienestares) {
+          if (b[campo] === null || b[campo] === undefined) continue;
+          const fecha = String(b.fecha_hora).slice(0, 10);
+          promedioPorFecha[fecha] = (promedioPorFecha[fecha] || 0) + b[campo];
+          conteoPorFecha[fecha] = (conteoPorFecha[fecha] || 0) + 1;
         }
+        for (const fecha of Object.keys(promedioPorFecha)) {
+          promedioPorFecha[fecha] = promedioPorFecha[fecha] / conteoPorFecha[fecha];
+        }
+        const grupoCon = [...fechasConAlternativa].filter((f) => promedioPorFecha[f] !== undefined).map((f) => promedioPorFecha[f]);
+        const grupoBase = Object.entries(promedioPorFecha).filter(([fecha]) => !fechasConAlternativa.has(fecha)).map(([, v]) => v);
+        if (grupoCon.length < OCURRENCIAS_MINIMAS || grupoBase.length < 1) return null;
+        const promedioCon = grupoCon.reduce((a, b) => a + b, 0) / grupoCon.length;
+        const promedioBase = grupoBase.reduce((a, b) => a + b, 0) / grupoBase.length;
+        if (Math.abs(promedioCon - promedioBase) < DIFERENCIA_MINIMA) return null;
+        return {
+          promedioConAlternativa: Math.round(promedioCon * 10) / 10,
+          promedioGeneral: Math.round(promedioBase * 10) / 10,
+          ocurrencias: grupoCon.length,
+        };
       }
+
+      const patron = {
+        energia: calcularPatronMetrica("energia"),
+        digestion: calcularPatronMetrica("digestion"),
+      };
 
       return res.status(200).json({ reaccion: reaccionRows[0] || null, patron });
     } catch (err) {
