@@ -1884,10 +1884,19 @@ function ModalYEstoEnMiCaso({ entry, pase, reaccion, patron, cargando, onCerrar,
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.6, marginBottom: 4 }}>
               Vos marcaste "{entry.combinacion}" como {[reaccion.frio_calor, reaccion.liviano_pesado].filter(Boolean).join(" y ")}.
             </p>
-            {patron ? (
-              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6 }}>
-                En tu historial, los días que sumaste "{entry.combinacion}" marcaste una energía de {patron.promedioConAlternativa} en promedio, vs {patron.promedioGeneral} tu promedio general ({patron.ocurrencias} veces registrado).
-              </p>
+            {patron && (patron.energia || patron.digestion) ? (
+              <div style={{ display: "grid", gap: 6 }}>
+                {patron.energia && (
+                  <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
+                    En tu historial, los días que sumaste "{entry.combinacion}" marcaste una energía de {patron.energia.promedioConAlternativa} en promedio, vs {patron.energia.promedioGeneral} tu promedio general ({patron.energia.ocurrencias} veces registrado).
+                  </p>
+                )}
+                {patron.digestion && (
+                  <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
+                    En digestión, marcaste {patron.digestion.promedioConAlternativa} en promedio esos días, vs {patron.digestion.promedioGeneral} tu promedio general ({patron.digestion.ocurrencias} veces registrado).
+                  </p>
+                )}
+              </div>
             ) : (
               <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.6 }}>
                 Todavía no tenemos suficiente cruce con tu bienestar para decirte si te suele ir mejor — a medida que sigas registrando, esto se va a ir afinando.
