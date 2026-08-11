@@ -16,6 +16,14 @@
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
+// Fase 4 (10/08/2026) — cruce CTA3 con bienestar. MISMO umbral que patrones-observacionales.js
+// (2 ocurrencias + diferencia >= 1 punto en energía, escala 1-5) — reusado literal, no
+// reinventado. Compara el mismo día que se sumó la alternativa (no el día siguiente: ese
+// desfasaje es específico de la teoría harinas-cena→energía de patrones-observacionales.js,
+// no un default general para cualquier alternativa).
+const OCURRENCIAS_MINIMAS = 2;
+const DIFERENCIA_MINIMA = 1;
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Blindaje legal: mismo chequeo que patrones-observacionales.js y registrar-comida.js.
@@ -65,10 +73,47 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Falta alternativaId válido." });
     }
     try {
-      const rows = await supabaseFetch(
-        `reacciones_alternativas?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=frio_calor,liviano_pesado,updated_at`
-      );
-      return res.status(200).json({ reaccion: rows[0] || null });
+      const [reaccionRows, comidas, bienestares] = await Promise.all([
+        supabaseFetch(`reacciones_alternativas?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=frio_calor,liviano_pesado,updated_at`),
+        supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=fecha`),
+        supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia`),
+      ]);
+
+      // fecha (YYYY-MM-DD) -> energía promedio ese día (mismo cálculo que patrones-observacionales.js).
+      const energiaPorFecha = {};
+      const conteoPorFecha = {};
+      for (const b of bienestares) {
+        if (b.energia === null || b.energia === undefined) continue;
+        const fecha = String(b.fecha_hora).slice(0, 10);
+        energiaPorFecha[fecha] = (energiaPorFecha[fecha] || 0) + b.energia;
+        conteoPorFecha[fecha] = (conteoPorFecha[fecha] || 0) + 1;
+      }
+      for (const fecha of Object.keys(energiaPorFecha)) {
+        energiaPorFecha[fecha] = energiaPorFecha[fecha] / conteoPorFecha[fecha];
+      }
+
+      const fechasConAlternativa = new Set(comidas.map((c) => c.fecha));
+      const grupoConAlternativa = [...fechasConAlternativa]
+        .filter((f) => energiaPorFecha[f] !== undefined)
+        .map((f) => energiaPorFecha[f]);
+      const grupoBase = Object.entries(energiaPorFecha)
+        .filter(([fecha]) => !fechasConAlternativa.has(fecha))
+        .map(([, valor]) => valor);
+
+      let patron = null;
+      if (grupoConAlternativa.length >= OCURRENCIAS_MINIMAS && grupoBase.length >= 1) {
+        const promedioCon = grupoConAlternativa.reduce((a, b) => a + b, 0) / grupoConAlternativa.length;
+        const promedioBase = grupoBase.reduce((a, b) => a + b, 0) / grupoBase.length;
+        if (Math.abs(promedioCon - promedioBase) >= DIFERENCIA_MINIMA) {
+          patron = {
+            promedioConAlternativa: Math.round(promedioCon * 10) / 10,
+            promedioGeneral: Math.round(promedioBase * 10) / 10,
+            ocurrencias: grupoConAlternativa.length,
+          };
+        }
+      }
+
+      return res.status(200).json({ reaccion: reaccionRows[0] || null, patron });
     } catch (err) {
       return res.status(500).json({ error: "Error leyendo la reacción", detail: String(err) });
     }
