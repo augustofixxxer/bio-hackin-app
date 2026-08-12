@@ -79,14 +79,27 @@ function promedio(nums) {
 // Calcula el resultado completo del insight para un usuario y lo persiste en
 // "insights_generados". Devuelve el resultado como dato — no responde HTTP,
 // eso es responsabilidad exclusiva de la Sección 2.
-async function calcularInsights(usuarioId) {
-  const registros = await supabaseFetch(
+//
+// FASE 7 (10/08/2026): acepta opciones para soportar el paywall real (antes esta función
+// solo se llamaba para Premium sin restricciones — Gratis estaba 100% bloqueado con un
+// ejemplo fijo, ver Sección 2). "opciones.metricas" restringe qué métricas se calculan
+// (Gratis = solo energía), "opciones.fechaDesde" restringe la ventana de datos que entra
+// al cálculo (Gratis = últimos 14 días). El motor puro no sabe POR QUÉ se restringe —
+// solo recibe los límites ya decididos por la Sección 2 (capa de acceso).
+async function calcularInsights(usuarioId, opciones = {}) {
+  const metricasActivas = opciones.metricas || METRICAS;
+  const fechaDesde = opciones.fechaDesde || null;
+
+  let registros = await supabaseFetch(
     `registro_diario_real?usuario_id=eq.${usuarioId}&select=id,fecha`
   );
-
-  const bienestarRecs = await supabaseFetch(
+  let bienestarRecs = await supabaseFetch(
     `bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion,sueno,hidratacion,actividad_fisica`
   );
+  if (fechaDesde) {
+    registros = registros.filter((r) => r.fecha && fechaISO(r.fecha) >= fechaDesde);
+    bienestarRecs = bienestarRecs.filter((b) => b.fecha_hora && fechaISO(b.fecha_hora) >= fechaDesde);
+  }
 
   const bienestarPorFecha = {};
   for (const rec of bienestarRecs) {
@@ -111,7 +124,7 @@ async function calcularInsights(usuarioId) {
   const bienestarDiario = {};
   for (const fecha of Object.keys(bienestarPorFecha)) {
     bienestarDiario[fecha] = {};
-    for (const m of METRICAS) {
+    for (const m of metricasActivas) {
       bienestarDiario[fecha][m] = promedio(bienestarPorFecha[fecha][m]);
     }
   }
@@ -169,7 +182,7 @@ async function calcularInsights(usuarioId) {
 
     if (fechasConBloqueo.size === 0 || fechasSinBloqueo.length === 0) continue;
 
-    for (const metrica of METRICAS) {
+    for (const metrica of metricasActivas) {
       const promCon = promedio(
         [...fechasConBloqueo].map((f) => bienestarDiario[f][metrica]).filter((v) => v !== null)
       );
@@ -229,11 +242,8 @@ function esUUIDValido(valor) {
   return typeof valor === "string" && UUID_REGEX.test(valor);
 }
 
-const MUESTRA_GENERICA = {
-  bloqueo: 'Milanesa + Papas Fritas (ejemplo)',
-  metrica: 'Energía',
-  frase: 'Los días después de "Milanesa + Papas Fritas", tu energía bajó en promedio 1.2 puntos comparado a tus días habituales. Este es un ejemplo — suscribite para ver tus propios patrones reales.',
-};
+// FASE 7 (10/08/2026): MUESTRA_GENERICA se eliminó — Gratis ya no ve un ejemplo fijo,
+// ve sus propios datos reales limitados (ver handler).
 
 export default async function handler(req, res) {
   try {
@@ -274,31 +284,27 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Debés aceptar los Términos y Condiciones para continuar.', requiereTerminos: true });
     }
 
-    const esPremium = usuario.nivel_acceso === 'Premium' || usuario.nivel_acceso === 'Personalizado';
+    const esPremium = usuario.nivel_acceso === 'Premium';
 
-    if (!esPremium) {
-      // MIS Etapa 2 — Trazabilidad. No intrusivo: emitirEvento nunca lanza.
-      await emitirEvento({
-        usuarioId,
-        eventType: "insights_bloqueado_premium",
-        sourceComponent: "generar-insights",
-        requestingComponent: "generar-insights",
-        payload: {},
-      });
-      return res.status(200).json({
-        estado: 'bloqueado',
-        muestra: MUESTRA_GENERICA,
-      });
-    }
+    // FASE 7 (10/08/2026) — CAMBIO DE COMPORTAMIENTO declarado: antes, Gratis estaba
+    // 100% bloqueado (0 datos reales, solo MUESTRA_GENERICA). Paywall aprobado por
+    // Marketing + Fundador define "Gratis = 14 días + patrones básicos solo energía".
+    // Este componente estaba "Validado en producción" con el comportamiento viejo —
+    // este bloque reemplaza ese comportamiento, no lo extiende por fuera.
+    const LIMITE_DIAS_GRATIS = 14;
+    const opciones = esPremium
+      ? {}
+      : { metricas: ['energia'], fechaDesde: sumarDias(fechaISO(new Date().toISOString()), -LIMITE_DIAS_GRATIS) };
 
-    const resultado = await calcularInsights(usuarioId);
+    const resultado = await calcularInsights(usuarioId, opciones);
+    resultado.limitado14dias = !esPremium;
 
     await emitirEvento({
       usuarioId,
-      eventType: "insights_generados",
+      eventType: esPremium ? "insights_generados" : "insights_generados_gratis_limitado",
       sourceComponent: "generar-insights",
       requestingComponent: "generar-insights",
-      payload: { estado: resultado.estado, cantidadInsights: resultado.insights?.length || 0 },
+      payload: { estado: resultado.estado, cantidadInsights: resultado.insights?.length || 0, esPremium },
     });
 
     return res.status(200).json(resultado);
