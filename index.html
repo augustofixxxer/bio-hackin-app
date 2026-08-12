@@ -1188,6 +1188,7 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
   const [teaser, setTeaser] = useState(null);
+  const [historialGratis, setHistorialGratis] = useState(null); // { historial, racha } | null mientras carga
   const [email, setEmail] = useState("");
   const [emailEnviado, setEmailEnviado] = useState(false);
   const [emailEnviando, setEmailEnviando] = useState(false);
@@ -1211,14 +1212,29 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
   }
 
   // Teaser del paywall con valor demostrado (04/08/2026): endpoint separado y liviano,
-  // sin LLM — solo cuenta y compara registros existentes. Se dispara solo cuando el motor
-  // principal devuelve "bloqueado", nunca para usuarios Premium (cero costo extra para ellos).
+  // sin LLM — solo cuenta y compara registros existentes.
+  // FASE 7 (10/08/2026): ya NO se dispara por "resultado.estado === 'bloqueado'" (ese estado
+  // no existe más — Gratis ahora calcula patrones reales limitados). Se dispara únicamente
+  // cuando ya sabemos, por historialGratis, que el usuario tiene 0 registros reales todavía
+  // — ahí sí tiene sentido el paywall grande con ejemplo. Con datos reales, aunque sean pocos,
+  // se muestra el historial real (ver bloque más abajo), no un ejemplo.
   useEffect(() => {
-    if (estado === "listo" && resultado && resultado.estado === "bloqueado" && !teaser) {
+    if (estado === "listo" && resultado?.limitado14dias && historialGratis && historialGratis.historial.length === 0 && !teaser) {
       fetch("/api/patrones-observacionales", { headers: { Authorization: `Bearer ${pase || ""}` } })
         .then((r) => r.json())
         .then((d) => setTeaser(d))
         .catch(() => setTeaser({ estado: "A", totalRegistros: 0, patron: null }));
+    }
+  }, [estado, resultado, historialGratis]);
+
+  // FASE 7 (10/08/2026): trae el historial real de 14 días para Gratis (gráfico/lista +
+  // racha) — generar-insights.js solo devuelve la frase del patrón, nunca los datos crudos.
+  useEffect(() => {
+    if (estado === "listo" && resultado?.limitado14dias && !historialGratis) {
+      fetch("/api/historial", { headers: { Authorization: `Bearer ${pase || ""}` } })
+        .then((r) => r.json())
+        .then((d) => setHistorialGratis(d))
+        .catch(() => setHistorialGratis({ historial: [], racha: 0 }));
     }
   }, [estado, resultado]);
 
@@ -1286,7 +1302,7 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
           api/_sesion.js + un archivo api/*.js existente como referencia antes de escribir ese
           endpoint (protocolo NO LO SÉ — no voy a inventar el patrón de sesión/Supabase que usa
           el resto del proyecto). Mientras tanto este bloque ya queda listo del lado visual. */}
-      {estado === "listo" && resultado.estado === "bloqueado" && (
+      {estado === "listo" && resultado.limitado14dias && historialGratis && historialGratis.historial.length === 0 && (
         <div>
           {!teaser && (
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 13.5 }}>Cargando tu laboratorio...</p>
@@ -1418,6 +1434,10 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
         </div>
       )}
 
+      {estado === "listo" && resultado.limitado14dias && historialGratis && historialGratis.historial.length > 0 && (
+        <HistorialGratis14Dias historial={historialGratis.historial} racha={historialGratis.racha} />
+      )}
+
       {estado === "listo" && resultado.estado === "insuficiente" && (
         <div style={{
           background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
@@ -1457,6 +1477,82 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
           </button>
         </div>
       )}
+
+      {estado === "listo" && resultado.limitado14dias && historialGratis && historialGratis.historial.length > 0 && (
+        <InvitacionPremiumChica />
+      )}
+    </div>
+  );
+}
+
+// Invitación Premium chica, NO bloqueante (Fase 7, 10/08/2026) — reemplaza el paywall
+// grande de Estado A/B para usuarios Gratis que ya tienen datos reales (el A/B queda
+// reservado solo para 0 registros). Mismo idioma visual, tamaño reducido.
+// NOTA: precio $13.990/mes según esta instrucción — la pantalla PremiumScreen (Fase 6)
+// todavía dice $11.490/mes. No unifiqué el número por mi cuenta, ver informe.
+function InvitacionPremiumChica() {
+  return (
+    <div style={{
+      background: "rgba(197,160,89,0.10)", border: `1.5px solid rgba(197,160,89,0.4)`,
+      borderRadius: 18, padding: 18, marginTop: 16,
+    }}>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 14, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 4 }}>
+        Llevás 14 días, desbloqueá tu historia completa
+      </p>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 14, lineHeight: 1.5 }}>
+        Historial ilimitado + energía y digestión + resumen semanal
+      </p>
+      <button className="glass-press" style={{
+        width: "100%", borderRadius: 14, padding: "11px", fontWeight: 700, fontSize: 13,
+        fontFamily: EXPLORADOR_TOKENS.font, cursor: "pointer", color: EXPLORADOR_TOKENS.accent,
+        background: "rgba(197,160,89,0.14)", border: `1px solid rgba(197,160,89,0.45)`,
+      }}>
+        Ver Premium — $13.990/mes
+      </button>
+    </div>
+  );
+}
+
+// Muestra los últimos 14 días de energía real de Gratis como mini-gráfico de barras +
+// racha (Fase 7, 10/08/2026). Sin librería de gráficos — barras con <div>, mismo patrón
+// liviano que el resto del archivo.
+function HistorialGratis14Dias({ historial, racha }) {
+  const dias = [...historial].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  return (
+    <div style={{
+      background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
+      backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+      borderRadius: 20, padding: 18, boxShadow: EXPLORADOR_TOKENS.cardShadow, marginBottom: 16,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, margin: 0 }}>
+          Tu energía, últimos 14 días
+        </p>
+        {racha > 0 && (
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.accent, fontWeight: 700 }}>
+            🔥 {racha} {racha === 1 ? "día" : "días"} seguidos
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 90 }}>
+        {dias.map((d) => {
+          const energia = d.bienestar?.energia;
+          const alturaPct = energia ? Math.max(8, (energia / 5) * 100) : 0;
+          return (
+            <div key={d.fecha} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%", justifyContent: "flex-end" }}>
+              <div title={`${d.fecha}: energía ${energia ?? "sin dato"}`} style={{
+                width: "100%", borderRadius: 4,
+                height: `${alturaPct}%`,
+                background: energia ? EXPLORADOR_TOKENS.accent : "rgba(255,255,255,0.08)",
+                opacity: energia ? 0.85 : 1,
+              }} />
+            </div>
+          );
+        })}
+      </div>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10.5, color: EXPLORADOR_TOKENS.textSecondary, marginTop: 8, marginBottom: 0 }}>
+        Cada barra es un día. Los días sin registro de bienestar quedan vacíos.
+      </p>
     </div>
   );
 }
@@ -1725,7 +1821,105 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
 // Separada en componente propio (antes era JSX inline en App()) porque ahora necesita
 // su propio estado: la reacción guardada (para CTA1 mostrar el toggle activo y CTA3
 // leerla) y si el modal de CTA3 está abierto.
-function EntryDetalleFase2({ entry, esPremium, pase, onVolver }) {
+// PREMIUM — pantalla de contenido (Fase 6, 10/08/2026). Definición de copy y estructura
+// aprobada por Marketing + Fundador. El botón de pago NO dispara ningún cobro real: Mercado
+// Pago sigue pausado por decisión explícita del Fundador (ver DMT). Cuando se autorice,
+// este botón se conecta a Checkout/Preapproval de MP — hoy solo muestra un estado honesto.
+const BENEFICIOS_PREMIUM = [
+  "Historial completo como línea de tiempo continua",
+  "Patrones avanzados con evidencia real",
+  "Resumen semanal como reporte de constancia, no de diagnóstico",
+  "Exportar tus datos como respaldo personal",
+  "Colección completa de Protocolos D (movimiento cotidiano, descanso, respiración) + rachas",
+];
+
+const COMPARATIVA_PREMIUM = [
+  { label: "Historial", gratis: "14 días", premium: "Ilimitado" },
+  { label: "Patrones", gratis: "Básicos, solo energía", premium: "Energía + digestión" },
+  { label: "Resumen semanal", gratis: false, premium: true },
+  { label: "Exportar CSV", gratis: false, premium: true },
+  { label: "Rachas y recordatorios", gratis: false, premium: true },
+];
+
+function CheckCelda({ valor }) {
+  if (typeof valor === "string") {
+    return <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textPrimary }}>{valor}</span>;
+  }
+  return valor
+    ? <span style={{ color: EXPLORADOR_TOKENS.menta, fontSize: 15 }}>✓</span>
+    : <span style={{ color: EXPLORADOR_TOKENS.textSecondary, fontSize: 15 }}>—</span>;
+}
+
+function PremiumScreen({ onVolver }) {
+  const [estadoCTA, setEstadoCTA] = useState("idle"); // idle | info
+  return (
+    <div className="fade-in">
+      <button onClick={onVolver} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+        ← Volver
+      </button>
+
+      <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 23, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.25, marginBottom: 8, letterSpacing: "-0.01em" }}>
+        Ya tenés la base, ahora desbloqueá tu historia completa
+      </h2>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 26 }}>
+        Sin perder lo que ya registraste
+      </p>
+
+      {/* Comparativa Gratis vs Premium */}
+      <div style={{
+        background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel, borderRadius: 18,
+        backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
+        boxShadow: EXPLORADOR_TOKENS.cardShadow, padding: "16px 14px", marginBottom: 20,
+      }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px", gap: 8, marginBottom: 10 }}>
+          <span />
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, textAlign: "center", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Gratis</span>
+          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, textAlign: "center", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>Premium</span>
+        </div>
+        {COMPARATIVA_PREMIUM.map((fila) => (
+          <div key={fila.label} style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px", gap: 8, alignItems: "center", padding: "9px 0", borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}` }}>
+            <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textPrimary, fontWeight: 600 }}>{fila.label}</span>
+            <span style={{ textAlign: "center" }}><CheckCelda valor={fila.gratis} /></span>
+            <span style={{ textAlign: "center" }}><CheckCelda valor={fila.premium} /></span>
+          </div>
+        ))}
+      </div>
+
+      {/* Beneficios, copy seguro */}
+      <div style={{ display: "grid", gap: 10, marginBottom: 24 }}>
+        {BENEFICIOS_PREMIUM.map((b) => (
+          <div key={b} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <span style={{ color: EXPLORADOR_TOKENS.accent, fontSize: 14, lineHeight: 1.5 }}>✓</span>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.55, margin: 0 }}>{b}</p>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={() => setEstadoCTA("info")} className="glass-press" style={{
+        width: "100%", borderRadius: 16, padding: "15px", fontWeight: 800, fontSize: 14.5,
+        fontFamily: EXPLORADOR_TOKENS.font, cursor: "pointer", color: "#2A1D08",
+        background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+        border: "none", boxShadow: "0 10px 22px -6px rgba(0,0,0,0.6)", marginBottom: 10,
+      }}>
+        Desbloquear Premium — $11.490/mes
+      </button>
+
+      {estadoCTA === "info" && (
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, textAlign: "center", lineHeight: 1.6, marginBottom: 10 }}>
+          El pago todavía no está activado. Muy pronto vas a poder suscribirte desde acá.
+        </p>
+      )}
+
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10.5, color: EXPLORADOR_TOKENS.textSecondary, textAlign: "center", lineHeight: 1.5 }}>
+        No reemplaza consejo médico, es registro de bienestar.
+      </p>
+    </div>
+  );
+}
+
+// PREMIUM — pantalla de contenido (Fase 6, 10/08/2026) [FIN]
+
+function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
   const [reaccion, setReaccion] = useState(undefined); // undefined = cargando, null = no hay, {} = hay
   const [patron, setPatron] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -1765,11 +1959,14 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver }) {
         </React.Fragment>
       ) : (
         <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
-          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px" }}>
+          <button onClick={onVerPremium} className="glass-press" style={{
+            width: "100%", textAlign: "left", background: "rgba(197,160,89,0.12)",
+            border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px", cursor: "pointer",
+          }}>
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
               💡 Esta herramienta sí tiene una forma concreta de aplicarse. Te mostramos el paso a paso en la sección Premium.
             </p>
-          </div>
+          </button>
         </div>
       )}
 
@@ -2365,7 +2562,7 @@ function App() {
     .filter((c) => query === "" || c.entries.length > 0);
 
   const temaOscuro = view.screen === "categories" || view.screen === "bienestar" || view.screen === "patrones"
-    || view.screen === "log" || view.screen === "category" || view.screen === "entry";
+    || view.screen === "log" || view.screen === "category" || view.screen === "entry" || view.screen === "premium";
 
   return (
     <div style={{ minHeight: "100vh", background: TOKENS.bg }}>
@@ -2518,9 +2715,14 @@ function App() {
           const esPremium = usuario.nivelAcceso === "Premium";
           return (
             <EntryDetalleFase2 entry={entry} esPremium={esPremium} pase={usuario.pase}
-              onVolver={() => setView({ screen: "category", name: view.catName })} />
+              onVolver={() => setView({ screen: "category", name: view.catName })}
+              onVerPremium={() => setView({ screen: "premium", origen: "entry", id: entry.id, catName: view.catName })} />
           );
         })()}
+
+        {view.screen === "premium" && (
+          <PremiumScreen onVolver={() => setView(view.origen === "entry" ? { screen: "entry", id: view.id, catName: view.catName } : { screen: "categories" })} />
+        )}
 
         <footer style={{ marginTop: 40, paddingTop: 16, borderTop: `1px solid ${temaOscuro ? "rgba(255,255,255,0.18)" : TOKENS.border}`, textAlign: "center" }}>
           <a href="privacidad.html" style={{ fontFamily: temaOscuro ? EXPLORADOR_TOKENS.font : "'IBM Plex Mono', monospace", fontSize: 11, color: temaOscuro ? EXPLORADOR_TOKENS.textSecondary : TOKENS.inkDim, textDecoration: "none" }}>
