@@ -79,6 +79,23 @@ function lsRemove(key) {
   try { window.localStorage.removeItem(key); } catch (e) { console.warn("localStorage inaccesible (remove):", e); }
 }
 
+// Fase 2/P0 (Marketing, 15/08/2026) — instrumentación de funnel de producto.
+// Reutiliza /api/data (POST) en vez de crear un endpoint nuevo — Resolución del Fundador.
+// Regla crítica: NUNCA bloquea ni condiciona el flujo funcional. No se espera (no await
+// en el punto de uso), y cualquier fallo de red se descarta en silencio — un evento de
+// analytics perdido nunca debe impedir una navegación, un click o un registro real.
+function logEventoProducto(evento, contexto, metadata, pase) {
+  try {
+    fetch("/api/data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(pase ? { Authorization: `Bearer ${pase}` } : {}) },
+      body: JSON.stringify({ evento, contexto, metadata }),
+    }).catch(() => {});
+  } catch (e) {
+    // Silencioso a propósito.
+  }
+}
+
 const EVIDENCE_STYLES = {
   Alto: { color: TOKENS.alto, label: "Evidencia alta" },
   Medio: { color: TOKENS.medio, label: "Evidencia media" },
@@ -1694,9 +1711,16 @@ const GRUPO_ICONOS = {
   rendimiento_fisico: IconoRendimiento, sentirme_mejor: IconoBienestar,
 };
 
-function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategory, grupoElegido }) {
+function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategory, grupoElegido, pase }) {
   const [grupoAbierto, setGrupoAbierto] = useState(grupoElegido ? grupoElegido.val : null);
   const buscando = query.trim() !== "";
+
+  // Fase 2/P0 — un evento por montaje del Explorador (cada vez que se entra a esta
+  // pantalla), no una única vez por sesión: mantiene la instrumentación simple, sin
+  // estado adicional que rastrear.
+  useEffect(() => {
+    logEventoProducto("exploracion_iniciada", "explorador", { grupoElegido: grupoElegido?.val || null }, pase);
+  }, []);
 
   function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
 
@@ -2162,6 +2186,18 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
     return () => { vivo = false; };
   }, [entry.id, pase]);
 
+  // Fase 2/P0 — contenido_visto: toda vez que se abre el detalle de una entrada.
+  // hack_visto: solo cuando efectivamente se muestra el mecanismo/resultado accionable
+  // (hoy gateado a Premium) — quien solo ve el teaser gratuito todavía no vio el hack en
+  // sí, vio la invitación a Premium. Distinción declarada, no arbitraria: separa "vio la
+  // ficha" de "vio la herramienta accionable" para el funnel de P0.18/19.
+  useEffect(() => {
+    logEventoProducto("contenido_visto", "entry_detalle", { alternativaId: entry.id, tipoCard: entry.tipo_card || null }, pase);
+    if (esPremium) {
+      logEventoProducto("hack_visto", "entry_detalle", { alternativaId: entry.id, tipoCard: entry.tipo_card || null }, pase);
+    }
+  }, [entry.id, esPremium]);
+
   return (
     <div className="fade-in">
       <button onClick={onVolver} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
@@ -2356,6 +2392,10 @@ function CTASumarDia({ entry, pase }) {
     if (estado === "cargando" || estado === "ok") return;
     setEstado("cargando");
     vibrar();
+    // Fase 2/P0 — probar_click: se loguea al iniciar la acción, no al confirmar éxito
+    // (mide intención de probar, distinto de registro_realizado que se loguea en el
+    // backend solo si el registro efectivamente se creó).
+    logEventoProducto("probar_click", "entry_detalle", { alternativaId: entry.id }, pase);
     try {
       const resp = await fetch("/api/registrar-comida", {
         method: "POST",
@@ -2872,6 +2912,19 @@ function App() {
                   Cruzamos tu alimentación y bienestar para revelar tus patrones biológicos
                 </p>
               </React.Fragment>
+            ) : view.screen === "categories" ? (
+              // P0.1 (Marketing, Fase 2) — reencuadre del Explorador como "puerta de
+              // entrada" en vez de biblioteca. No toca la agrupación por objetivo
+              // (GRUPOS_OBJETIVO/onboarding, ya aprobada) — es solo el mensaje de
+              // bienvenida para quien todavía no eligió un objetivo.
+              <React.Fragment>
+                <h1 style={{ fontFamily: temaOscuro ? EXPLORADOR_TOKENS.font : "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 28, color: temaOscuro ? EXPLORADOR_TOKENS.textPrimary : TOKENS.ink, lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0 }}>
+                  ¿Qué querés explorar hoy?
+                </h1>
+                <p style={{ fontFamily: temaOscuro ? EXPLORADOR_TOKENS.font : "'IBM Plex Sans', sans-serif", fontSize: 13, color: temaOscuro ? EXPLORADOR_TOKENS.textSecondary : TOKENS.inkDim, marginTop: 6, marginBottom: 0, lineHeight: 1.5 }}>
+                  Elegí algo que te interese y descubrí qué podés probar en tu propio contexto.
+                </p>
+              </React.Fragment>
             ) : (
               <h1 style={{ fontFamily: temaOscuro ? EXPLORADOR_TOKENS.font : "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 28, color: temaOscuro ? EXPLORADOR_TOKENS.textPrimary : TOKENS.ink, lineHeight: 1.15, letterSpacing: "-0.02em", margin: 0 }}>
                 Explorador por problemática
@@ -2935,6 +2988,7 @@ function App() {
               filteredCats={filteredCats}
               onSelectCategory={(name) => setView({ screen: "category", name })}
               grupoElegido={grupoElegido}
+              pase={usuario.pase}
             />
           </React.Fragment>
         )}
