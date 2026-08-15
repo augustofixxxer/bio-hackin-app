@@ -10,6 +10,9 @@
 // cambio, son un conjunto finito de herramientas (hoy 68), coherente con la identidad de
 // "hackeo" de la app.
 
+import { emitirEventoProducto } from "./_eventos-producto.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -30,6 +33,18 @@ async function supabaseFetch(path) {
 }
 
 export default async function handler(req, res) {
+  // Fase 2/P0 (Marketing, 15/08/2026) — instrumentación de funnel de producto (P0.17-19).
+  // Reutiliza este endpoint (ya se llama al cargar el Explorador) en vez de crear uno
+  // nuevo — Resolución del Fundador. Observacional: siempre responde 200, incluso si el
+  // INSERT interno falló (ver api/_eventos-producto.js) — nunca debe bloquear al cliente.
+  if (req.method === "POST") {
+    const { evento, contexto, metadata } = req.body || {};
+    const usuarioId = usuarioIdDesdeRequest(req);
+    await emitirEventoProducto({ usuarioId, evento, contexto, metadata });
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     res.status(500).json({
       error: "Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY como variable de entorno en Vercel.",
