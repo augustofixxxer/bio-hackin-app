@@ -33,7 +33,29 @@ export default async function handler(req, res) {
       const pendientes = await supabaseFetch(
         `premium_subscriptions?estado=eq.pendiente&select=id,user_id,metodo,monto,comprobante_url,created_at,usuarios(email,nombre_alias)&order=created_at.asc`
       );
-      return res.status(200).json({ pendientes });
+
+      // Fase 8b (10/08/2026) — link temporal firmado para cada comprobante (el bucket es
+      // privado, no hay URL pública). Vence en 1 hora, se genera fresco cada vez que se
+      // carga la lista, nunca se guarda en la base.
+      const conVistaPrevia = await Promise.all(
+        pendientes.map(async (s) => {
+          if (!s.comprobante_url) return { ...s, comprobanteSignedUrl: null };
+          try {
+            const resp = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/comprobantes-premium/${s.comprobante_url}`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${SUPABASE_KEY}`, apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+              body: JSON.stringify({ expiresIn: 3600 }),
+            });
+            if (!resp.ok) return { ...s, comprobanteSignedUrl: null };
+            const data = await resp.json();
+            return { ...s, comprobanteSignedUrl: data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null };
+          } catch (err) {
+            return { ...s, comprobanteSignedUrl: null };
+          }
+        })
+      );
+
+      return res.status(200).json({ pendientes: conVistaPrevia });
     } catch (err) {
       return res.status(500).json({ error: "Error listando pendientes.", detail: String(err) });
     }
