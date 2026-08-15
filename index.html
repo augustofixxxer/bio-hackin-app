@@ -1880,10 +1880,18 @@ function AdminPremiumScreen({ pase }) {
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, margin: "4px 0 10px" }}>
               {s.metodo === "alias" ? "Transferencia" : "Mercado Pago"} — ${s.monto} — {new Date(s.created_at).toLocaleString("es-AR")}
             </p>
-            {s.comprobante_url && (
-              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.accent, marginBottom: 10, wordBreak: "break-all" }}>
-                Comprobante: {s.comprobante_url}
-              </p>
+            {s.comprobanteSignedUrl && (
+              <a href={s.comprobanteSignedUrl} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginBottom: 10 }}>
+                {s.comprobante_url && s.comprobante_url.toLowerCase().endsWith(".pdf") ? (
+                  <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.accent }}>📄 Ver comprobante (PDF) ↗</span>
+                ) : (
+                  <React.Fragment>
+                    <img src={s.comprobanteSignedUrl} alt="Comprobante" style={{ width: "100%", maxHeight: 220, objectFit: "contain", borderRadius: 10, border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, background: "rgba(0,0,0,0.2)" }}
+                      onError={(e) => { e.target.style.display = "none"; }} />
+                    <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent }}>Ver comprobante completo ↗</span>
+                  </React.Fragment>
+                )}
+              </a>
             )}
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => procesar(s.id, "aprobar")} disabled={procesando === s.id} className="glass-press" style={{
