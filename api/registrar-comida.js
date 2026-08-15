@@ -3,6 +3,7 @@
 // y los Bloqueos correspondientes en Supabase (Postgres).
 
 import { emitirEvento, evaluarValidacionParalela } from "./_instrumentacion.js";
+import { emitirEventoProducto } from "./_eventos-producto.js";
 // BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 // Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
@@ -383,6 +384,15 @@ export default async function handler(req, res) {
           registroId, bloqueosCount: bloqueos.length, versionCasera,
           iaUsada: Boolean(categoriasIA && categoriasIA.length > 0),
         },
+      });
+
+      // Fase 2/P0 (Marketing) — funnel de producto, separado del evento de seguridad
+      // de arriba. Mismo criterio no-bloqueante (ver _eventos-producto.js).
+      await emitirEventoProducto({
+        usuarioId,
+        evento: "registro_realizado",
+        contexto: alternativaId ? "explorador" : "log_libre",
+        metadata: { alternativaId: alternativaId || null, bloqueosCount: bloqueos.length },
       });
     }
 
