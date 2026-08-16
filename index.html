@@ -1583,8 +1583,6 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
 // Invitación Premium chica, NO bloqueante (Fase 7, 10/08/2026) — reemplaza el paywall
 // grande de Estado A/B para usuarios Gratis que ya tienen datos reales (el A/B queda
 // reservado solo para 0 registros). Mismo idioma visual, tamaño reducido.
-// NOTA: precio $13.990/mes según esta instrucción — la pantalla PremiumScreen (Fase 6)
-// todavía dice $11.490/mes. No unifiqué el número por mi cuenta, ver informe.
 function InvitacionPremiumChica() {
   return (
     <div style={{
@@ -2045,10 +2043,15 @@ function ConfirmacionMPScreen({ resultado, onContinuar }) {
 // este botón se conecta a Checkout/Preapproval de MP — hoy solo muestra un estado honesto.
 const BENEFICIOS_PREMIUM = [
   "Historial completo como línea de tiempo continua",
-  "Patrones avanzados con evidencia real",
+  "Patrones avanzados con evidencia real (energía + digestión)",
   "Resumen semanal como reporte de constancia, no de diagnóstico",
   "Exportar tus datos como respaldo personal",
-  "Colección completa de Protocolos D (movimiento cotidiano, descanso, respiración) + rachas",
+  // Bloque 5 (15/08/2026): reemplaza "Colección completa de Protocolos D... + rachas" —
+  // esa línea prometía una funcionalidad inexistente (mismo patrón que el hallazgo H4 de
+  // Fase 2, "Protocolos NOA"). Este beneficio nuevo es real: timing/frecuencia por
+  // alternativa (entry.frecuencia = frecuencia_dosis), recién liberado como la única
+  // profundidad Premium de EntryDetalleFase2 en este mismo bloque.
+  "Timing y frecuencia sugerida en cada alternativa, para armar tu experimento",
 ];
 
 const COMPARATIVA_PREMIUM = [
@@ -2056,7 +2059,12 @@ const COMPARATIVA_PREMIUM = [
   { label: "Patrones", gratis: "Básicos, solo energía", premium: "Energía + digestión" },
   { label: "Resumen semanal", gratis: false, premium: true },
   { label: "Exportar CSV", gratis: false, premium: true },
-  { label: "Rachas y recordatorios", gratis: false, premium: true },
+  // Bloque 5: se retiró la fila "Rachas y recordatorios" — hallazgo nuevo de esta
+  // auditoría. "Rachas" ya se muestra a usuarios Gratis (HistorialGratis14Dias, Fase 7);
+  // "recordatorios" no existe en ningún lado del producto (no hay sistema de
+  // notificaciones — está en el roadmap de PWA, sin empezar). Mantenerla habría sido
+  // exactamente el mismo error que "Protocolos D": prometer algo que no se entrega.
+  { label: "Timing y frecuencia sugerida", gratis: false, premium: true },
 ];
 
 function CheckCelda({ valor }) {
@@ -2282,35 +2290,56 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
         <EvidenceStamp level={entry.evidencia} />
       </div>
-      {esPremium ? (
-        <React.Fragment>
-          <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
-            {entry.mecanismo && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 10, letterSpacing: "0.03em" }}>{entry.mecanismo}</p>}
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+      {/* Fase 2/P0, Bloque 5 (15/08/2026) — Resolución del Fundador: mecanismo/resultado
+          básico pasa a ser visible para TODOS. Antes se ocultaba detrás de Premium, lo que
+          contradecía el principio fundacional del DMT (Sección 1: "la diferencia entre Base
+          y Potenciada nunca es alterar datos ni ocultar información"). Reutiliza los mismos
+          campos que ya existían (entry.mecanismo/entry.resultado), no se agregó contenido. */}
+      <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
+        {entry.mecanismo && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 10, letterSpacing: "0.03em" }}>{entry.mecanismo}</p>}
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 14, lineHeight: 1.65 }}>{entry.resultado}</p>
+      </div>
+
+      {/* Capa Probá/Observá genérica (mismo criterio no-fabricado que Bloque 2): ayuda a
+          pasar de "leer información" a "armar un experimento", sin inventar contenido por
+          entrada — coherente con el circuito Contexto→Experimento→Registro→Observación. */}
+      <div style={{ marginTop: 14 }}>
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55, marginBottom: 4 }}>
+          <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Probá:</b> la próxima vez que se dé esta situación, aplicá este cambio.
+        </p>
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55 }}>
+          <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Observá:</b> energía, digestión, cómo te sentís después.
+        </p>
+      </div>
+
+      {/* Única profundidad Premium real que queda en esta ficha: timing/frecuencia
+          (entry.frecuencia = frecuencia_dosis en la base) — operacionalización, no
+          información básica. Si la entrada no tiene ese dato, no se muestra nada (no se
+          inventa profundidad donde no existe). */}
+      {entry.frecuencia && (
+        esPremium ? (
+          <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Frecuencia</p>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14 }}>{entry.frecuencia}</p>
           </div>
-          {entry.frecuencia && (
-            <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
-              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>Frecuencia</p>
-              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14 }}>{entry.frecuencia}</p>
-            </div>
-          )}
-        </React.Fragment>
-      ) : (
-        <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18 }}>
-          <button onClick={onVerPremium} className="glass-press" style={{
-            width: "100%", textAlign: "left", background: "rgba(197,160,89,0.12)",
-            border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px", cursor: "pointer",
-          }}>
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
-              💡 Esta herramienta sí tiene una forma concreta de aplicarse. Te mostramos el paso a paso en la sección Premium.
-            </p>
-          </button>
-        </div>
+        ) : (
+          <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18 }}>
+            <button onClick={onVerPremium} className="glass-press" style={{
+              width: "100%", textAlign: "left", background: "rgba(197,160,89,0.12)",
+              border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px", cursor: "pointer",
+            }}>
+              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
+                🔒 Timing y frecuencia sugerida — parte de armar esto como experimento personal en Premium.
+              </p>
+            </button>
+          </div>
+        )
       )}
 
-      {/* FASE 2 — Loop anti-migración (10/08/2026). CTA2 usa entry.combinacion (el título,
-          siempre visible) y NO entry.resultado (gateado a Premium) — postear el texto
-          gateado acá sería filtrar contenido Premium por una vía lateral para gratuitos. */}
+      {/* FASE 2 — Loop anti-migración (10/08/2026). CTA2 usa entry.combinacion (el título).
+          Nota Bloque 5 (15/08/2026): entry.resultado dejó de estar gateado a Premium — este
+          comentario reflejaba el estado previo, corregido acá para no dejar el código
+          desactualizado (integridad documental, DMC-D Sección 9). */}
       <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 18, marginTop: 18, display: "grid", gap: 14 }}>
         <CTAComoTeCae entry={entry} pase={pase} reaccion={reaccion} onGuardada={setReaccion} />
         <CTASumarDia entry={entry} pase={pase} />
