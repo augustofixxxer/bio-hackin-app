@@ -1040,7 +1040,7 @@ const OPCIONES_ACTIVIDAD = [
   { val: "muy_activo", label: "Muy activo", icono: IconoMuyActivo },
 ];
 
-function BienestarScreen({ onBack, pase }) {
+function BienestarScreen({ onBack, pase, onVerMisPatrones }) {
   const [energia, setEnergia] = useState(null);
   const [digestion, setDigestion] = useState(null);
   const [sueno, setSueno] = useState(null);
@@ -1095,6 +1095,9 @@ function BienestarScreen({ onBack, pase }) {
       const nuevoTotal = prevTotal + 1;
       setTotalRegistros(nuevoTotal);
       setResultado({ n, prevPct: pctLaboratorio(prevTotal), nuevoPct: pctLaboratorio(nuevoTotal), faltan: Math.max(0, 3 - nuevoTotal) });
+      // Fase 2/P0, Bloque 3 (15/08/2026) — feedback_realizado: registrar "cómo te sentís"
+      // es, en el circuito de P0, el paso de feedback posterior a la comida.
+      logEventoProducto("feedback_realizado", "bienestar_screen", { n, nuevoTotal }, pase);
       setEnergia(null);
       setDigestion(null);
       setSueno(null);
@@ -1186,6 +1189,18 @@ function BienestarScreen({ onBack, pase }) {
               ? `Te faltan ${resultado.faltan} para tu primer patrón.`
               : "Ya tenés suficientes registros para ver tu primer patrón."}
           </p>
+          {resultado.faltan === 0 && onVerMisPatrones && (
+            <button onClick={() => { if (navigator.vibrate) navigator.vibrate(12); onVerMisPatrones(); }} className="glass-press" style={{
+              width: "100%", padding: "13px", borderRadius: 16, fontWeight: 800, fontSize: 13, cursor: "pointer",
+              fontFamily: EXPLORADOR_TOKENS.font, marginBottom: 12, color: "#2A1D08",
+              background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+              borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+              borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+              boxShadow: "0 8px 18px -4px rgba(0,0,0,0.55)",
+            }}>
+              Ver mi primer patrón
+            </button>
+          )}
           <button onClick={() => setResultado(null)} style={{
             background: "none", border: "none", color: EXPLORADOR_TOKENS.menta,
             fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0,
@@ -1224,6 +1239,43 @@ function InsightCard({ insight }) {
         {insight.metrica}
       </p>
       <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, lineHeight: 1.65, margin: 0 }}>{insight.frase}</p>
+    </div>
+  );
+}
+
+// Fase 2/P0, Bloque 3 (15/08/2026) — Caso C: "apareció una observación". Componente propio
+// (no inline en PatronesScreen) para que patron_visto se dispare una vez por resultado real,
+// no en cada re-render de la pantalla contenedora (ej. al tipear el email de lista de espera).
+function PatronOkBlock({ resultado, onRecalcular, onIrABienestar, pase }) {
+  useEffect(() => {
+    logEventoProducto("patron_visto", "patrones_screen", { cantidadInsights: (resultado.insights || []).length }, pase);
+  }, [resultado]);
+
+  return (
+    <div>
+      {resultado.insights.map((insight, i) => (
+        <InsightCard key={i} insight={insight} />
+      ))}
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <button onClick={onRecalcular} className="glass-press" style={{
+          flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: 16, padding: "12px", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font,
+          fontWeight: 700, fontSize: 13, cursor: "pointer",
+        }}>
+          Recalcular
+        </button>
+        {onIrABienestar && (
+          <button onClick={() => { if (navigator.vibrate) navigator.vibrate(12); onIrABienestar(); }} className="glass-press" style={{
+            flex: 1, borderRadius: 16, padding: "12px", fontWeight: 800, fontSize: 13, cursor: "pointer",
+            fontFamily: EXPLORADOR_TOKENS.font, color: "#2A1D08",
+            background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+            borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+            borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+          }}>
+            Seguir comprobando
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1493,6 +1545,9 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
             Todavía no tenés suficientes días registrados para un patrón confiable. Seguí cargando comidas y bienestar.
           </p>
           <BarraProgreso actual={resultado.diasRegistrados} total={10} />
+          <button onClick={() => { vibrar(); onIrABienestar && onIrABienestar(); }} className="glass-press" style={{ ...botonOscuroEstilo(true), marginTop: 14 }}>
+            Seguir observando
+          </button>
         </div>
       )}
 
@@ -1505,22 +1560,14 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
           <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 14, lineHeight: 1.6, margin: 0 }}>
             Ya tenés suficientes días registrados, pero todavía no encontramos ninguna diferencia lo bastante fuerte como para mostrártela. Seguí registrando — cuantos más días sumés, más precisos van a ser los patrones.
           </p>
+          <button onClick={() => { vibrar(); onIrABienestar && onIrABienestar(); }} className="glass-press" style={{ ...botonOscuroEstilo(true), marginTop: 14 }}>
+            Seguir observando
+          </button>
         </div>
       )}
 
       {estado === "listo" && resultado.estado === "ok" && (
-        <div>
-          {resultado.insights.map((insight, i) => (
-            <InsightCard key={i} insight={insight} />
-          ))}
-          <button onClick={() => { vibrar(); verPatrones(); }} className="glass-press" style={{
-            width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: 16, padding: "12px", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font,
-            fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4,
-          }}>
-            Recalcular
-          </button>
-        </div>
+        <PatronOkBlock resultado={resultado} onRecalcular={() => { vibrar(); verPatrones(); }} onIrABienestar={onIrABienestar} pase={pase} />
       )}
 
       {estado === "listo" && resultado.limitado14dias && historialGratis && historialGratis.historial.length > 0 && (
@@ -2988,7 +3035,7 @@ function App() {
         </nav>
 
         {view.screen === "bienestar" && (
-          <BienestarScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase} />
+          <BienestarScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase} onVerMisPatrones={() => setView({ screen: "patrones" })} />
         )}
 
         {view.screen === "patrones" && (
