@@ -1256,6 +1256,9 @@ function PatronOkBlock({ resultado, onRecalcular, onIrABienestar, pase }) {
       {resultado.insights.map((insight, i) => (
         <InsightCard key={i} insight={insight} />
       ))}
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 10.5, textAlign: "center", lineHeight: 1.5, margin: "0 0 14px" }}>
+        Información observacional basada en tus registros. No reemplaza consejo médico profesional.
+      </p>
       <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
         <button onClick={onRecalcular} className="glass-press" style={{
           flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)",
