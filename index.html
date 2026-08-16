@@ -1074,6 +1074,17 @@ function BienestarScreen({ onBack, pase, onVerMisPatrones }) {
   // lógica de conteo en dos lugares. 0 costo LLM (ese endpoint ya es sin IA).
   const [totalRegistros, setTotalRegistros] = useState(null);
 
+  // Hallazgo A (auditoría de pre-lanzamiento, 15/08/2026) — Resolución del Fundador: el CTA
+  // "Ver mi primer patrón" estaba gateado por totalRegistros/3 (conteo liviano), pero el
+  // motor real (generar-insights.js, UMBRAL_DIAS_CRUZADOS=10) exige 10 días cruzados de
+  // comida+bienestar — un umbral distinto y más exigente. Mostrar el botón antes de eso era
+  // una promesa que el motor real no podía cumplir, sobre todo para Premium (sin paywall de
+  // por medio). Este state es la fuente de verdad real, no se calcula localmente ni duplica
+  // el motor: se pide al mismo endpoint que ya usa PatronesScreen.
+  // null = todavía no se consultó / en curso (no se promete nada mientras tanto);
+  // { disponible, diasRegistrados } = respuesta real del motor tras el último guardado.
+  const [patronReal, setPatronReal] = useState(null);
+
   useEffect(() => {
     fetch("/api/patrones-observacionales", { headers: { Authorization: `Bearer ${pase || ""}` } })
       .then((r) => r.json())
@@ -1117,6 +1128,18 @@ function BienestarScreen({ onBack, pase, onVerMisPatrones }) {
       // Fase 2/P0, Bloque 3 (15/08/2026) — feedback_realizado: registrar "cómo te sentís"
       // es, en el circuito de P0, el paso de feedback posterior a la comida.
       logEventoProducto("feedback_realizado", "bienestar_screen", { n, nuevoTotal }, pase);
+
+      // Hallazgo A: consulta al motor real. No bloquea el guardado (ya terminó arriba) ni
+      // condiciona el flujo principal — solo decide qué mensaje/CTA de continuidad mostrar.
+      setPatronReal(null);
+      fetch("/api/generar-insights", { headers: { Authorization: `Bearer ${pase || ""}` } })
+        .then((r) => r.json())
+        .then((d) => setPatronReal({
+          disponible: Boolean(d.estado) && d.estado !== "insuficiente",
+          diasRegistrados: typeof d.diasRegistrados === "number" ? d.diasRegistrados : null,
+        }))
+        .catch(() => setPatronReal({ disponible: false, diasRegistrados: null }));
+
       setEnergia(null);
       setDigestion(null);
       setSueno(null);
@@ -1202,25 +1225,41 @@ function BienestarScreen({ onBack, pase, onVerMisPatrones }) {
           <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 18, color: EXPLORADOR_TOKENS.textPrimary, margin: "0 0 6px", letterSpacing: "-0.01em" }}>
             ¡Dato guardado! {resultado.n}/5
           </p>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: "0 0 16px", lineHeight: 1.5 }}>
-            Laboratorio: {resultado.prevPct}% → {resultado.nuevoPct}%.{" "}
-            {resultado.faltan > 0
-              ? `Te faltan ${resultado.faltan} para tu primer patrón.`
-              : "Ya tenés suficientes registros para ver tu primer patrón."}
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: "0 0 12px", lineHeight: 1.5 }}>
+            Laboratorio: {resultado.prevPct}% → {resultado.nuevoPct}%.
           </p>
-          {resultado.faltan === 0 && onVerMisPatrones && (
-            <button onClick={() => { if (navigator.vibrate) navigator.vibrate(12); onVerMisPatrones(); }} className="glass-press" style={{
-              width: "100%", padding: "13px", borderRadius: 16, fontWeight: 800, fontSize: 13, cursor: "pointer",
-              fontFamily: EXPLORADOR_TOKENS.font, marginBottom: 12, color: "#2A1D08",
-              background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
-              borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
-              borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
-              boxShadow: "0 8px 18px -4px rgba(0,0,0,0.55)",
-            }}>
-              Ver mi primer patrón
-            </button>
+
+          {/* Hallazgo A: mensaje/CTA de patrón, 100% desacoplado del % de laboratorio de
+              arriba. Mientras patronReal es null, no se afirma nada (evita prometer de más
+              mientras se confirma con el motor real). */}
+          {patronReal && (
+            patronReal.disponible ? (
+              <React.Fragment>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: "0 0 16px", lineHeight: 1.5 }}>
+                  Ya tenés suficientes días registrados para ver tu primer patrón.
+                </p>
+                {onVerMisPatrones && (
+                  <button onClick={() => { if (navigator.vibrate) navigator.vibrate(12); onVerMisPatrones(); }} className="glass-press" style={{
+                    width: "100%", padding: "13px", borderRadius: 16, fontWeight: 800, fontSize: 13, cursor: "pointer",
+                    fontFamily: EXPLORADOR_TOKENS.font, marginBottom: 12, color: "#2A1D08",
+                    background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+                    borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+                    borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+                    boxShadow: "0 8px 18px -4px rgba(0,0,0,0.55)",
+                  }}>
+                    Ver mi primer patrón
+                  </button>
+                )}
+              </React.Fragment>
+            ) : (
+              <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: "rgba(242,239,233,0.85)", margin: "0 0 16px", lineHeight: 1.5 }}>
+                {typeof patronReal.diasRegistrados === "number"
+                  ? `Vas ${patronReal.diasRegistrados}/10 días con comida y bienestar cruzados. Seguí registrando para tu primer patrón.`
+                  : "Seguí registrando — con suficientes días cruzados vas a poder ver tu primer patrón."}
+              </p>
+            )
           )}
-          <button onClick={() => setResultado(null)} style={{
+          <button onClick={() => { setResultado(null); setPatronReal(null); }} style={{
             background: "none", border: "none", color: EXPLORADOR_TOKENS.menta,
             fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 700, fontSize: 13, cursor: "pointer", padding: 0,
           }}>
