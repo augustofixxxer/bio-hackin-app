@@ -167,6 +167,14 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
   const [confirmado, setConfirmado] = useState(!requiereConsentimiento);
   const [enviando, setEnviando] = useState(false);
 
+  // Fase 2/P0, Bloque 2 (15/08/2026) — hack_visto: punto real y definitivo, cuando el
+  // usuario efectivamente ve la solución (no antes, si todavía falta confirmar riesgo).
+  useEffect(() => {
+    if (confirmado && b.solucion) {
+      logEventoProducto("hack_visto", "bloqueo_card", { combinacion: b.combinacion, solucion: b.solucion.nombre || null }, pase);
+    }
+  }, [confirmado, b.solucion, b.combinacion]);
+
   async function confirmarRiesgo() {
     setEnviando(true);
     try {
@@ -213,8 +221,14 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
 
       {confirmado && b.solucion && (
         <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12 }}>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10, color: EXPLORADOR_TOKENS.accent, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>Solución</p>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 13, lineHeight: 1.6 }}>{b.solucion.adaptacion}</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10, color: EXPLORADOR_TOKENS.accent, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>🔧 Hack</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 13, lineHeight: 1.6, marginBottom: 10 }}>{b.solucion.adaptacion}</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55, marginBottom: 4 }}>
+            <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Probá:</b> la próxima vez que se repita esta situación, aplicá este cambio.
+          </p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55 }}>
+            <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Observá:</b> cómo te sentís después. Con suficientes registros vas a poder ver si se repite un patrón.
+          </p>
         </div>
       )}
 
@@ -605,6 +619,13 @@ function PlanificarPanel({ pase, onVerMisPatrones }) {
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
       setResultado(data);
+      // Fase 2/P0, Bloque 2 — hack_visto: se ve al mismo tiempo que el resultado, acá
+      // (no hace falta un useEffect aparte porque no depende del ciclo de montaje).
+      (data.bloqueos || []).forEach((b) => {
+        if (b.solucion) {
+          logEventoProducto("hack_visto", "planificar_panel", { combinacion: b.combinacion, solucion: b.solucion.nombre || null }, pase);
+        }
+      });
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -661,11 +682,18 @@ function PlanificarPanel({ pase, onVerMisPatrones }) {
                   <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.5, marginBottom: (b.solucion || b.invitacionPremium) ? 8 : 0 }}>{b.resultado}</p>
 
                   {/* Reciprocidad, no castigo (04/08/2026): siempre se muestra un hack real
-                      cuando existe — nunca solo el problema sin salida. */}
+                      cuando existe — nunca solo el problema sin salida. Capa Hack/Probá/
+                      Observá agregada en Bloque 2 (15/08/2026) sobre la misma solución. */}
                   {b.solucion && (
                     <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 12, padding: "10px 12px" }}>
-                      <p style={{ color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-                        💡 Hack sin dejarlo: {b.solucion.adaptacion}
+                      <p style={{ color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", fontWeight: 700 }}>
+                        🔧 Hack: {b.solucion.adaptacion}
+                      </p>
+                      <p style={{ color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, lineHeight: 1.5, margin: "0 0 3px" }}>
+                        <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Probá:</b> aplicalo cuando lo prepares.
+                      </p>
+                      <p style={{ color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, lineHeight: 1.5, margin: 0 }}>
+                        <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Observá:</b> cuando lo registres de verdad, vas a poder ver cómo te sentiste.
                       </p>
                     </div>
                   )}
@@ -2187,15 +2215,12 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
   }, [entry.id, pase]);
 
   // Fase 2/P0 — contenido_visto: toda vez que se abre el detalle de una entrada.
-  // hack_visto: solo cuando efectivamente se muestra el mecanismo/resultado accionable
-  // (hoy gateado a Premium) — quien solo ve el teaser gratuito todavía no vio el hack en
-  // sí, vio la invitación a Premium. Distinción declarada, no arbitraria: separa "vio la
-  // ficha" de "vio la herramienta accionable" para el funnel de P0.18/19.
+  // hack_visto se removió de acá (Bloque 2, 15/08/2026): el punto real y definitivo es
+  // cuando se muestra la solución/Hack dentro de BloqueoCard / PlanificarPanel — no la
+  // ficha del Explorador. Cambio declarado por Resolución del Fundador, reemplaza el
+  // mapeo temporal del Bloque 1.
   useEffect(() => {
     logEventoProducto("contenido_visto", "entry_detalle", { alternativaId: entry.id, tipoCard: entry.tipo_card || null }, pase);
-    if (esPremium) {
-      logEventoProducto("hack_visto", "entry_detalle", { alternativaId: entry.id, tipoCard: entry.tipo_card || null }, pase);
-    }
   }, [entry.id, esPremium]);
 
   return (
