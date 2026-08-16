@@ -162,7 +162,7 @@ function groupByCategoria(entradas) {
   return grupos;
 }
 
-function BloqueoCard({ b, pase, tieneCondicionMedica }) {
+function BloqueoCard({ b, pase, tieneCondicionMedica, onVerPremium }) {
   const requiereConsentimiento = b.nivelRiesgo && b.nivelRiesgo !== "Bajo";
   const [confirmado, setConfirmado] = useState(!requiereConsentimiento);
   const [enviando, setEnviando] = useState(false);
@@ -235,9 +235,21 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
       {confirmado && !b.solucion && b.invitacionPremium && (
         <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12, marginTop: 4 }}>
           <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "12px 14px" }}>
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>
-              💡 {b.invitacionPremium}
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, fontWeight: 700, lineHeight: 1.6, margin: "0 0 6px" }}>
+              Para esta situación existe una segunda capa de experimentación.
             </p>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 12, lineHeight: 1.55, margin: "0 0 10px" }}>
+              {b.invitacionPremium}
+            </p>
+            <button onClick={() => onVerPremium && onVerPremium()} className="glass-press" style={{
+              padding: "8px 16px", borderRadius: 12, fontWeight: 800, fontSize: 11.5, cursor: "pointer",
+              fontFamily: EXPLORADOR_TOKENS.font, color: "#2A1D08", textTransform: "uppercase", letterSpacing: "0.02em",
+              background: `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
+              borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
+              borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
+            }}>
+              Ver en Premium
+            </button>
           </div>
         </div>
       )}
@@ -245,7 +257,7 @@ function BloqueoCard({ b, pase, tieneCondicionMedica }) {
   );
 }
 
-function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar }) {
+function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar, onVerPremium }) {
   const [texto, setTexto] = useState("");
   const [momento, setMomento] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -322,7 +334,7 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar }) {
         )}
         <div style={{ display: "grid", gap: 12 }}>
           {bloqueos.map((b, i) => (
-            <BloqueoCard key={i} b={b} pase={pase} tieneCondicionMedica={tieneCondicionMedica} />
+            <BloqueoCard key={i} b={b} pase={pase} tieneCondicionMedica={tieneCondicionMedica} onVerPremium={onVerPremium} />
           ))}
         </div>
         {sugerencias.length > 0 && (
@@ -599,7 +611,7 @@ function PortadaBanner({ abierto, onToggle }) {
 // cosa, ni un formulario que obligue a cargar las cuatro juntas. Cada acceso sigue siendo
 // independiente puertas adentro (LogMealScreen / BienestarScreen), esto es solo la puerta
 // de entrada común.
-function PlanificarPanel({ pase, onVerMisPatrones }) {
+function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium }) {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -698,25 +710,32 @@ function PlanificarPanel({ pase, onVerMisPatrones }) {
                     </div>
                   )}
 
-                  {/* Sin solución pública para esta combinación: en vez del cartel "esto es
-                      Premium" (retirado a pedido de Marketing), se muestra un segundo hack
-                      real pero desenfocado, con salida directa a Mis Patrones — mismo dato
-                      (b.invitacionPremium), presentado como reciprocidad en vez de límite. */}
+                  {/* Ajuste comercial Bloque 5 (15/08/2026): antes salía a "Mis Patrones";
+                      ahora conduce al punto de conversión Premium real, con explicación
+                      contextual antes — mismo dato (b.invitacionPremium), sin infraestructura
+                      nueva. Copy evita "más información/datos": se comunica como una segunda
+                      capa de experimentación ligada a esta situación puntual. */}
                   {!b.solucion && b.invitacionPremium && (
                     <div>
                       <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 12, padding: "10px 12px", marginBottom: 8 }}>
                         <p style={{ color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, lineHeight: 1.5, margin: "0 0 6px" }}>
                           💡 Hack 1 gratis: probá reducir la porción y sumar algo fresco al lado.
                         </p>
+                        <p style={{ color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, fontWeight: 700, lineHeight: 1.5, margin: "10px 0 4px" }}>
+                          Para esta situación existe una segunda capa de experimentación.
+                        </p>
+                        <p style={{ color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, lineHeight: 1.5, margin: "0 0 8px" }}>
+                          Vinculada a tus propios registros, no a un consejo genérico.
+                        </p>
                         <p style={{ color: EXPLORADOR_TOKENS.textPrimary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, lineHeight: 1.5, margin: 0, filter: "blur(4px)", userSelect: "none" }}>
-                          Hack 2 en tu laboratorio: {b.invitacionPremium}
+                          {b.invitacionPremium}
                         </p>
                       </div>
-                      <button onClick={() => { vibrar(); onVerMisPatrones && onVerMisPatrones(); }} style={{
+                      <button onClick={() => { vibrar(); onVerPremium && onVerPremium(); }} style={{
                         background: "none", border: "none", padding: 0, cursor: "pointer",
                         color: EXPLORADOR_TOKENS.accent, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, fontWeight: 700, textDecoration: "underline",
                       }}>
-                        Ver mi 2do hack en Mis Patrones →
+                        Ver en Premium →
                       </button>
                     </div>
                   )}
@@ -788,7 +807,7 @@ const IconoCandado = (p) => <IconoGlass {...p}><rect x="4" y="10" width="16" hei
 const IconoEscudo = (p) => <IconoGlass {...p}><path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3Z" /><path d="m8.5 12 2.3 2.3L15.5 9.5" /></IconoGlass>;
 const IconoCorona = (p) => <IconoGlass {...p}><path d="M3 8l4 3 5-6 5 6 4-3-2 10H5L3 8Z" /><path d="M5 21h14" /></IconoGlass>;
 
-function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones, pase }) {
+function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones, onVerPremium, pase }) {
   const [mostrarPlanificar, setMostrarPlanificar] = useState(false);
   // Progreso de hoy (05/08/2026): extiende /api/patrones-observacionales (mismo endpoint,
   // sin costo de IA) para traer comidaHoy + bienestarHoy sin crear ningún endpoint nuevo.
@@ -858,7 +877,7 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones
           </span>
         </span>
       </button>
-      {mostrarPlanificar && <PlanificarPanel pase={pase} onVerMisPatrones={onVerMisPatrones} />}
+      {mostrarPlanificar && <PlanificarPanel pase={pase} onVerMisPatrones={onVerMisPatrones} onVerPremium={onVerPremium} />}
 
       <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 4, textTransform: "uppercase", fontWeight: 700 }}>
         Tu registro de hoy
@@ -2042,28 +2061,25 @@ function ConfirmacionMPScreen({ resultado, onContinuar }) {
 // Pago sigue pausado por decisión explícita del Fundador (ver DMT). Cuando se autorice,
 // este botón se conecta a Checkout/Preapproval de MP — hoy solo muestra un estado honesto.
 const BENEFICIOS_PREMIUM = [
+  // Bloque 5 — ajuste comercial (15/08/2026): el segundo hack ya existía técnicamente
+  // (BloqueoCard/PlanificarPanel) pero estaba subcomunicado — no figuraba acá. Pasa a ser
+  // el primer beneficio porque la validación comercial lo identificó como el de mayor
+  // valor diferencial real (aparece ante una necesidad concreta del usuario, ligado a su
+  // propio registro).
+  "Una segunda capa de experimentación cuando tu registro no tiene una salida pública todavía",
   "Historial completo como línea de tiempo continua",
   "Patrones avanzados con evidencia real (energía + digestión)",
   "Resumen semanal como reporte de constancia, no de diagnóstico",
   "Exportar tus datos como respaldo personal",
-  // Bloque 5 (15/08/2026): reemplaza "Colección completa de Protocolos D... + rachas" —
-  // esa línea prometía una funcionalidad inexistente (mismo patrón que el hallazgo H4 de
-  // Fase 2, "Protocolos NOA"). Este beneficio nuevo es real: timing/frecuencia por
-  // alternativa (entry.frecuencia = frecuencia_dosis), recién liberado como la única
-  // profundidad Premium de EntryDetalleFase2 en este mismo bloque.
   "Timing y frecuencia sugerida en cada alternativa, para armar tu experimento",
 ];
 
 const COMPARATIVA_PREMIUM = [
+  { label: "Segunda capa de experimentación", gratis: false, premium: true },
   { label: "Historial", gratis: "14 días", premium: "Ilimitado" },
   { label: "Patrones", gratis: "Básicos, solo energía", premium: "Energía + digestión" },
   { label: "Resumen semanal", gratis: false, premium: true },
   { label: "Exportar CSV", gratis: false, premium: true },
-  // Bloque 5: se retiró la fila "Rachas y recordatorios" — hallazgo nuevo de esta
-  // auditoría. "Rachas" ya se muestra a usuarios Gratis (HistorialGratis14Dias, Fase 7);
-  // "recordatorios" no existe en ningún lado del producto (no hay sistema de
-  // notificaciones — está en el roadmap de PWA, sin empezar). Mantenerla habría sido
-  // exactamente el mismo error que "Protocolos D": prometer algo que no se entrega.
   { label: "Timing y frecuencia sugerida", gratis: false, premium: true },
 ];
 
@@ -3080,6 +3096,7 @@ function App() {
               onCargarComida={() => setView({ screen: "log" })}
               onRegistrarBienestar={() => setView({ screen: "bienestar" })}
               onVerMisPatrones={() => setView({ screen: "patrones" })}
+              onVerPremium={() => setView({ screen: "premium" })}
               pase={usuario.pase}
             />
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 12, textTransform: "uppercase", fontWeight: 700 }}>
@@ -3100,7 +3117,8 @@ function App() {
         {view.screen === "log" && (
           <LogMealScreen onBack={() => setView({ screen: "categories" })} pase={usuario.pase}
             tieneCondicionMedica={lsGet("reseteo_condicion_medica") === "true"}
-            onIrABienestar={() => setView({ screen: "bienestar" })} />
+            onIrABienestar={() => setView({ screen: "bienestar" })}
+            onVerPremium={() => setView({ screen: "premium" })} />
         )}
 
         {view.screen === "category" && (() => {
