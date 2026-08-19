@@ -2367,6 +2367,16 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
         </p>
       </div>
 
+      {/* Paso 3 (Marketing, 19/08/2026), Sección 1 — puente hacia el motor reactivo.
+          Genérico a propósito: NO muestra el contenido de la solución (sigue 100%
+          reactiva, decisión del 31/07/2026 preservada), solo señala que la conexión
+          existe de verdad (13 entradas reales, ver ALTERNATIVAS_CON_CONEXION_REACTIVA). */}
+      {ALTERNATIVAS_CON_CONEXION_REACTIVA.has(entry.id) && (
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.5, marginTop: 10, fontStyle: "italic" }}>
+          Esto se relaciona con una situación que la app puede reconocer en tus propios registros.
+        </p>
+      )}
+
       {/* Única profundidad Premium real que queda en esta ficha: timing/frecuencia
           (entry.frecuencia = frecuencia_dosis en la base) — operacionalización, no
           información básica. Si la entrada no tiene ese dato, no se muestra nada (no se
@@ -2594,6 +2604,76 @@ function CTASumarDia({ entry, pase }) {
 // fallback a Tipo C/Combinación si tipo_card viene null (dato aún no cargado en
 // alternativas_locales/reglas). Reusa EVIDENCE_STYLES/EvidenceStamp existentes, no
 // duplica el sistema de color de evidencia.
+// ============================================================
+// PASO 3 (Marketing, 19/08/2026) — capa conceptual de Función/Variable/Prioridad.
+// Réplica exacta, en JS puro, de la heurística ya declarada y auditada en la matriz
+// del Paso 2 — NO es una tabla estática duplicada: se calcula en runtime a partir de
+// los mismos campos que ya trae /api/data (mecanismo, descripcion_mecanismo,
+// recomendacion, frecuencia_dosis, tipo_card, evidencia). Única fuente de verdad =
+// las columnas reales de alternativas_locales.
+// ============================================================
+const TECNICA_KW = ["remoj","coccion","cocción","horno","hervid","asar","saltead","tostad","fermenta","blanque","congel","activ"];
+const SUSTITUCION_KW = ["casera","caseras","casero","en casa","en vez de","reemplaz","sustitu","cambia el","cambiá el","cambiar el","version casera","versión casera"];
+const MOMENTO_KW = ["antes de","despues de","después de","al despertar","antes del sueño","antes de dormir","minutos antes","pre-","post-","pre-entreno","post-entreno","ventana"];
+const CANTIDAD_KW = ["cucharada","puñado","g)","gr)","20g","porcion","porción","unidades","1-2","2-3 nueces"];
+const VARIABLES_FUERTES = new Set(["Preparación", "Sustitución de producto", "Momento", "Cantidad"]);
+
+function detectarVariable(entry) {
+  const tecnica = ((entry.mecanismo || "") + " " + (entry.resultado || "")).toLowerCase();
+  const frecuencia = (entry.frecuencia || "").toLowerCase();
+  if (TECNICA_KW.some((k) => tecnica.includes(k))) return "Preparación";
+  if (SUSTITUCION_KW.some((k) => tecnica.includes(k))) return "Sustitución de producto";
+  if (MOMENTO_KW.some((k) => frecuencia.includes(k))) return "Momento";
+  if (CANTIDAD_KW.some((k) => frecuencia.includes(k))) return "Cantidad";
+  if (entry.frecuencia) return "Frecuencia de consumo (variable débil)";
+  return "Ninguna identificada";
+}
+
+function clasificarEntrada(entry) {
+  const variable = detectarVariable(entry);
+  const tc = entry.tipo_card;
+  let funcion;
+  if (tc === "B" || tc === "D") funcion = "HACK";
+  else if (tc === "A") funcion = VARIABLES_FUERTES.has(variable) ? "HERO" : "CONTEXTO";
+  else if (tc === "C") {
+    if (VARIABLES_FUERTES.has(variable)) funcion = "HACK";
+    else if (entry.evidencia === "Especulativo" && variable === "Ninguna identificada") funcion = "ARCHIVO";
+    else funcion = "CONTEXTO";
+  } else funcion = "CONTEXTO";
+
+  let prioridad;
+  if ((funcion === "HERO" || funcion === "HACK") && (entry.evidencia === "Alto" || entry.evidencia === "Medio") && VARIABLES_FUERTES.has(variable)) prioridad = "A";
+  else if (funcion === "HERO" || funcion === "HACK") prioridad = "B";
+  else if (funcion === "CONTEXTO" && (entry.evidencia === "Alto" || entry.evidencia === "Medio")) prioridad = "C";
+  else prioridad = "D";
+
+  return { funcion, variable, prioridad, accionable: funcion === "HERO" || funcion === "HACK" };
+}
+
+// Puente Explorador → motor reactivo (Paso 3, Sección 1). Calculado offline (script,
+// no en runtime) con la misma lógica AND-por-grupo que ya usa registrar-comida.js para
+// disparar reglas, excluyendo términos genéricos/categorías amplias (mismo criterio de
+// riesgo que ya marcó el Paso 2). 13 de 68 entradas tienen una conexión real y
+// verificable — el resto no fuerza ninguna relación semántica débil. Es un índice de
+// relación (solo IDs), no duplica ningún contenido: el texto real de la solución sigue
+// viviendo exclusivamente en BloqueoCard/PlanificarPanel (100% reactivo, decisión del
+// 31/07/2026 preservada — acá solo se señala que existe, nunca se muestra el contenido).
+const ALTERNATIVAS_CON_CONEXION_REACTIVA = new Set([
+  "d41b6ecb-f63b-4f91-8df6-d8e3e9d2a1b3", // Bombas de carne y queso
+  "7b5f2f04-6053-4054-ae4c-e5537e8d0989", // Humita
+  "6be7165d-e4ea-4e16-a741-a67b201dd9f2", // Tamales
+  "d9fe76dc-fbc2-4268-895b-8677d969eb59", // Bollos caseros
+  "86f12f0a-1373-4014-9294-c27ee68db8d1", // Hamburguesa casera
+  "eb0b3104-90e5-45e2-91b7-878b1ada83fe", // Medialunas caseras
+  "15ab6319-1e87-4ddf-af0e-c1d29d1d44b3", // Papa/arroz fríos
+  "98cb2c2b-dcc1-4661-b976-f62c654b1feb", // Vainillas caseras
+  "2eb2b35c-9c86-4161-99d2-ca1a9894dc1a", // Brócoli y crucíferas
+  "e41d30e9-87fa-4f53-98e1-b9ae704212d1", // Cítricos y repollo
+  "386a5122-319d-4f69-9ad6-fa0fb4ef582f", // Morcilla
+  "e0935812-7145-4812-a388-e428f14a7207", // Salchicha casera
+  "70494973-33fa-4061-a1d4-158bd88b332b", // Zinc y ritmo hormonal
+]);
+
 const CARD_TIPO_STYLES = {
   A: { color: EXPLORADOR_TOKENS.accent, badgeDefault: "Tradición NOA" },
   B: { color: EXPLORADOR_TOKENS.menta, badgeDefault: "Técnica" },
@@ -2606,6 +2686,7 @@ function CardExploraV2({ entry, onClick }) {
   const tipo = (entry.tipo_card && CARD_TIPO_STYLES[entry.tipo_card]) ? entry.tipo_card : "C";
   const estilo = CARD_TIPO_STYLES[tipo];
   const badgeTexto = entry.badge_principal || estilo.badgeDefault;
+  const clasificacion = clasificarEntrada(entry);
   return (
     <button onClick={() => { vibrar(); onClick(); }} className="glass-press"
       style={{
@@ -2627,6 +2708,13 @@ function CardExploraV2({ entry, onClick }) {
             fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10.5, color: EXPLORADOR_TOKENS.textSecondary,
             letterSpacing: "0.03em",
           }}>{entry.tag_frio_calor}</span>
+        )}
+        {clasificacion.accionable && (
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10.5, fontWeight: 600,
+            color: EXPLORADOR_TOKENS.bronce || EXPLORADOR_TOKENS.accent,
+          }}>🧪 Podés probarlo</span>
         )}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -3173,9 +3261,9 @@ function App() {
               </div>
               <div style={{ display: "grid", gap: 10 }}>
                 {[...cat].sort((a, b) => {
-                  const esAa = a.tipo_card === "A" ? 0 : 1;
-                  const esAb = b.tipo_card === "A" ? 0 : 1;
-                  if (esAa !== esAb) return esAa - esAb;
+                  const pa = clasificarEntrada(a).prioridad;
+                  const pb = clasificarEntrada(b).prioridad;
+                  if (pa !== pb) return pa.localeCompare(pb);
                   return (a.orden_prioridad ?? Infinity) - (b.orden_prioridad ?? Infinity);
                 }).map((entry) => (
                   <CardExploraV2 key={entry.id} entry={entry} onClick={() => setView({ screen: "entry", id: entry.id, catName: view.name })} />
