@@ -611,14 +611,15 @@ function PortadaBanner({ abierto, onToggle }) {
 // cosa, ni un formulario que obligue a cargar las cuatro juntas. Cada acceso sigue siendo
 // independiente puertas adentro (LogMealScreen / BienestarScreen), esto es solo la puerta
 // de entrada común.
-function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium }) {
+function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium, prefillTexto, onPrefillConsumido }) {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState(null);
 
-  async function ver() {
-    if (!texto.trim()) return;
+  async function ver(textoAUsar) {
+    const t = textoAUsar ?? texto;
+    if (!t.trim()) return;
     setEnviando(true);
     setError(null);
     setResultado(null);
@@ -626,7 +627,7 @@ function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium }) {
       const resp = await fetch("/api/registrar-comida", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
-        body: JSON.stringify({ texto, soloVista: true }),
+        body: JSON.stringify({ texto: t, soloVista: true }),
       });
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
@@ -644,6 +645,19 @@ function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium }) {
       setEnviando(false);
     }
   }
+
+  // Checkpoint 3A (19/08/2026) — cierra el agujero detectado: antes, la "conexión clase
+  // A" desde el Explorador terminaba en una frase sin destino. Ahora, si llega con texto
+  // precargado (desde EntryDetalleFase2), lo carga y corre el motor real una sola vez —
+  // reutiliza el mismo endpoint/lógica que ya usa esta pantalla, sin tocar el matching.
+  useEffect(() => {
+    if (prefillTexto) {
+      setTexto(prefillTexto);
+      ver(prefillTexto);
+      onPrefillConsumido && onPrefillConsumido();
+    }
+    // eslint-disable-next-line
+  }, [prefillTexto]);
 
   function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
   const activo = texto.trim() && !enviando;
@@ -807,11 +821,18 @@ const IconoCandado = (p) => <IconoGlass {...p}><rect x="4" y="10" width="16" hei
 const IconoEscudo = (p) => <IconoGlass {...p}><path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3Z" /><path d="m8.5 12 2.3 2.3L15.5 9.5" /></IconoGlass>;
 const IconoCorona = (p) => <IconoGlass {...p}><path d="M3 8l4 3 5-6 5 6 4-3-2 10H5L3 8Z" /><path d="M5 21h14" /></IconoGlass>;
 
-function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones, onVerPremium, pase }) {
-  const [mostrarPlanificar, setMostrarPlanificar] = useState(false);
+function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones, onVerPremium, pase, prefillPlanificar, onPrefillConsumido }) {
+  const [mostrarPlanificar, setMostrarPlanificar] = useState(Boolean(prefillPlanificar));
   // Progreso de hoy (05/08/2026): extiende /api/patrones-observacionales (mismo endpoint,
   // sin costo de IA) para traer comidaHoy + bienestarHoy sin crear ningún endpoint nuevo.
   const [hoy, setHoy] = useState(null);
+
+  // Checkpoint 3A (19/08/2026) — si llega un texto precargado (desde una conexión clase A
+  // en el Explorador), abrir el panel automáticamente en vez de dejar al usuario tener
+  // que tocar "¿Estás por comer?" de nuevo.
+  useEffect(() => {
+    if (prefillPlanificar) setMostrarPlanificar(true);
+  }, [prefillPlanificar]);
 
   useEffect(() => {
     fetch("/api/patrones-observacionales", { headers: { Authorization: `Bearer ${pase || ""}` } })
@@ -877,7 +898,7 @@ function TableroAccesos({ onCargarComida, onRegistrarBienestar, onVerMisPatrones
           </span>
         </span>
       </button>
-      {mostrarPlanificar && <PlanificarPanel pase={pase} onVerMisPatrones={onVerMisPatrones} onVerPremium={onVerPremium} />}
+      {mostrarPlanificar && <PlanificarPanel pase={pase} onVerMisPatrones={onVerMisPatrones} onVerPremium={onVerPremium} prefillTexto={prefillPlanificar} onPrefillConsumido={onPrefillConsumido} />}
 
       <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 4, textTransform: "uppercase", fontWeight: 700 }}>
         Tu registro de hoy
@@ -2311,7 +2332,7 @@ function TarjetaPagoMP({ pase }) {
 
 // PREMIUM — pantalla de contenido (Fase 6, 10/08/2026) [FIN]
 
-function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
+function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium, onVerEnPlanificar }) {
   const [reaccion, setReaccion] = useState(undefined); // undefined = cargando, null = no hay, {} = hay
   const [patron, setPatron] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -2367,14 +2388,30 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium }) {
         </p>
       </div>
 
-      {/* Paso 3 (Marketing, 19/08/2026), Sección 1 — puente hacia el motor reactivo.
-          Genérico a propósito: NO muestra el contenido de la solución (sigue 100%
-          reactiva, decisión del 31/07/2026 preservada), solo señala que la conexión
-          existe de verdad (13 entradas reales, ver ALTERNATIVAS_CON_CONEXION_REACTIVA). */}
+      {/* Checkpoint 3A (19/08/2026) — de las 13 conexiones, solo 7 (clase A) agregan algo
+          que la ficha no dice; esas tienen CTA real hacia Planificar (con el texto
+          precargado, corre el motor real). Las B/C se quedan con la frase pasiva —
+          instrucción explícita de no tocarlas todavía. Sigue sin exponerse el contenido
+          de la solución acá (decisión del 31/07/2026 preservada): el hack solo aparece
+          si el motor real lo dispara en Planificar. */}
       {ALTERNATIVAS_CON_CONEXION_REACTIVA.has(entry.id) && (
-        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.5, marginTop: 10, fontStyle: "italic" }}>
-          Esto se relaciona con una situación que la app puede reconocer en tus propios registros.
-        </p>
+        CONEXIONES_CLASE_A.has(entry.id) ? (
+          <div style={{ marginTop: 10 }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.5, marginBottom: 8, fontStyle: "italic" }}>
+              Esto se relaciona con una situación que la app puede reconocer en tus propios registros.
+            </p>
+            <button onClick={() => onVerEnPlanificar && onVerEnPlanificar(entry.combinacion)} style={{
+              background: "none", border: "none", padding: 0, cursor: "pointer",
+              color: EXPLORADOR_TOKENS.accent, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, fontWeight: 700, textDecoration: "underline",
+            }}>
+              Ver esta situación en "Antes de comer" →
+            </button>
+          </div>
+        ) : (
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11.5, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.5, marginTop: 10, fontStyle: "italic" }}>
+            Esto se relaciona con una situación que la app puede reconocer en tus propios registros.
+          </p>
+        )
       )}
 
       {/* Única profundidad Premium real que queda en esta ficha: timing/frecuencia
@@ -2650,27 +2687,30 @@ function clasificarEntrada(entry) {
   return { funcion, variable, prioridad, accionable: funcion === "HERO" || funcion === "HACK" };
 }
 
-// Puente Explorador → motor reactivo (Paso 3, Sección 1). Calculado offline (script,
-// no en runtime) con la misma lógica AND-por-grupo que ya usa registrar-comida.js para
-// disparar reglas, excluyendo términos genéricos/categorías amplias (mismo criterio de
-// riesgo que ya marcó el Paso 2). 13 de 68 entradas tienen una conexión real y
-// verificable — el resto no fuerza ninguna relación semántica débil. Es un índice de
-// relación (solo IDs), no duplica ningún contenido: el texto real de la solución sigue
-// viviendo exclusivamente en BloqueoCard/PlanificarPanel (100% reactivo, decisión del
-// 31/07/2026 preservada — acá solo se señala que existe, nunca se muestra el contenido).
+// Checkpoint 3A (19/08/2026) — de las 13 conexiones, solo 7 agregan una experiencia real
+// no redundante con la ficha (clasificación A). Las otras 6 (B/C) quedan con la señal
+// pasiva únicamente — instrucción explícita: "no modificar todavía las B/C".
 const ALTERNATIVAS_CON_CONEXION_REACTIVA = new Set([
+  "d41b6ecb-f63b-4f91-8df6-d8e3e9d2a1b3", "7b5f2f04-6053-4054-ae4c-e5537e8d0989",
+  "6be7165d-e4ea-4e16-a741-a67b201dd9f2", "d9fe76dc-fbc2-4268-895b-8677d969eb59",
+  "86f12f0a-1373-4014-9294-c27ee68db8d1", "eb0b3104-90e5-45e2-91b7-878b1ada83fe",
+  "15ab6319-1e87-4ddf-af0e-c1d29d1d44b3", "98cb2c2b-dcc1-4661-b976-f62c654b1feb",
+  "2eb2b35c-9c86-4161-99d2-ca1a9894dc1a", "e41d30e9-87fa-4f53-98e1-b9ae704212d1",
+  "386a5122-319d-4f69-9ad6-fa0fb4ef582f", "e0935812-7145-4812-a388-e428f14a7207",
+  "70494973-33fa-4061-a1d4-158bd88b332b",
+]);
+
+// Checkpoint 3A — conexiones clase A (puente funcional): agregan algo que la ficha no
+// dice. El texto de búsqueda es el propio título de la entrada (entry.combinacion) —
+// es literalmente el mismo texto contra el que se validó el match en el Paso 3, así que
+// el motor real (registrar-comida.js) debería reconocer la misma situación.
+const CONEXIONES_CLASE_A = new Set([
   "d41b6ecb-f63b-4f91-8df6-d8e3e9d2a1b3", // Bombas de carne y queso
   "7b5f2f04-6053-4054-ae4c-e5537e8d0989", // Humita
   "6be7165d-e4ea-4e16-a741-a67b201dd9f2", // Tamales
-  "d9fe76dc-fbc2-4268-895b-8677d969eb59", // Bollos caseros
-  "86f12f0a-1373-4014-9294-c27ee68db8d1", // Hamburguesa casera
-  "eb0b3104-90e5-45e2-91b7-878b1ada83fe", // Medialunas caseras
-  "15ab6319-1e87-4ddf-af0e-c1d29d1d44b3", // Papa/arroz fríos
-  "98cb2c2b-dcc1-4661-b976-f62c654b1feb", // Vainillas caseras
   "2eb2b35c-9c86-4161-99d2-ca1a9894dc1a", // Brócoli y crucíferas
   "e41d30e9-87fa-4f53-98e1-b9ae704212d1", // Cítricos y repollo
   "386a5122-319d-4f69-9ad6-fa0fb4ef582f", // Morcilla
-  "e0935812-7145-4812-a388-e428f14a7207", // Salchicha casera
   "70494973-33fa-4061-a1d4-158bd88b332b", // Zinc y ritmo hormonal
 ]);
 
@@ -3225,6 +3265,8 @@ function App() {
               onVerMisPatrones={() => setView({ screen: "patrones" })}
               onVerPremium={() => setView({ screen: "premium" })}
               pase={usuario.pase}
+              prefillPlanificar={view.prefillPlanificar}
+              onPrefillConsumido={() => setView((v) => ({ ...v, prefillPlanificar: undefined }))}
             />
             <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: "rgba(242,239,233,0.85)", letterSpacing: "0.06em", marginBottom: 12, textTransform: "uppercase", fontWeight: 700 }}>
               Explora y descubre
@@ -3281,7 +3323,8 @@ function App() {
           return (
             <EntryDetalleFase2 entry={entry} esPremium={esPremium} pase={usuario.pase}
               onVolver={() => setView({ screen: "category", name: view.catName })}
-              onVerPremium={() => setView({ screen: "premium", origen: "entry", id: entry.id, catName: view.catName })} />
+              onVerPremium={() => setView({ screen: "premium", origen: "entry", id: entry.id, catName: view.catName })}
+              onVerEnPlanificar={(texto) => setView({ screen: "categories", prefillPlanificar: texto })} />
           );
         })()}
 
