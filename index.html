@@ -178,7 +178,7 @@ function BloqueoCard({ b, pase, tieneCondicionMedica, onVerPremium }) {
   async function confirmarRiesgo() {
     setEnviando(true);
     try {
-      await fetch("/api/registrar-consentimiento-riesgo", {
+      await fetch("/api/registrar-extra?tipo=consentimiento-riesgo", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
         body: JSON.stringify({ bloqueo: b.combinacion, nivelRiesgo: b.nivelRiesgo }),
@@ -1410,7 +1410,7 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
   // racha) — generar-insights.js solo devuelve la frase del patrón, nunca los datos crudos.
   useEffect(() => {
     if (estado === "listo" && resultado?.limitado14dias && !historialGratis) {
-      fetch("/api/historial", { headers: { Authorization: `Bearer ${pase || ""}` } })
+      fetch("/api/generar-insights?vista=historial", { headers: { Authorization: `Bearer ${pase || ""}` } })
         .then((r) => r.json())
         .then((d) => setHistorialGratis(d))
         .catch(() => setHistorialGratis({ historial: [], racha: 0 }));
@@ -1421,7 +1421,7 @@ function PatronesScreen({ onBack, pase, onIrABienestar }) {
     if (!email.trim()) return;
     setEmailEnviando(true);
     try {
-      await fetch("/api/lista-espera-premium", {
+      await fetch("/api/premium?ruta=lista-espera", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
         body: JSON.stringify({ email: email.trim() }),
@@ -2000,7 +2000,7 @@ function TarjetaCategoria({ cat, onClick, compacta }) {
 // Separada en componente propio (antes era JSX inline en App()) porque ahora necesita
 // su propio estado: la reacción guardada (para CTA1 mostrar el toggle activo y CTA3
 // leerla) y si el modal de CTA3 está abierto.
-// Panel admin mínimo (Fase 8, 10/08/2026). El bloqueo real está en /api/premium-admin.js
+// Panel admin mínimo (Fase 8, 10/08/2026). El bloqueo real está en /api/premium.js (?ruta=admin)
 // (chequea ADMIN_USER_ID server-side) — esta pantalla asume que si el fetch devuelve 401,
 // simplemente no sos vos, y lo muestra tal cual sin dar pistas extra.
 function AdminPremiumScreen({ pase }) {
@@ -2010,7 +2010,7 @@ function AdminPremiumScreen({ pase }) {
 
   function cargar() {
     setPendientes(undefined);
-    fetch("/api/premium-admin", { headers: { Authorization: `Bearer ${pase || ""}` } })
+    fetch("/api/premium?ruta=admin", { headers: { Authorization: `Bearer ${pase || ""}` } })
       .then((r) => {
         if (r.status === 401) { setError("No autorizado."); setPendientes([]); return null; }
         return r.json();
@@ -2023,7 +2023,7 @@ function AdminPremiumScreen({ pase }) {
   async function procesar(id, accion) {
     setProcesando(id);
     try {
-      await fetch("/api/premium-admin", {
+      await fetch("/api/premium?ruta=admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
         body: JSON.stringify({ solicitudId: id, accion }),
@@ -2230,7 +2230,7 @@ function TarjetaPagoAlias({ pase }) {
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = String(reader.result).split(",")[1];
-      fetch("/api/premium-activar-alias", {
+      fetch("/api/premium?ruta=activar-alias", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
         body: JSON.stringify({ archivoBase64: base64, mimeType: file.type }),
@@ -2298,7 +2298,7 @@ function TarjetaPagoMP({ pase }) {
   function pagar() {
     setCargando(true);
     setError(null);
-    fetch("/api/premium-crear-preferencia", {
+    fetch("/api/premium?ruta=crear-preferencia", {
       method: "POST",
       headers: { Authorization: `Bearer ${pase || ""}` },
     })
@@ -2341,7 +2341,7 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium, onV
     let vivo = true;
     setReaccion(undefined);
     setPatron(null);
-    fetch(`/api/registrar-reaccion?alternativaId=${entry.id}`, { headers: { Authorization: `Bearer ${pase || ""}` } })
+    fetch(`/api/registrar-extra?tipo=reaccion&alternativaId=${entry.id}`, { headers: { Authorization: `Bearer ${pase || ""}` } })
       .then((r) => (r.ok ? r.json() : { reaccion: null, patron: null }))
       .then((d) => { if (vivo) { setReaccion(d.reaccion || null); setPatron(d.patron || null); } })
       .catch(() => { if (vivo) setReaccion(null); });
@@ -2462,7 +2462,7 @@ function EntryDetalleFase2({ entry, esPremium, pase, onVolver, onVerPremium, onV
 }
 
 // CTA1 "¿Cómo te cae?" (Fase 2, 10/08/2026) — 2 toggles independientes, upsert vía
-// /api/registrar-reaccion. Cada toggle guarda apenas se toca (no espera un botón
+// /api/registrar-extra?tipo=reaccion. Cada toggle guarda apenas se toca (no espera un botón
 // "Guardar" aparte, mismo espíritu de fricción mínima que el resto de Fase 2).
 function CTAComoTeCae({ entry, pase, reaccion, onGuardada }) {
   const [guardando, setGuardando] = useState(null); // "frioCalor" | "livianoPesado" | null
@@ -2474,7 +2474,7 @@ function CTAComoTeCae({ entry, pase, reaccion, onGuardada }) {
     try {
       const body = { alternativaId: entry.id };
       if (campo === "frioCalor") body.frioCalor = valor; else body.livianoPesado = valor;
-      const resp = await fetch("/api/registrar-reaccion", {
+      const resp = await fetch("/api/registrar-extra?tipo=reaccion", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
         body: JSON.stringify(body),
@@ -2524,7 +2524,7 @@ const VALORES_FRIO_CALOR = ["Fresco", "Cálido"];
 const VALORES_LIVIANO_PESADO = ["Liviano", "Pesado"];
 
 // CTA3 "¿Y esto en mi caso?" (Fase 2, 10/08/2026) — modal local, cero IA, solo lee la
-// reacción propia ya guardada (GET /api/registrar-reaccion). Si no hay reacción todavía,
+// reacción propia ya guardada (GET /api/registrar-extra?tipo=reaccion). Si no hay reacción todavía,
 // invita a usar el CTA1 en vez de mostrar un dato vacío (fallback pedido por Marketing).
 // A propósito NO inventa una correlación con el historial de bienestar todavía — mostrar
 // "te suele ir mejor" requeriría el mismo umbral de evidencia que ya aplica
@@ -2778,7 +2778,7 @@ function CardExploraV2({ entry, onClick }) {
 // (Paso 2 anterior: preguntaba por energía/digestión/sueño/ánimo, se guardaba en
 // localStorage y nunca lo leía nadie más — no llegaba a persistirse en Supabase ni
 // a influir en ninguna pantalla). Este mapeo sí se persiste (usuarios.objetivo_grupo,
-// vía /api/actualizar-objetivo) y sí se usa: reordena el Explorador para que el grupo
+// vía /api/perfil?campo=objetivo) y sí se usa: reordena el Explorador para que el grupo
 // elegido aparezca primero. Los 4 grupos agrupan los 11 "objetivo" reales que ya
 // existen en alternativas_locales, por conexión estructural (no por reparto parejo) —
 // definido con Augusto el 30/07/2026:
@@ -2867,7 +2867,7 @@ function OnboardingFlow({ pase, onCompletar }) {
     if (nombreLimpio) {
       setGuardando(true);
       try {
-        await fetch("/api/actualizar-nombre", {
+        await fetch("/api/perfil?campo=nombre", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
           body: JSON.stringify({ nombreAlias: nombreLimpio }),
@@ -2889,7 +2889,7 @@ function OnboardingFlow({ pase, onCompletar }) {
         lsSet("reseteo_objetivo_grupo", objetivoGrupo);
       } catch (e) {}
       try {
-        await fetch("/api/actualizar-objetivo", {
+        await fetch("/api/perfil?campo=objetivo", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
           body: JSON.stringify({ objetivoGrupo }),
@@ -3071,7 +3071,7 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const paymentId = params.get("payment_id");
     if (!paymentId) return;
-    fetch("/api/premium-confirmar-mp", {
+    fetch("/api/premium?ruta=confirmar-mp", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${usuario.pase || ""}` },
       body: JSON.stringify({ paymentId }),
