@@ -17,6 +17,12 @@
 // mismo estilo ya validado en producción en registrar-comida.js y el resto. Ningún
 // comportamiento de la Sección 1 (Motor Puro) cambió — se movieron solo imports.
 //
+// CONSOLIDACIÓN DE DEPLOY (19/08/2026): historial.js (Fase 7) se fusionó acá — Vercel
+// Hobby tiene un límite de 12 funciones serverless por deployment; el proyecto llegó a
+// 18 y toda publicación falló en silencio durante ~11 días. CERO cambio de lógica: el
+// handler de historial es el mismo código, movido a su propia función (manejarHistorial)
+// y ruteado por ?vista=historial. La Sección 1 (Motor Puro) de insights no se tocó.
+//
 // ============================================================
 // SECCIÓN 1 — MOTOR PURO (no conoce nivel de acceso, no conoce req/res)
 // ============================================================
@@ -227,6 +233,119 @@ async function guardarResultado(usuarioId, resultado) {
 }
 
 // ============================================================
+// SECCIÓN 1B — HISTORIAL (ex historial.js, Fase 7, fusionado 19/08/2026)
+// Día por día, racha, resumen semanal y exportación CSV. Reutiliza fechaISO/sumarDias
+// de la Sección 1 (idénticas en ambos archivos originales, sin duplicar).
+// ============================================================
+
+const LIMITE_DIAS_GRATIS_HISTORIAL = 14;
+
+function calcularRacha(fechasConActividad) {
+  const set = new Set(fechasConActividad);
+  let racha = 0;
+  let cursor = fechaISO(new Date().toISOString());
+  while (set.has(cursor)) {
+    racha += 1;
+    cursor = sumarDias(cursor, -1);
+  }
+  return racha;
+}
+
+function aCSV(historial) {
+  const filas = [["fecha", "comidas_registradas", "energia", "digestion", "sueno", "hidratacion", "actividad_fisica"]];
+  for (const dia of historial) {
+    filas.push([
+      dia.fecha,
+      dia.comidas.map((c) => c.texto).join(" | "),
+      dia.bienestar?.energia ?? "",
+      dia.bienestar?.digestion ?? "",
+      dia.bienestar?.sueno ?? "",
+      dia.bienestar?.hidratacion ?? "",
+      dia.bienestar?.actividad_fisica ?? "",
+    ]);
+  }
+  return filas.map((f) => f.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+}
+
+async function verificarAccesoHistorial(usuarioId) {
+  const rows = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso`);
+  if (!rows.length) return { ok: false, status: 404, error: "Usuario no encontrado." };
+  const u = rows[0];
+  if (u.cuenta_suspendida === true) return { ok: false, status: 403, error: "Esta cuenta fue suspendida. Contactanos si creés que es un error." };
+  if (u.terminos_aceptados !== true) return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
+  return { ok: true, esPremium: u.nivel_acceso === "Premium" };
+}
+
+// Ruta: GET /api/generar-insights?vista=historial (antes: GET /api/historial)
+async function manejarHistorial(req, res, usuarioId) {
+  let acceso;
+  try {
+    acceso = await verificarAccesoHistorial(usuarioId);
+    if (!acceso.ok) return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
+  } catch (err) {
+    return res.status(400).json({ error: "El usuarioId recibido no es válido.", detail: String(err) });
+  }
+
+  const formatoCSV = req.query?.formato === "csv";
+  if (formatoCSV && !acceso.esPremium) {
+    return res.status(403).json({ error: "Exportar es una función Premium." });
+  }
+
+  const fechaDesde = acceso.esPremium ? null : sumarDias(fechaISO(new Date().toISOString()), -LIMITE_DIAS_GRATIS_HISTORIAL);
+
+  try {
+    let [comidas, bienestares] = await Promise.all([
+      supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&select=fecha,comida_registrada,alternativa_id&order=fecha.desc`),
+      supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion,sueno,hidratacion,actividad_fisica`),
+    ]);
+    if (fechaDesde) {
+      comidas = comidas.filter((c) => c.fecha && fechaISO(c.fecha) >= fechaDesde);
+      bienestares = bienestares.filter((b) => b.fecha_hora && fechaISO(b.fecha_hora) >= fechaDesde);
+    }
+
+    const porFecha = {};
+    const asegurar = (f) => { if (!porFecha[f]) porFecha[f] = { fecha: f, comidas: [], bienestar: null }; return porFecha[f]; };
+    for (const c of comidas) {
+      if (!c.fecha) continue;
+      asegurar(fechaISO(c.fecha)).comidas.push({ texto: c.comida_registrada, alternativaId: c.alternativa_id || null });
+    }
+    for (const b of bienestares) {
+      if (!b.fecha_hora) continue;
+      const dia = asegurar(fechaISO(b.fecha_hora));
+      dia.bienestar = { energia: b.energia, digestion: b.digestion, sueno: b.sueno, hidratacion: b.hidratacion, actividad_fisica: b.actividad_fisica };
+    }
+
+    const historial = Object.values(porFecha).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+    const racha = calcularRacha(Object.keys(porFecha));
+
+    if (formatoCSV) {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", "attachment; filename=historial-reseteo-propio.csv");
+      return res.status(200).send(aCSV(historial));
+    }
+
+    let resumenSemanal = null;
+    if (acceso.esPremium) {
+      const hoy = fechaISO(new Date().toISOString());
+      const hace7 = sumarDias(hoy, -7);
+      const hace14 = sumarDias(hoy, -14);
+      const diasEstaSemana = Object.keys(porFecha).filter((f) => f >= hace7 && f <= hoy).length;
+      const diasSemanaAnterior = Object.keys(porFecha).filter((f) => f >= hace14 && f < hace7).length;
+      resumenSemanal = { diasRegistradosEstaSemana: diasEstaSemana, diasRegistradosSemanaAnterior: diasSemanaAnterior };
+    }
+
+    return res.status(200).json({
+      historial,
+      racha,
+      limitado14dias: !acceso.esPremium,
+      resumenSemanal,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Error leyendo el historial", detail: String(err) });
+  }
+}
+
+// ============================================================
 // SECCIÓN 2 — CAPA DE ACCESO / PRESENTACIÓN (endpoint HTTP)
 // Acá vive el nivel de acceso, Premium, y todo lo comercial.
 // La Sección 1 nunca recibe ni conoce nada de lo que hay acá abajo.
@@ -256,6 +375,17 @@ export default async function handler(req, res) {
     }
     if (!SUPABASE_URL || !SUPABASE_KEY) {
       return res.status(500).json({ error: 'Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Vercel' });
+    }
+
+    // Consolidación de deploy (19/08/2026): historial vive acá mismo ahora, bajo
+    // ?vista=historial — mismo usuarioId ya extraído/validado arriba, sin duplicar esa
+    // lógica. No interfiere con el flujo de insights de abajo (return corta acá).
+    if (req.query?.vista === "historial") {
+      return manejarHistorial(req, res, usuarioId);
+    }
+
+    if (req.method !== 'GET') {
+      return res.status(405).json({ error: 'Método no permitido, usar GET.' });
     }
 
     const usuarioRows = await supabaseFetch(
