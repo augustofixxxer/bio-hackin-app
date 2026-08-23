@@ -2653,7 +2653,7 @@ const TECNICA_KW = ["remoj","coccion","cocción","horno","hervid","asar","saltea
 const SUSTITUCION_KW = ["casera","caseras","casero","en casa","en vez de","reemplaz","sustitu","cambia el","cambiá el","cambiar el","version casera","versión casera"];
 const MOMENTO_KW = ["antes de","despues de","después de","al despertar","antes del sueño","antes de dormir","minutos antes","pre-","post-","pre-entreno","post-entreno","ventana"];
 const CANTIDAD_KW = ["cucharada","puñado","g)","gr)","20g","porcion","porción","unidades","1-2","2-3 nueces"];
-const VARIABLES_FUERTES = new Set(["Preparación", "Sustitución de producto", "Momento", "Cantidad"]);
+const VARIABLES_FUERTES = new Set(["Preparación", "Sustitución de producto", "Momento", "Cantidad", "Frecuencia"]);
 
 function detectarVariable(entry) {
   const tecnica = ((entry.mecanismo || "") + " " + (entry.resultado || "")).toLowerCase();
@@ -2662,6 +2662,7 @@ function detectarVariable(entry) {
   if (SUSTITUCION_KW.some((k) => tecnica.includes(k))) return "Sustitución de producto";
   if (MOMENTO_KW.some((k) => frecuencia.includes(k))) return "Momento";
   if (CANTIDAD_KW.some((k) => frecuencia.includes(k))) return "Cantidad";
+  if (/\d+\s*(?:-|a)\s*\d+\s*veces\s*por\s*semana/i.test(frecuencia)) return "Frecuencia";
   if (entry.frecuencia) return "Frecuencia de consumo (variable débil)";
   return "Ninguna identificada";
 }
