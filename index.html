@@ -2551,18 +2551,42 @@ function ModalYEstoEnMiCaso({ entry, pase, reaccion, patron, cargando, onCerrar,
               Vos marcaste "{entry.combinacion}" como {[reaccion.frio_calor, reaccion.liviano_pesado].filter(Boolean).join(" y ")}.
             </p>
             {patron && (patron.energia || patron.digestion) ? (
-              <div style={{ display: "grid", gap: 6 }}>
-                {patron.energia && (
-                  <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
-                    En tu historial, los días que sumaste "{entry.combinacion}" marcaste una energía de {patron.energia.promedioConAlternativa} en promedio, vs {patron.energia.promedioGeneral} tu promedio general ({patron.energia.ocurrencias} veces registrado).
+              esPremium ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  {patron.energia && (
+                    <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
+                      En tu historial, los días que sumaste "{entry.combinacion}" marcaste una energía de {patron.energia.promedioConAlternativa} en promedio, vs {patron.energia.promedioGeneral} tu promedio general ({patron.energia.ocurrencias} veces registrado).
+                    </p>
+                  )}
+                  {patron.digestion && (
+                    <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
+                      En digestión, marcaste {patron.digestion.promedioConAlternativa} en promedio esos días, vs {patron.digestion.promedioGeneral} tu promedio general ({patron.digestion.ocurrencias} veces registrado).
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ filter: "blur(4px)", userSelect: "none" }}>
+                    {patron.energia && (
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: "0 0 6px" }}>
+                        En tu historial, los días que sumaste "{entry.combinacion}" marcaste una energía de {patron.energia.promedioConAlternativa} en promedio, vs {patron.energia.promedioGeneral} tu promedio general ({patron.energia.ocurrencias} veces registrado).
+                      </p>
+                    )}
+                    {patron.digestion && (
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
+                        En digestión, marcaste {patron.digestion.promedioConAlternativa} en promedio esos días, vs {patron.digestion.promedioGeneral} tu promedio general ({patron.digestion.ocurrencias} veces registrado).
+                      </p>
+                    )}
+                  </div>
+                  <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.5, margin: "10px 0 8px" }}>
+                    Premium te muestra cómo te viene yendo con esto en particular, según tu propio historial.
                   </p>
-                )}
-                {patron.digestion && (
-                  <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.menta, lineHeight: 1.6, margin: 0 }}>
-                    En digestión, marcaste {patron.digestion.promedioConAlternativa} en promedio esos días, vs {patron.digestion.promedioGeneral} tu promedio general ({patron.digestion.ocurrencias} veces registrado).
-                  </p>
-                )}
-              </div>
+                  <button className="glass-press" style={{
+                    background: "none", border: "none", padding: 0, cursor: "pointer",
+                    color: EXPLORADOR_TOKENS.accent, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, fontWeight: 700, textDecoration: "underline",
+                  }}>Ver en Premium →</button>
+                </div>
+              )
             ) : (
               <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.6 }}>
                 Todavía no tenemos suficiente cruce con tu bienestar para decirte si te suele ir mejor — a medida que sigas registrando, esto se va a ir afinando.
