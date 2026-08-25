@@ -2530,7 +2530,7 @@ const VALORES_LIVIANO_PESADO = ["Liviano", "Pesado"];
 // "te suele ir mejor" requeriría el mismo umbral de evidencia que ya aplica
 // patrones-observacionales.js (mínimo de ocurrencias + diferencia real), y hoy esta tabla
 // recién nace. Ver informe a Marketing: queda como paso 2 explícito, no fabricado ahora.
-function ModalYEstoEnMiCaso({ entry, pase, reaccion, patron, cargando, onCerrar, onIrACTA1 }) {
+function ModalYEstoEnMiCaso({ entry, pase, reaccion, patron, cargando, esPremium, onCerrar, onIrACTA1 }) {
   return (
     <div onClick={onCerrar} style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 50,
