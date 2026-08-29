@@ -262,13 +262,43 @@ export default async function handler(req, res) {
     // ";" (ej. "carne roja ; queso, crema, lacteos") es una interacción entre ingredientes
     // sueltos, más genérica. Mostrar primero lo específico evita que el usuario tenga que
     // leer 2-3 avisos genéricos antes de llegar al que realmente nombra su plato.
-    const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
-    coincidencias.sort((a, b) => especificidad(a) - especificidad(b));
+const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
+
+    // P0-D (28/08/2026) — Precedencia entre reglas empatadas en especificidad. Estos dos
+    // criterios SOLO desempatan dentro del mismo nivel de especificidad, nunca invierten
+    // el orden que ya existía arriba:
+    // 1) Seguridad: una regla de riesgo Alto nunca puede quedar detrás de una de menor riesgo.
+    // 2) Posición: entre las que quedan, gana la que el usuario nombró primero en su texto
+    //    (el plato base casi siempre se dice antes que su acompañamiento).
+    const riesgoRank = (r) => (r.nivel_riesgo === "Alto" ? 0 : r.nivel_riesgo === "Medio" ? 1 : 2);
+    function posicionMatch(r) {
+      const claves = (r.palabras_clave || "").replace(/^tip:/i, "").trim()
+        .split(/[;,]/).map((k) => normalizar(k.trim())).filter(Boolean);
+      let mejor = Infinity;
+      for (const clave of claves) {
+        const m = new RegExp(`\\b${escapeRegex(clave)}\\b`).exec(textoParaMatching);
+        if (m && m.index < mejor) mejor = m.index;
+      }
+      return mejor;
+    }
+    function ordenarPorPrecedencia(lista) {
+      return [...lista].sort((a, b) => {
+        const espDiff = especificidad(a) - especificidad(b);
+        if (espDiff !== 0) return espDiff;
+        const riesgoDiff = riesgoRank(a) - riesgoRank(b);
+        if (riesgoDiff !== 0) return riesgoDiff;
+        return posicionMatch(a) - posicionMatch(b);
+      });
+    }
+    const coincidenciasOrdenadas = ordenarPorPrecedencia(coincidencias);
+    const coincidenciasTipOrdenadas = ordenarPorPrecedencia(coincidenciasTip).slice(0, 2);
 
     // 2b. Si el texto indica versión casera, esas coincidencias quedan "resueltas"
     // (ya se aplicó el hackeo) y no se tratan como bloqueo real.
-    const bloqueosReales = versionCasera ? [] : coincidencias;
-    const resueltos = versionCasera ? coincidencias : [];
+    // Límite de salida (P0, sección 8): máximo 2 bloqueos mostrados — el principal según
+    // el orden de arriba, y como mucho un segundo.
+    const bloqueosReales = versionCasera ? [] : coincidenciasOrdenadas.slice(0, 2);
+    const resueltos = versionCasera ? coincidenciasOrdenadas : [];
 
     // 3. Crear el Registro Diario — salvo en modo "planificar antes de comer" (soloVista):
     // ahí se evalúa todo exactamente igual, pero no se persiste nada, porque el usuario
