@@ -1900,6 +1900,22 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
   return (
     <div className="fade-in">
       <BarraBusqueda query={query} setQuery={setQuery} />
+      {grupoElegido && (
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.textSecondary, marginBottom: 8, letterSpacing: "0.03em", textTransform: "uppercase" }}>
+            Para vos, según tu objetivo
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {grupoElegido.objetivos.filter((o) => catsPorNombre[o]).map((o) => (
+              <button key={o} onClick={() => onSelectCategory(o)} className="glass-press" style={{
+                borderRadius: 14, padding: "8px 14px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, fontWeight: 700,
+                color: EXPLORADOR_TOKENS.textPrimary, background: "rgba(197,160,89,0.14)",
+                border: `1px solid ${EXPLORADOR_TOKENS.accent}55`, cursor: "pointer",
+              }}>{o}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ display: "grid", gap: 12 }}>
         {GRUPOS_OBJETIVO.map((g) => {
           const catsDelGrupo = g.objetivos.map((o) => catsPorNombre[o]).filter(Boolean);
