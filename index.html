@@ -3333,7 +3333,7 @@ function App() {
               query={query}
               setQuery={setQuery}
               filteredCats={filteredCats}
-              onSelectCategory={(name) => setView({ screen: "category", name })}
+              onSelectCategory={(name, idsCoincidentes) => setView({ screen: "category", name, idsCoincidentes: idsCoincidentes || null })}
               grupoElegido={grupoElegido}
               pase={usuario.pase}
             />
