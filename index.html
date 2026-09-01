@@ -3348,7 +3348,8 @@ function App() {
         )}
 
         {view.screen === "category" && (() => {
-          const cat = grupos[view.name] || [];
+          const catCompleta = grupos[view.name] || [];
+          const cat = view.idsCoincidentes ? catCompleta.filter((e) => view.idsCoincidentes.includes(e.id)) : catCompleta;
           return (
             <div className="fade-in">
               <button onClick={() => setView({ screen: "categories" })} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
