@@ -1886,7 +1886,7 @@ function ExploradorScreen({ data, query, setQuery, filteredCats, onSelectCategor
         <BarraBusqueda query={query} setQuery={setQuery} />
         <div style={{ display: "grid", gap: 10 }}>
           {filteredCats.map((cat) => (
-            <TarjetaCategoria key={cat.name} cat={cat} onClick={() => onSelectCategory(cat.name)} />
+            <TarjetaCategoria key={cat.name} cat={cat} onClick={() => onSelectCategory(cat.name, buscando ? cat.entries.map((e) => e.id) : null)} />
           ))}
         </div>
       </div>
