@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reseteo Propio — Tu punto de partida</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #0f1715;
+    --surface: #17211e;
+    --surface-2: #1d2925;
+    --text: #f2efe9;
+    --muted: #aab5af;
+    --accent: #c5a059;
+    --mint: #8fa89b;
+    --border: rgba(255,255,255,.12);
+  }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; }
+  button,input,textarea,select { font:inherit; }
+  button { -webkit-tap-highlight-color:transparent; }
+  .wrap { max-width:640px; margin:0 auto; padding:24px 18px 80px; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:26px; }
+  .brand { font-weight:800; letter-spacing:.02em; }
+  .status { font-size:11px; color:var(--mint); }
+  .hero { margin-bottom:22px; }
+  .eyebrow { color:var(--accent); font-size:11px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; margin-bottom:8px; }
+  h1 { font-size:30px; line-height:1.12; margin:0 0 10px; }
+  .hero p { color:var(--muted); line-height:1.55; margin:0; font-size:14px; }
+  .search { display:flex; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:13px 14px; box-shadow:0 12px 30px rgba(0,0,0,.22); }
+  .search input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:var(--text); font-size:15px; }
+  .search button { border:0; border-radius:13px; background:var(--accent); color:#2a1d08; padding:9px 13px; font-weight:800; cursor:pointer; }
+  .section-title { font-size:13px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:800; margin:26px 0 10px; }
+  .hooks { display:grid; gap:9px; }
+  .hook { width:100%; text-align:left; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:17px; padding:14px 15px; cursor:pointer; }
+  .hook strong { display:block; font-size:14px; margin-bottom:4px; }
+  .hook span { color:var(--muted); font-size:12px; line-height:1.4; }
+  .before { margin-top:20px; background:linear-gradient(180deg,rgba(197,160,89,.12),rgba(197,160,89,.04)); border:1px solid rgba(197,160,89,.28); border-radius:22px; padding:17px; }
+  .before h2 { font-size:18px; margin:0 0 5px; }
+  .before p { margin:0 0 13px; color:var(--muted); font-size:12.5px; line-height:1.5; }
+  textarea { width:100%; min-height:78px; resize:vertical; background:rgba(0,0,0,.16); border:1px solid var(--border); border-radius:15px; color:var(--text); padding:12px; outline:0; }
+  .primary { width:100%; margin-top:10px; border:0; border-radius:15px; padding:12px; background:var(--accent); color:#2a1d08; font-weight:800; cursor:pointer; }
+  .secondary { width:100%; border:1px solid var(--border); border-radius:15px; padding:11px; background:transparent; color:var(--text); font-weight:700; cursor:pointer; }
+  .result { margin-top:13px; display:grid; gap:9px; }
+  .card { background:var(--surface-2); border:1px solid var(--border); border-radius:17px; padding:14px; }
+  .card h3 { margin:0 0 7px; font-size:14px; }
+  .card p { margin:0; color:var(--muted); font-size:12.5px; line-height:1.55; }
+  .why { color:var(--accent)!important; font-weight:700; margin-top:8px!important; }
+  .empty { color:var(--muted); font-size:12.5px; line-height:1.5; padding:10px 2px; }
+  .tabs { position:fixed; left:0; right:0; bottom:0; background:rgba(15,23,21,.96); border-top:1px solid var(--border); backdrop-filter:blur(12px); display:flex; justify-content:center; z-index:10; }
+  .tabs-inner { max-width:640px; width:100%; display:grid; grid-template-columns:repeat(3,1fr); }
+  .tab { background:none; border:0; color:var(--muted); padding:11px 4px 12px; cursor:pointer; font-size:11px; font-weight:800; }
+  .tab.active { color:var(--text); }
+  .tab small { display:block; font-size:9px; font-weight:500; margin-top:3px; color:var(--muted); }
+  .notice { margin-top:12px; font-size:11px; color:var(--muted); line-height:1.45; }
+  .loading { color:var(--muted); font-size:12px; margin-top:10px; }
+  .event-grid { display:grid; gap:10px; }
+  .event { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:15px; }
+  .event h3 { margin:0 0 4px; font-size:15px; }
+  .event p { color:var(--muted); font-size:12px; line-height:1.45; margin:0 0 11px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  select { width:100%; background:#111a17; color:var(--text); border:1px solid var(--border); border-radius:12px; padding:10px; }
+  .saved { color:var(--mint); font-size:12px; margin-top:9px; }
+  .premium { background:linear-gradient(180deg,rgba(143,168,155,.14),rgba(197,160,89,.08)); border:1px solid rgba(143,168,155,.24); border-radius:22px; padding:18px; }
+  .premium h2 { margin:0 0 8px; font-size:19px; }
+  .premium p { margin:0 0 13px; color:var(--muted); font-size:12.5px; line-height:1.55; }
+  .pill { display:inline-block; border:1px solid rgba(197,160,89,.3); color:var(--accent); border-radius:999px; padding:5px 9px; font-size:10px; margin:3px 3px 0 0; }
+  @media (max-width:420px){ h1{font-size:27px;} .wrap{padding-left:15px;padding-right:15px;} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<script type="text/babel">
+const {useEffect,useMemo,useState}=React;
+
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+const HOOKS=[
+  {text:"¿Te quedás sin energía durante el día?",terms:["energia","cansancio","agotamiento","fatiga","sin energia"]},
+  {text:"¿Comés y después te sentís pesado o con sueño?",terms:["pesadez","sueño","somnolencia","digestión","pesado"]},
+  {text:"¿Tenés hambre poco después de comer?",terms:["hambre","saciedad","antojo","picar","comer"]},
+  {text:"¿Dormís, pero no sentís que descansás?",terms:["sueño","dormir","descanso","descansar"]},
+  {text:"¿Te cuesta mantener el foco?",terms:["foco","concentracion","concentración","atencion","atención"]},
+  {text:"¿Querés mejorar una comida sin dejar de comerla?",terms:["preparacion","coccion","cantidad","sustitucion","comida"]},
+];
+
+function normalize(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function scoreEntry(e,q){
+  const n=normalize(q); if(!n)return 0;
+  const fields=[e.combinacion,e.resultado,e.mecanismo,e.intencionPrincipal,e.familia,...(e.intencionesSecundarias||[])].map(normalize);
+  let s=0;
+  if(fields[0]&&fields[0].includes(n))s+=80;
+  if(fields[1]&&fields[1].includes(n))s+=55;
+  if(fields[2]&&fields[2].includes(n))s+=40;
+  if(fields[3]&&fields[3].includes(n))s+=45;
+  if(fields[4]&&fields[4].includes(n))s+=35;
+  fields.slice(5).forEach(f=>{if(f&&f.includes(n))s+=25});
+  n.split(/\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=4}));
+  return s;
+}
+function explain(e,q){
+  const n=normalize(q);
+  if(e.intencionPrincipal && normalize(e.intencionPrincipal).includes(n)) return "Aparece porque esta ficha está vinculada directamente con esa intención.";
+  if(e.familia && normalize(e.familia).includes(n)) return "Aparece porque pertenece a una familia de preparación relacionada con lo que buscaste.";
+  return "Aparece porque el contenido de esta ficha tiene una relación contextual con tu búsqueda.";
+}
+
+function App(){
+  const [usuario,setUsuario]=useState(null); const [data,setData]=useState(null); const [tab,setTab]=useState("descubrir");
+  const [q,setQ]=useState(""); const [before,setBefore]=useState(""); const [beforeResult,setBeforeResult]=useState(null); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState("");
+  const [energy,setEnergy]=useState(""); const [dig,setDig]=useState(""); const [sleep,setSleep]=useState(""); const [water,setWater]=useState(""); const [activity,setActivity]=useState("");
+  useEffect(()=>{
+    let u=null; try{u=JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){}
+    if(!u){ window.location.href="/index.html"; return; }
+    if(lsGet("reseteo_terminos_v1")!=="true" || lsGet("reseteo_onboarding_v1")!=="true"){ window.location.href="/index.html"; return; }
+    setUsuario(u);
+    fetch("/api/data").then(r=>r.json()).then(d=>setData(d)).catch(()=>setData({entradas:[]}));
+  },[]);
+
+  const results=useMemo(()=>{
+    if(!data)return [];
+    const all=data.entradas||[]; const n=normalize(q);
+    if(!n)return [];
+    const tokens=n.split(/\s+/).filter(Boolean);
+    return all.map(e=>({e,s:scoreEntry(e,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,7);
+  },[data,q]);
+
+  function buscar(text){setQ(text);setTab("descubrir")}
+
+  async function analizarAntes(){
+    if(!before.trim())return;
+    setBusy(true);setBeforeResult(null);setMsg("");
+    try{
+      const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto:before.trim(),soloVista:true})});
+      const d=await r.json(); if(!r.ok)throw new Error(d.error||"No se pudo consultar");
+      setBeforeResult(d);
+    }catch(e){setMsg(e.message||"No se pudo consultar ahora.")}
+    finally{setBusy(false)}
+  }
+
+  async function guardarBienestar(){
+    const body={}; if(energy)body.energia=energy;if(dig)body.digestion=dig;if(sleep)body.sueno=sleep;if(water)body.hidratacion=water;if(activity)body.actividad_fisica=activity;
+    if(!Object.keys(body).length){setMsg("Elegí al menos un dato para registrar.");return}
+    setBusy(true);setMsg("");
+    try{const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setMsg("Guardado. Podés volver cuando quieras y sumar otro evento.");}
+    catch(e){setMsg(e.message||"No se pudo guardar.")}
+    finally{setBusy(false)}
+  }
+
+  if(!usuario)return null;
+  return <>
+    <main className="wrap">
+      <div className="top"><div className="brand">Reseteo Propio</div><div className="status">Tu espacio personal</div></div>
+      {tab==="descubrir" && <>
+        <section className="hero">
+          <div className="eyebrow">Empezá por lo que necesitás ahora</div>
+          <h1>¿Qué querés entender hoy?</h1>
+          <p>Buscá una situación, una sensación o algo que estés por comer. Te damos contexto para que puedas decidir y probar por vos mismo.</p>
+        </section>
+        <div className="search"><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&setTab('buscar')} placeholder="Ej: sueño después de comer, hambre, energía..."/><button onClick={()=>setTab('buscar')}>Buscar</button></div>
+        {!q && <>
+          <div className="section-title">Tal vez estás buscando esto</div>
+          <div className="hooks">{HOOKS.map(h=><button className="hook" key={h.text} onClick={()=>buscar(h.terms[0])}><strong>{h.text}</strong><span>Entrá por la situación, no por una lista de alimentos.</span></button>)}</div>
+        </>}
+        <section className="before">
+          <h2>🍽️ Antes de comer o hacer algo</h2>
+          <p>Consultá primero. No hace falta registrar nada: queremos ayudarte en el momento en que tomás la decisión.</p>
+          <textarea value={before} onChange={e=>setBefore(e.target.value)} placeholder="Ej: milanesa con papas fritas" />
+          <button className="primary" onClick={analizarAntes} disabled={busy}>{busy?"Consultando...":"Consultar antes"}</button>
+          {msg&&<div className="notice">{msg}</div>}
+          {beforeResult&&<BeforeResult data={beforeResult} />}
+        </section>
+      </>}
+
+      {tab==="buscar" && <>
+        <section className="hero"><div className="eyebrow">Explorar</div><h1>Esto encontramos para “{q}”</h1><p>No queremos que tengas que adivinar por qué apareció una ficha.</p></section>
+        <div className="search"><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&setQ(e.target.value)} placeholder="Probá otra forma de decirlo..."/><button onClick={()=>setTab('descubrir')}>Volver</button></div>
+        <div className="result">{results.length?results.map(({e})=><div className="card" key={e.id}><h3>{e.combinacion||"Sin título"}</h3><p>{e.resultado||e.mecanismo||"Información disponible para esta situación."}</p><p className="why">Por qué apareció: {explain(e,q)}</p><button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");setTab('descubrir')}}>Llevarlo a “Antes de comer” →</button></div>):<div className="empty">No encontramos una relación suficientemente clara todavía. Eso no significa que no exista; significa que preferimos no inventarte una respuesta.</div>}</div>
+      </>}
+
+      {tab==="midi" && <>
+        <section className="hero"><div className="eyebrow">Segundo mundo</div><h1>Tu día, tus registros</h1><p>Acá no venís a buscar información. Venís a contar qué pasó. Cada comida y cada observación son eventos independientes.</p></section>
+        <div className="event-grid">
+          <div className="event"><h3>🍽️ Registrar una comida</h3><p>Podés registrar varias durante el mismo día. El texto queda tal como lo escribís.</p><button className="primary" onClick={()=>window.location.href="/index.html"}>Abrir registro completo</button></div>
+          <div className="event"><h3>⚡ Cómo me sentí</h3><p>Elegí solo lo que quieras registrar ahora. No hace falta completar todo.</p>
+            <div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="1">1 — Muy baja</option><option value="2">2 — Baja</option><option value="3">3 — Media</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select>
+            <select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="1">1 — Muy mala</option><option value="2">2 — Mala</option><option value="3">3 — Normal</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select></div>
+            <div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="menos_6h">Menos de 6 h</option><option value="6_7h">6–7 h</option><option value="7_9h">7–9 h</option><option value="mas_9h">Más de 9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="menos_1l">Menos de 1 L</option><option value="1_2l">1–2 L</option><option value="2_3l">2–3 L</option><option value="mas_3l">Más de 3 L</option></select></div>
+            <select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="sedentario">Sedentario</option><option value="activo">Activo</option><option value="muy_activo">Muy activo</option></select>
+            <button className="primary" onClick={guardarBienestar} disabled={busy}>{busy?"Guardando...":"Guardar observación"}</button>{msg&&<div className="saved">{msg}</div>}
+          </div>
+        </div>
+      </>}
+
+      {tab==="premium" && <>
+        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>Descubrir qué se repite en vos</h1><p>Premium no es más catálogo. Es la capa que toma tus registros y los convierte en aprendizaje personal.</p></section>
+        <div className="premium"><h2>Cuando ya hay suficiente historia...</h2><p>Podemos cruzar alimentación, energía, descanso y digestión para encontrar relaciones observacionales. Después, usar esos aprendizajes para probar cambios concretos y ver qué pasa.</p><div><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Hacks</span><span className="pill">Continuidad</span></div><button className="primary" style={{marginTop:15}} onClick={()=>window.location.href="/index.html"}>Ver mi espacio completo</button></div>
+      </>}
+    </main>
+    <div className="tabs"><div className="tabs-inner">
+      <button className={'tab '+(tab==='descubrir'||tab==='buscar'?'active':'')} onClick={()=>setTab('descubrir')}>🔎 DESCUBRIR<small>Encontrar respuestas</small></button>
+      <button className={'tab '+(tab==='midi'?'active':'')} onClick={()=>setTab('midi')}>📓 MI DÍA<small>Registrar lo que pasó</small></button>
+      <button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>setTab('premium')}>✦ PREMIUM<small>Entender patrones</small></button>
+    </div></div>
+  </>;
+}
+
+function BeforeResult({data}){
+  const blocks=data.bloqueos||[]; const suggestions=data.sugerencias||[];
+  return <div className="result">
+    {blocks.length?blocks.map((b,i)=><div className="card" key={i}><h3>{b.combinacion||"Señal detectada"}</h3><p>{b.resultado||"Hay una señal cargada para esta combinación."}</p>{b.solucion&&<><p style={{marginTop:8,color:'var(--text)'}}><b>Podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p><p className="why">Observá cómo te sentís después. La idea es experimentar, no obedecer una receta.</p></>}</div>):<div className="card"><h3>No encontramos una alerta específica</h3><p>Eso no significa que esta comida sea “perfecta”. Solo significa que hoy no tenemos una señal suficientemente clara cargada para esta combinación.</p><p className="why">Si la repetís, podés registrarla y observar cómo te sentís.</p></div>}
+    {suggestions.length>0&&suggestions.map((s,i)=><div className="card" key={'s'+i}><h3>También puede interesarte</h3><p>{s.adaptacion||s.recomendacion||s.nombre||String(s)}</p></div>)}
+  </div>
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
