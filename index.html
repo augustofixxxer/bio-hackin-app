@@ -2694,7 +2694,35 @@ const SUSTITUCION_KW = ["casera","caseras","casero","en casa","en vez de","reemp
 const MOMENTO_KW = ["antes de","despues de","después de","al despertar","antes del sueño","antes de dormir","minutos antes","pre-","post-","pre-entreno","post-entreno","ventana"];
 const CANTIDAD_KW = ["cucharada","puñado","g)","gr)","20g","porcion","porción","unidades","1-2","2-3 nueces"];
 const VARIABLES_FUERTES = new Set(["Preparación", "Sustitución de producto", "Momento", "Cantidad", "Frecuencia"]);
-
+const CATALOGO_INTENCIONES = [
+  { clave: "energia", terminos: ["cansancio","cansado","cansada","bajon","bajón","falta de energia","poca energia","energia"] },
+  { clave: "hambre_saciedad", terminos: ["hambre","picoteo","picotear","saciedad"] },
+  { clave: "digestion", terminos: ["pesadez","pesado","pesada","digestion pesada","digestion"] },
+  { clave: "recuperacion", terminos: ["recuperacion","recuperación","recupero"] },
+  { clave: "entrenamiento", terminos: ["actividad fisica","actividad física","entrenamiento"] },
+  { clave: "descanso_sueno", terminos: ["sueño","sueno","somnolencia","dormir"] },
+];
+const CATALOGO_FAMILIAS = [
+  { clave: "frituras", terminos: ["rabas","papas fritas","bombas de queso"] },
+  { clave: "empanados", terminos: ["milanesa","suprema","rebozado"] },
+  { clave: "pastas", terminos: ["ravioles","ñoquis","tallarines","fideos","canelones","lasaña"] },
+  { clave: "guisos", terminos: ["guiso","guisado"] },
+  { clave: "carnes", terminos: ["asado","matambre","bife"] },
+];
+function rankearContenido(query, entries) {
+  const q = query.toLowerCase();
+  const intencionesMatch = CATALOGO_INTENCIONES.filter((i) => i.terminos.some((t) => q.includes(t))).map((i) => i.clave);
+  const familiasMatch = CATALOGO_FAMILIAS.filter((f) => f.terminos.some((t) => q.includes(t))).map((f) => f.clave);
+  return entries.map((e) => {
+    let score = 0;
+    if (e.intencionPrincipal && intencionesMatch.includes(e.intencionPrincipal)) score += 100;
+    if ((e.intencionesSecundarias || []).some((i) => intencionesMatch.includes(i))) score += 50;
+    if (e.familia && familiasMatch.includes(e.familia)) score += 40;
+    const texto = (e.combinacion + " " + (e.mecanismo || "") + " " + (e.resultado || "")).toLowerCase();
+    if (texto.includes(q)) score += 10;
+    return { e, score };
+  }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).map((r) => r.e);
+}
 function detectarVariable(entry) {
   const tecnica = ((entry.mecanismo || "") + " " + (entry.resultado || "")).toLowerCase();
   const frecuencia = (entry.frecuencia || "").toLowerCase();
