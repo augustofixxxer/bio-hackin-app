@@ -3188,22 +3188,7 @@ function App() {
   const filteredCats = categorias
     .map((cat) => ({
       name: cat,
-     entries: grupos[cat].filter((e) => {
-  const SINONIMOS_SITUACION = {
-    "cansancio": "energ", "cansado": "energ", "cansada": "energ", "bajón": "energ", "bajon": "energ",
-    "pesadez": "digest", "pesado": "digest", "pesada": "digest",
-    "sueño": "dormir", "sueno": "dormir", "somnolencia": "dormir",
-    "hambre": "saciedad", "picoteo": "saciedad", "picotear": "saciedad",
-    "recuperacion": "entren", "recuperación": "entren", "recupero": "entren", "actividad fisica": "entren", "actividad física": "entren",
-  };
-  const q = query.toLowerCase();
-  const terminos = [q];
-  for (const [clave, mapeo] of Object.entries(SINONIMOS_SITUACION)) {
-    if (q.includes(clave)) terminos.push(mapeo);
-  }
-  const texto = (e.combinacion + " " + (e.mecanismo || "") + " " + (e.resultado || "")).toLowerCase();
-  return terminos.some((t) => texto.includes(t));
-}), 
+     entries: query.trim() === "" ? grupos[cat] : rankearContenido(query, grupos[cat]),
     }))
     .filter((c) => query === "" || c.entries.length > 0);
 
