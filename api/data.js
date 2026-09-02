@@ -75,6 +75,11 @@ export default async function handler(req, res) {
         badge_principal: a.badge_principal || null,
         tag_frio_calor: a.tag_frio_calor || null,
         orden_prioridad: a.orden_prioridad ?? null,
+        intencionPrincipal: claveDeIntencion[a.intencion_principal_id] || null,
+        intencionesSecundarias: (a.intenciones_secundarias || []).map((id) => claveDeIntencion[id]).filter(Boolean),
+        familia: a.familia_key || null,
+        prioridadBusqueda: a.prioridad_busqueda || 0,
+        estadoCurado: a.estado_curado || null,
       };
     });
 
