@@ -149,9 +149,20 @@ function App(){
     try{const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setMsg("Guardado. Podés volver cuando quieras y sumar otro evento.");}
     catch(e){setMsg(e.message||"No se pudo guardar.")}
     finally{setBusy(false)}
-  }
+}
 
-  if(!usuario)return null;
+async function registrarComidaMiDia(){
+if(!comidaTexto.trim())return;
+setComidaBusy(true);setComidaMsg("");setComidaResult(null);
+try{
+const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify({texto:comidaTexto.trim()})});
+const d=await r.json(); if(!r.ok)throw new Error(d.error||"No se pudo guardar");
+setComidaResult(d); setComidaTexto(""); setComidaMsg("Comida registrada. Podés sumar otra cuando quieras.");
+}catch(e){setComidaMsg(e.message||"No se pudo guardar.")}
+finally{setComidaBusy(false)}
+}
+
+if(!usuario)return null;
   return <>
     <main className="wrap">
       <div className="top"><div className="brand">Reseteo Propio</div><div className="status">Tu espacio personal</div></div>
