@@ -113,7 +113,7 @@ function App(){
   const [usuario,setUsuario]=useState(null); const [data,setData]=useState(null); const [tab,setTab]=useState("descubrir");
   const [q,setQ]=useState(""); const [before,setBefore]=useState(""); const [beforeResult,setBeforeResult]=useState(null); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState("");
   const [energy,setEnergy]=useState(""); const [dig,setDig]=useState(""); const [sleep,setSleep]=useState(""); const [water,setWater]=useState(""); const [activity,setActivity]=useState("");
-  useEffect(()=>{
+  const [comidaTexto,setComidaTexto]=useState(""); const [comidaBusy,setComidaBusy]=useState(false); const [comidaMsg,setComidaMsg]=useState(""); const [comidaResult,setComidaResult]=useState(null);  useEffect(()=>{
     let u=null; try{u=JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){}
     if(!u){ window.location.href="/index.html"; return; }
     if(lsGet("reseteo_terminos_v1")!=="true" || lsGet("reseteo_onboarding_v1")!=="true"){ window.location.href="/index.html"; return; }
