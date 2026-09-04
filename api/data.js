@@ -80,6 +80,9 @@ export default async function handler(req, res) {
         familia: a.familia_key || null,
         prioridadBusqueda: a.prioridad_busqueda || 0,
         estadoCurado: a.estado_curado || null,
+        accionTexto: a.accion_texto || null,
+        observacionTexto: a.observacion_texto || null,
+        continuidadTexto: a.continuidad_texto || null,
       };
     });
 
