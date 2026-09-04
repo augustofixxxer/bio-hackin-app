@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
   try {
     const alternativas = await supabaseFetch(
-      `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia,tipo_card,badge_principal,tag_frio_calor,orden_prioridad,intencion_principal_id,intenciones_secundarias,familia_key,prioridad_busqueda,estado_curado`
+    `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia,tipo_card,badge_principal,tag_frio_calor,orden_prioridad,intencion_principal_id,intenciones_secundarias,familia_key,prioridad_busqueda,estado_curado,accion_texto,observacion_texto,continuidad_texto`  
     );
     const intenciones = await supabaseFetch(`intenciones?select=id,clave`);
     const claveDeIntencion = Object.fromEntries(intenciones.map((i) => [i.id, i.clave]));
