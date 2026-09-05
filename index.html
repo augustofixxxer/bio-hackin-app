@@ -474,6 +474,10 @@ function LoginScreen({ onLogin }) {
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
       lsSet("reseteo_usuario", JSON.stringify(data));
+      if (lsGet("reseteo_terminos_v1") === "true" && lsGet("reseteo_onboarding_v1") === "true") {
+        window.location.href = "/inicio.html";
+        return;
+      }
       onLogin(data);
     } catch (e) {
       setError(String(e.message || e));
