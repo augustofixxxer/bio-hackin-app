@@ -2980,7 +2980,7 @@ function OnboardingFlow({ pase, onCompletar }) {
     try {
       lsSet("reseteo_onboarding_v1", "true");
     } catch (e) {}
-    onCompletar();
+    window.location.href = "/inicio.html";
   }
 
   const cardStyle = {
