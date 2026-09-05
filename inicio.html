@@ -219,8 +219,25 @@ if(!usuario)return null;
 function BeforeResult({data}){
   const blocks=data.bloqueos||[]; const suggestions=data.sugerencias||[];
   return <div className="result">
-    {blocks.length?blocks.map((b,i)=><div className="card" key={i}><h3>{b.combinacion||"Señal detectada"}</h3><p>{b.resultado||"Hay una señal cargada para esta combinación."}</p>{b.solucion&&<><p style={{marginTop:8,color:'var(--text)'}}><b>Podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p><p className="why">Observá cómo te sentís después. La idea es experimentar, no obedecer una receta.</p></>}</div>):<div className="card"><h3>No encontramos una alerta específica</h3><p>Eso no significa que esta comida sea “perfecta”. Solo significa que hoy no tenemos una señal suficientemente clara cargada para esta combinación.</p><p className="why">Si la repetís, podés registrarla y observar cómo te sentís.</p></div>}
-    {suggestions.length>0&&suggestions.map((s,i)=><div className="card" key={'s'+i}><h3>También puede interesarte</h3><p>{s.adaptacion||s.recomendacion||s.nombre||String(s)}</p></div>)}
+    {blocks.length?blocks.map((b,i)=><div className="card" key={i}>
+      <h3>{b.combinacion||"Señal detectada"}</h3>
+      <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
+      {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
+      {b.solucion&&<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>}
+      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
+      <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
+    </div>):<div className="card">
+      <h3>No encontramos una alerta específica</h3>
+      <p><b>Qué detectamos:</b> hoy no tenemos una señal suficientemente clara cargada para esta combinación — eso no significa que sea "perfecta".</p>
+      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué podés hacer:</b> comerla con confianza y prestar atención a cómo te sentís después.</p>
+      <p className="why" style={{marginTop:4}}>Siguiente paso: si la repetís seguido, registrala en Mi Día — con más registros podemos empezar a ver patrones reales, no solo reglas generales.</p>
+    </div>}
+    {suggestions.length>0&&suggestions.map((s,i)=><div className="card" key={'s'+i}>
+      <h3>También puede interesarte</h3>
+      <p>{s.adaptacion||s.recomendacion||s.nombre||String(s)}</p>
+      {s.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Podés probar:</b> {s.accionTexto}</p>}
+      {s.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {s.observacionTexto}</p>}
+    </div>)}
   </div>
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
