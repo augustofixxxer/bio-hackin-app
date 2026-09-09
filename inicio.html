@@ -255,4 +255,44 @@ function App(){
 
       {tab==="premium" && <>
         <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>Lo que Premium te da ahora mismo</h1><p>Cada vez que consultes "Antes de comer" o busques una situación, Premium te muestra además cómo te viene yendo específicamente a vos con eso — no solo la regla general que ve todo el mundo.</p></section>
-        <div className="premium"><h2>Y con el tiempo, se pone mejor</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</s
+        <div className="premium"><h2>Y con el tiempo, se pone mejor</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></div>
+      </>}
+    </main>
+    <div className="tabs"><div className="tabs-inner">
+      <button className={'tab '+(tab==='descubrir'?'active':'')} onClick={()=>irA('descubrir')}>🔎 DESCUBRIR<small>Encontrar respuestas</small></button>
+      <button className={'tab '+(tab==='midi'?'active':'')} onClick={()=>irA('midi')}>📓 MI DÍA<small>Registrar lo que pasó</small></button>
+      <button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>irA('premium')}>✦ PREMIUM<small>Entender patrones</small></button>
+    </div></div>
+  </>;
+}
+
+function BeforeResult({data,original}){
+  const blocks=data.bloqueos||[]; const suggestions=data.sugerencias||[];
+  const esCompuesto=blocks.length>1;
+  return <div className="result">
+    {esCompuesto && original && <p className="notice" style={{marginBottom:2}}>Esto es parte de lo que registraste: "{original}"</p>}
+    {blocks.length?blocks.map((b,i)=><div className="card" key={i}>
+      <h3>{b.combinacion||"Señal detectada"}</h3>
+      <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
+      {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
+      {b.solucion&&<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>}
+      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
+      <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
+    </div>):<div className="card">
+      <h3>No encontramos una alerta específica</h3>
+      <p><b>Qué detectamos:</b> hoy no tenemos una señal suficientemente clara cargada para esta combinación — eso no significa que sea "perfecta".</p>
+      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué podés hacer:</b> comerla con confianza y prestar atención a cómo te sentís después.</p>
+      <p className="why" style={{marginTop:4}}>Siguiente paso: si la repetís seguido, registrala en Mi Día — con más registros podemos empezar a ver patrones reales, no solo reglas generales.</p>
+    </div>}
+    {suggestions.length>0&&suggestions.map((s,i)=><div className="card" key={'s'+i}>
+      <h3>También puede interesarte</h3>
+      <p>{s.adaptacion||s.recomendacion||s.nombre||String(s)}</p>
+      {s.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Podés probar:</b> {s.accionTexto}</p>}
+      {s.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {s.observacionTexto}</p>}
+    </div>)}
+  </div>
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
