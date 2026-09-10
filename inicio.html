@@ -266,7 +266,7 @@ function App(){
   </>;
 }
 
-function BeforeResult({data,original}){
+function BeforeResult({data,original,onIrPremium}){
   const blocks=data.bloqueos||[]; const suggestions=data.sugerencias||[];
   const esCompuesto=blocks.length>1;
   return <div className="result">
