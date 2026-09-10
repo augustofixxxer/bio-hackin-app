@@ -235,7 +235,7 @@ function App(){
           <textarea value={before} onChange={e=>setBefore(e.target.value)} placeholder={beforePlaceholder} />
           <button className="primary" onClick={analizarAntes} disabled={busy}>{busy?"Consultando...":"Consultar antes"}</button>
           {msg&&<div className="notice">{msg}</div>}
-          {beforeResult&&<BeforeResult data={beforeResult} original={before} />}
+          {beforeResult&&<BeforeResult data={beforeResult} original={before} onIrPremium={()=>irA('premium')} />}
         </section>
       </>}
 
