@@ -276,6 +276,8 @@ function BeforeResult({data,original,onIrPremium}){
       <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
       {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
       {b.solucion&&<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>}
+      {b.solucion&&<p className="why" style={{marginTop:6,cursor:'pointer'}} onClick={onIrPremium}>✦ Premium te muestra qué más podés cambiar en "{b.combinacion}" y qué observar después.</p>}
+      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
       <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
       <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
     </div>):<div className="card">
