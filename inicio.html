@@ -127,6 +127,10 @@ function App(){
   const [q,setQ]=useState(""); const [before,setBefore]=useState(""); const [beforePlaceholder,setBeforePlaceholder]=useState("Ej: milanesa con papas fritas"); const [beforeResult,setBeforeResult]=useState(null); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState("");
   const [energy,setEnergy]=useState(""); const [dig,setDig]=useState(""); const [sleep,setSleep]=useState(""); const [water,setWater]=useState(""); const [activity,setActivity]=useState("");
   const [comidaTexto,setComidaTexto]=useState(""); const [comidaBusy,setComidaBusy]=useState(false); const [comidaMsg,setComidaMsg]=useState(""); const [comidaResult,setComidaResult]=useState(null);
+  // Contexto del último hallazgo que llevó a Premium (Directiva "Cierre Comercial v1",
+  // sección 3: el título de Premium debe continuar el contexto, no ser genérico).
+  // Vive en el mismo componente que ya controla "tab" -- no es una arquitectura nueva.
+  const [ultimoHallazgo,setUltimoHallazgo]=useState(null); // {combinacion, invitacion}
 
   useEffect(()=>{
     let u=null; try{u=JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){}
@@ -145,6 +149,7 @@ function App(){
     return ()=>window.removeEventListener("popstate",onPop);
   },[]);
   function irA(t){ setTab(t); history.pushState({tab:t},""); }
+  function irAPremiumConContexto(combinacion,invitacion){ setUltimoHallazgo({combinacion,invitacion}); irA('premium'); }
   // Recuperación de "Cerrar sesión" (Directiva Premium Contextual, punto 5).
   // Réplica exacta del comportamiento original de index.html: borra únicamente
   // reseteo_usuario y reseteo_terminos_v1 -- reseteo_onboarding_v1 y
@@ -229,7 +234,7 @@ function App(){
               {e.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Probá:</b> {e.accionTexto}</p>}
               {e.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {e.observacionTexto}</p>}
               {e.continuidadTexto&&<p style={{marginTop:4,color:'var(--mint)',fontSize:'12px'}}>{e.continuidadTexto}</p>}
-              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irA('premium')}>✦ Premium te muestra qué más podés modificar en "{e.combinacion}" y qué observar en vos.</p>}
+              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,"Podés experimentar con esto y observar qué notás.")}>✦ Ver cómo, en Premium →</p>}
               {!e.accionTexto&&<p style={{marginTop:8,color:'var(--muted)',fontSize:'12px',fontStyle:'italic'}}>Todavía no tenemos un experimento puntual cargado para esto — preferimos no inventarte uno.</p>}
               <button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");irA('descubrir');setQ("")}}>Llevarlo a "Antes de comer" →</button>
             </div>):<div className="empty">Buscaste "{q}" y no encontramos una relación suficientemente clara todavía. Eso no significa que no exista; significa que preferimos no inventarte una respuesta. Probá con otras palabras, o registralo en Mi Día para que empecemos a ver patrones con el tiempo.</div>}
@@ -248,14 +253,14 @@ function App(){
           <textarea value={before} onChange={e=>setBefore(e.target.value)} placeholder={beforePlaceholder} />
           <button className="primary" onClick={analizarAntes} disabled={busy}>{busy?"Consultando...":"Consultar antes"}</button>
           {msg&&<div className="notice">{msg}</div>}
-          {beforeResult&&<BeforeResult data={beforeResult} original={before} onIrPremium={()=>irA('premium')} />}
+          {beforeResult&&<BeforeResult data={beforeResult} original={before} onIrPremium={irAPremiumConContexto} />}
         </section>
       </>}
 
       {tab==="midi" && <>
         <section className="hero"><div className="eyebrow">Segundo mundo</div><h1>Tu día, tus registros</h1><p>Acá no venís a buscar información. Venís a contar qué pasó. Cada comida y cada observación son eventos independientes.</p></section>
         <div className="event-grid">
-          <div className="event"><h3>🍽️ Registrar una comida</h3><p>Podés registrar varias durante el mismo día. El texto queda tal como lo escribís.</p><textarea value={comidaTexto} onChange={e=>setComidaTexto(e.target.value)} placeholder="Ej: milanesa con papas fritas" /><button className="primary" onClick={registrarComidaMiDia} disabled={comidaBusy}>{comidaBusy?"Guardando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} original={comidaTexto} onIrPremium={()=>irA('premium')} />}</div>
+          <div className="event"><h3>🍽️ Registrar una comida</h3><p>Podés registrar varias durante el mismo día. El texto queda tal como lo escribís.</p><textarea value={comidaTexto} onChange={e=>setComidaTexto(e.target.value)} placeholder="Ej: milanesa con papas fritas" /><button className="primary" onClick={registrarComidaMiDia} disabled={comidaBusy}>{comidaBusy?"Guardando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} original={comidaTexto} onIrPremium={irAPremiumConContexto} />}</div>
           <div className="event"><h3>⚡ Cómo me sentí</h3><p>Elegí solo lo que quieras registrar ahora. No hace falta completar todo.</p>
             <div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="1">1 — Muy baja</option><option value="2">2 — Baja</option><option value="3">3 — Media</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select>
             <select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="1">1 — Muy mala</option><option value="2">2 — Mala</option><option value="3">3 — Normal</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select></div>
@@ -267,7 +272,7 @@ function App(){
       </>}
 
       {tab==="premium" && <>
-        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>Lo que Premium te da ahora mismo</h1><p>Cuando una comida o situación tiene una forma distinta de resolverse, Premium te muestra cuál es esa alternativa concreta y qué observar después — al toque, sin esperar semanas de registros.</p></section>
+        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>{ultimoHallazgo?`Sobre "${ultimoHallazgo.combinacion}"`:"Lo que Premium te da ahora mismo"}</h1><p>{ultimoHallazgo?`${ultimoHallazgo.invitacion} Premium convierte este hallazgo en un experimento concreto para vos.`:"Cuando una comida o situación tiene una forma distinta de resolverse, Premium te muestra cuál es esa alternativa concreta y qué observar después — al toque, sin esperar semanas de registros."}</p></section>
         <div className="premium"><h2>Y con el tiempo, se pone mejor</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></div>
       </>}
 
@@ -295,7 +300,8 @@ function BeforeResult({data,original,onIrPremium}){
       <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
       {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
       {b.solucion&&<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>}
-      {b.invitacionPremium&&<p className="why" style={{marginTop:6,cursor:'pointer'}} onClick={onIrPremium}>✦ {b.invitacionPremium}</p>}
+      {b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium}</p>}
+      {b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium)}>✦ Ver cómo, en Premium →</p>}
       <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
       <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
     </div>):<div className="card">
