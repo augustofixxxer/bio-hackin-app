@@ -140,28 +140,32 @@ function esVersionCasera(textoNormalizado) {
   return PALABRAS_CASERO.some((p) => textoNormalizado.includes(normalizar(p)));
 }
 
-// Plantillas de invitación Premium contextual — Directiva "Cierre de Arquitectura
-// Comercial Premium v1". Copy DEFINITIVO, aplicado tal como está especificado (no
-// parafraseado): 6 variables válidas, mapeadas 1 a 1 contra soluciones.variable_modificada,
-// que ya está curada al 100% en las 38 filas de soluciones (verificado en Supabase antes de
-// esta implementación: cantidad=10, sustitucion de producto=9, momento=7, preparacion=7,
-// combinacion=4, frecuencia de consumo=1 — cero "pendiente_curaduria" restante).
-// No revela la técnica (eso sigue siendo exclusivamente Premium). No usa nombre_hackeo como
-// fallback (instrucción explícita de esta directiva, revierte el criterio del Sprint 23).
-const PLANTILLAS_INVITACION_PREMIUM = {
-  "cantidad": "Podés experimentar ajustando la cantidad de este alimento y observar cómo te resulta.",
-  "combinacion": "Podés experimentar con cómo combinás estos alimentos y observar qué notás después.",
-  "frecuencia de consumo": "Podés experimentar con la frecuencia con la que consumís este alimento y observar cómo te resulta.",
-  "momento": "Podés experimentar con el momento en que consumís este alimento y observar qué notás después.",
-  "preparacion": "Podés experimentar con la forma de preparación y observar qué notás después.",
-  "sustitucion de producto": "Podés experimentar reemplazando esta opción por otra y observar qué diferencia notás.",
+// Motor de invitación Premium contextual — Directiva "Refactor de Contenido / Comercial v1".
+// Las 6 variables NO son el contenido (sección 3): son metadato de clasificación, no el
+// mensaje en sí. El elemento concreto ("¿qué estoy modificando?") sale de
+// soluciones.categoria -- dato real y curado, verificado en Supabase antes de esta
+// implementación: las 14 reglas Premium actuales tienen categoria poblada al 100%
+// (0 excepciones hoy). La acción específica (soluciones.adaptacion, el "cómo") nunca se
+// revela acá -- eso es exclusivamente lo que Premium desbloquea.
+const ETIQUETA_DIMENSION = {
+  "cantidad": "un ajuste de cantidad",
+  "combinacion": "una combinación distinta",
+  "frecuencia de consumo": "un ajuste de frecuencia",
+  "momento": "un cambio de momento",
+  "preparacion": "una forma de preparación distinta",
+  "sustitucion de producto": "un reemplazo concreto",
 };
-// Fallback neutro y seguro (nunca nombre_hackeo): solo se usa si algún día aparece una
-// solución con variable_modificada vacía o fuera de las 6 válidas — hoy no ocurre (0 casos).
-function construirInvitacionPremium(variableModificada) {
+function construirInvitacionPremium(categoria, variableModificada) {
   const clave = normalizar((variableModificada || "").trim());
-  return PLANTILLAS_INVITACION_PREMIUM[clave]
-    || "Podés experimentar con una alternativa concreta para esto y observar qué notás.";
+  const etiqueta = ETIQUETA_DIMENSION[clave];
+  const cat = (categoria || "").trim();
+  if (etiqueta && cat) {
+    return `Existe ${etiqueta} para esto: "${cat}". Podés experimentarlo en Premium y observar qué notás.`;
+  }
+  // Directiva, sección 2: "Regla Premium sin adaptación suficientemente concreta -> no
+  // generar CTA Premium fuerte, marcar para curaduría". Resguardo para el futuro -- hoy
+  // no aplica a ninguna de las 14 reglas Premium (0 sin categoria, verificado).
+  return "Podés experimentar con una alternativa concreta para esto y observar qué notás.";
 }
 
 // ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
@@ -256,11 +260,11 @@ export default async function handler(req, res) {
       textoParaMatching = `${textoParaMatching} ${categoriasIA.join(" ")}`;
     }
 
-    // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje)
-    // Sprint 23 — se agrega variable_modificada al select: es el único campo nuevo que
-    // necesita construirInvitacionPremium() para dejar de usar una frase fija única.
+    // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje).
+    // Incluye nivel_acceso (de la regla) y categoria (de la solución) -- ambos necesarios
+    // para la separación Free/Premium correcta (Directiva Refactor v1, sección 5).
     const reglas = await supabaseFetch(
-      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,momento_requerido,palabras_excluyentes,soluciones(nombre_hackeo,adaptacion,variable_modificada)`
+      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,soluciones(nombre_hackeo,adaptacion,variable_modificada,categoria)`
     );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
@@ -363,39 +367,53 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
       });
     }
 
-    // 5. Armar bloqueos reales. La solución concreta (el "cómo") queda para Premium desde
-    // el 31/07/2026 — decisión del Fundador: el "resultado" (el "por qué") siempre es
-    // gratis y completo, nunca se oculta, eso es la parte educativa no negociable. Lo que
-    // pasa a ser de pago es el paso a paso accionable. El usuario gratuito nunca se queda
-    // sin salida — recibe una frase puente honesta, nunca solo el problema sin más.
-    // Directiva "Cierre de Arquitectura Comercial Premium v1" — la frase puente usa el
-    // copy contextual definitivo (construirInvitacionPremium), basado en la clasificación
-    // ya curada de soluciones.variable_modificada. Sigue sin revelar la técnica: eso
-    // sigue exclusivamente en r.soluciones.adaptacion, solo visible si esPremiumComida.
+    // 5. Armar bloqueos reales. Directiva "Refactor de Contenido / Comercial v1", sección 2
+    // — regla crítica de separación, corregida en esta tanda:
+    //   REGLA GRATUITA (r.nivel_acceso === "gratuito"): su adaptación SIEMPRE se muestra
+    //     completa, para cualquier usuario, sin importar si es Premium o no -- y NUNCA
+    //     genera una invitación Premium sobre esa misma adaptación (no se vende lo gratis).
+    //   REGLA PREMIUM (r.nivel_acceso === "Premium"): la adaptación solo se muestra si el
+    //     USUARIO además es Premium. Si no lo es, se oculta y se genera la invitación
+    //     contextual (construirInvitacionPremium) en su lugar.
+    // Bug encontrado y corregido: la versión anterior gateaba `solucion` únicamente por el
+    // tier del usuario (esPremiumComida), ignorando r.nivel_acceso -- por eso una regla
+    // gratuita como "Milanesa con Papas Fritas" le ocultaba su propia adaptación gratuita a
+    // un usuario no-Premium y encima la ofrecía como si fuera un gancho Premium. No se tocó
+    // reglas.nivel_acceso en la base -- ya estaba correctamente clasificado.
     const esPremiumComida = nivelAcceso === "Premium";
-    const bloqueos = bloqueosReales.map((r, i) => ({
-      combinacion: r.combinacion || "",
-      resultado: r.resultado || "",
-      nivelRiesgo: r.nivel_riesgo || "Bajo",
-      solucion:
-        esPremiumComida && r.soluciones
-          ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "", premium: true }
+    const bloqueos = bloqueosReales.map((r, i) => {
+      const reglaEsPremium = r.nivel_acceso === "Premium";
+      const puedeVerAdaptacion = Boolean(r.soluciones) && (!reglaEsPremium || esPremiumComida);
+      const debeInvitarAPremium = Boolean(r.soluciones) && reglaEsPremium && !esPremiumComida;
+      return {
+        combinacion: r.combinacion || "",
+        resultado: r.resultado || "",
+        nivelRiesgo: r.nivel_riesgo || "Bajo",
+        solucion: puedeVerAdaptacion
+          ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "", premium: reglaEsPremium }
           : null,
-      invitacionPremium:
-        !esPremiumComida && r.soluciones
-          ? construirInvitacionPremium(r.soluciones.variable_modificada)
+        invitacionPremium: debeInvitarAPremium
+          ? construirInvitacionPremium(r.soluciones.categoria, r.soluciones.variable_modificada)
           : null,
-      bloqueoId: bloqueosCreados[i]?.id,
-    }));
+        bloqueoId: bloqueosCreados[i]?.id,
+      };
+    });
 
-    // 6. Armar resueltos (versión casera) como refuerzo positivo, sin crear Bloqueo
-    const resueltosRespuesta = resueltos.map((r) => ({
-      combinacion: r.combinacion || "",
-      mensaje: "Ya aplicaste este hackeo con la versión casera.",
-      solucion: r.soluciones
-        ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "" }
-        : null,
-    }));
+    // 6. Armar resueltos (versión casera) como refuerzo positivo, sin crear Bloqueo.
+    // Misma regla de separación de la sección 5: si la regla es Premium y el usuario no lo
+    // es, no se revela soluciones.adaptacion tampoco acá -- el mensaje de refuerzo queda
+    // igual, solo sin el detalle de la técnica.
+    const resueltosRespuesta = resueltos.map((r) => {
+      const reglaEsPremium = r.nivel_acceso === "Premium";
+      const puedeVerAdaptacion = Boolean(r.soluciones) && (!reglaEsPremium || esPremiumComida);
+      return {
+        combinacion: r.combinacion || "",
+        mensaje: "Ya aplicaste este hackeo con la versión casera.",
+        solucion: puedeVerAdaptacion
+          ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "" }
+          : null,
+      };
+    });
 
     // 7. Tips positivos de Reglas (siempre se muestran, marcadas con "TIP:" en Supabase)
     let sugerencias = coincidenciasTip.map((r) => ({
