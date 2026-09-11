@@ -255,7 +255,7 @@ function App(){
       </>}
 
       {tab==="premium" && <>
-        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>Lo que Premium te da ahora mismo</h1><p>Cada vez que consultes "Antes de comer" o busques una situación, Premium te muestra además cómo te viene yendo específicamente a vos con eso — no solo la regla general que ve todo el mundo.</p></section>
+        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>Lo que Premium te da ahora mismo</h1><p>Cuando una comida o situación tiene una forma distinta de resolverse, Premium te muestra cuál es esa alternativa concreta y qué observar después — al toque, sin esperar semanas de registros.</p></section>
         <div className="premium"><h2>Y con el tiempo, se pone mejor</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></div>
       </>}
     </main>
@@ -277,7 +277,7 @@ function BeforeResult({data,original,onIrPremium}){
       <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
       {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
       {b.solucion&&<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>}
-      <p className="why" style={{marginTop:6,cursor:'pointer'}} onClick={onIrPremium}>✦ Premium te muestra qué más podés cambiar en "{b.combinacion}" y qué observar después.</p>
+      {b.invitacionPremium&&<p className="why" style={{marginTop:6,cursor:'pointer'}} onClick={onIrPremium}>✦ {b.invitacionPremium}</p>}
       <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
       <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
     </div>):<div className="card">
