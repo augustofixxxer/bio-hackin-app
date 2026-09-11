@@ -140,36 +140,28 @@ function esVersionCasera(textoNormalizado) {
   return PALABRAS_CASERO.some((p) => textoNormalizado.includes(normalizar(p)));
 }
 
-// Plantillas de invitación Premium contextual (Directiva "Premium Contextual", Sprint 23).
-// Reemplaza la frase fija única que existía antes ("Esto sí tiene forma de mejorarse...").
-// Se arma a partir de soluciones.variable_modificada — un dato REAL que ya existe en la
-// tabla soluciones, nunca inventado. No revela la técnica en sí (eso sigue siendo
-// exclusivamente Premium, decisión de negocio del 31/07/2026, sin cambios) — solo nombra
-// QUÉ DIMENSIÓN es modificable, para que la invitación sea específica sin regalar el hack.
-// Deliberadamente no repite el nombre abstracto de la regla (combinacion) — el usuario ya
-// lo ve arriba, en el título de la tarjeta.
+// Plantillas de invitación Premium contextual — Directiva "Cierre de Arquitectura
+// Comercial Premium v1". Copy DEFINITIVO, aplicado tal como está especificado (no
+// parafraseado): 6 variables válidas, mapeadas 1 a 1 contra soluciones.variable_modificada,
+// que ya está curada al 100% en las 38 filas de soluciones (verificado en Supabase antes de
+// esta implementación: cantidad=10, sustitucion de producto=9, momento=7, preparacion=7,
+// combinacion=4, frecuencia de consumo=1 — cero "pendiente_curaduria" restante).
+// No revela la técnica (eso sigue siendo exclusivamente Premium). No usa nombre_hackeo como
+// fallback (instrucción explícita de esta directiva, revierte el criterio del Sprint 23).
 const PLANTILLAS_INVITACION_PREMIUM = {
-  "preparacion": "Hay una forma distinta de prepararlo que podés experimentar.",
-  "sustitucion de producto": "Hay un reemplazo concreto para esto que podés probar.",
-  "cantidad": "Hay un ajuste de cantidad concreto que podés probar acá.",
-  "momento": "Hay un cambio de momento u orden que podés probar con esto.",
-  "frecuencia de consumo": "Hay un ajuste de frecuencia que podés probar con esto.",
+  "cantidad": "Podés experimentar ajustando la cantidad de este alimento y observar cómo te resulta.",
+  "combinacion": "Podés experimentar con cómo combinás estos alimentos y observar qué notás después.",
+  "frecuencia de consumo": "Podés experimentar con la frecuencia con la que consumís este alimento y observar cómo te resulta.",
+  "momento": "Podés experimentar con el momento en que consumís este alimento y observar qué notás después.",
+  "preparacion": "Podés experimentar con la forma de preparación y observar qué notás después.",
+  "sustitucion de producto": "Podés experimentar reemplazando esta opción por otra y observar qué diferencia notás.",
 };
-function construirInvitacionPremium(nombreHackeo, variableModificada) {
+// Fallback neutro y seguro (nunca nombre_hackeo): solo se usa si algún día aparece una
+// solución con variable_modificada vacía o fuera de las 6 válidas — hoy no ocurre (0 casos).
+function construirInvitacionPremium(variableModificada) {
   const clave = normalizar((variableModificada || "").trim());
-  const plantilla = PLANTILLAS_INVITACION_PREMIUM[clave];
-  if (plantilla) {
-    return `${plantilla} Premium te muestra cuál es y qué observar después.`;
-  }
-  // Hallazgo Sprint 23: hoy variable_modificada está sin curar en el 100% de las 38 filas
-  // de soluciones ("pendiente_curaduria") — sin este resguardo, esta función devolvería
-  // siempre la misma frase genérica de más abajo, para toda la app. Mientras esa curaduría
-  // no se haga (tarea de contenido, no de código), usamos nombre_hackeo — dato real, ya
-  // 100% cargado en soluciones — para dar especificidad real sin revelar el paso a paso.
-  if (nombreHackeo) {
-    return `Para esto existe un protocolo propio ("${nombreHackeo}"). Premium te muestra en qué consiste y qué observar después.`;
-  }
-  return "Hay una forma distinta de resolver esto que podés experimentar. Premium te muestra cuál es y qué observar después.";
+  return PLANTILLAS_INVITACION_PREMIUM[clave]
+    || "Podés experimentar con una alternativa concreta para esto y observar qué notás.";
 }
 
 // ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
@@ -376,8 +368,9 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
     // gratis y completo, nunca se oculta, eso es la parte educativa no negociable. Lo que
     // pasa a ser de pago es el paso a paso accionable. El usuario gratuito nunca se queda
     // sin salida — recibe una frase puente honesta, nunca solo el problema sin más.
-    // Sprint 23 — esa frase puente ahora es CONTEXTUAL (construirInvitacionPremium), no
-    // una única frase fija repetida en toda la app. Sigue sin revelar la técnica: eso
+    // Directiva "Cierre de Arquitectura Comercial Premium v1" — la frase puente usa el
+    // copy contextual definitivo (construirInvitacionPremium), basado en la clasificación
+    // ya curada de soluciones.variable_modificada. Sigue sin revelar la técnica: eso
     // sigue exclusivamente en r.soluciones.adaptacion, solo visible si esPremiumComida.
     const esPremiumComida = nivelAcceso === "Premium";
     const bloqueos = bloqueosReales.map((r, i) => ({
@@ -390,7 +383,7 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
           : null,
       invitacionPremium:
         !esPremiumComida && r.soluciones
-          ? construirInvitacionPremium(r.soluciones.nombre_hackeo, r.soluciones.variable_modificada)
+          ? construirInvitacionPremium(r.soluciones.variable_modificada)
           : null,
       bloqueoId: bloqueosCreados[i]?.id,
     }));
