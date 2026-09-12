@@ -234,7 +234,7 @@ function App(){
               {e.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Probá:</b> {e.accionTexto}</p>}
               {e.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {e.observacionTexto}</p>}
               {e.continuidadTexto&&<p style={{marginTop:4,color:'var(--mint)',fontSize:'12px'}}>{e.continuidadTexto}</p>}
-              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,"Podés experimentar con esto y observar qué notás.")}>✦ Ver cómo, en Premium →</p>}
+              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,{texto:"Para esto que acabás de consultar, hay una acción concreta que podés probar.",variable:null,categoria:null})}>✦ Ver cómo, en Premium →</p>}
               {!e.accionTexto&&<p style={{marginTop:8,color:'var(--muted)',fontSize:'12px',fontStyle:'italic'}}>Todavía no tenemos un experimento puntual cargado para esto — preferimos no inventarte uno.</p>}
               <button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");irA('descubrir');setQ("")}}>Llevarlo a "Antes de comer" →</button>
             </div>):<div className="empty">Buscaste "{q}" y no encontramos una relación suficientemente clara todavía. Eso no significa que no exista; significa que preferimos no inventarte una respuesta. Probá con otras palabras, o registralo en Mi Día para que empecemos a ver patrones con el tiempo.</div>}
@@ -272,7 +272,7 @@ function App(){
       </>}
 
       {tab==="premium" && <>
-        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>{ultimoHallazgo?`Sobre "${ultimoHallazgo.combinacion}"`:"Lo que Premium te da ahora mismo"}</h1><p>{ultimoHallazgo?`${ultimoHallazgo.invitacion} Premium convierte este hallazgo en un experimento concreto para vos.`:"Cuando una comida o situación tiene una forma distinta de resolverse, Premium te muestra cuál es esa alternativa concreta y qué observar después — al toque, sin esperar semanas de registros."}</p></section>
+        <section className="hero"><div className="eyebrow">Tercer mundo</div><h1>{ultimoHallazgo?`Sobre "${ultimoHallazgo.combinacion}"`:"Lo que Premium te da ahora mismo"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion.texto:"Cuando una comida o situación tiene una forma distinta de resolverse, Premium te muestra cuál es esa alternativa concreta y qué observar después — al toque, sin esperar semanas de registros."}</p></section>
         <div className="premium"><h2>Y con el tiempo, se pone mejor</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></div>
       </>}
 
@@ -299,8 +299,15 @@ function BeforeResult({data,original,onIrPremium}){
       <h3>{b.combinacion||"Señal detectada"}</h3>
       <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
       {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
-      {b.solucion&&<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>}
-      {b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium}</p>}
+      {b.solucion && (b.solucion.accionUsuario ? (<>
+        <p style={{marginTop:8,color:'var(--text)'}}><b>Qué hacer:</b> {b.solucion.accionUsuario}</p>
+        {b.solucion.contextoActivacion&&<p style={{marginTop:4,color:'var(--text)'}}><b>Cómo aplicarlo:</b> {b.solucion.contextoActivacion}</p>}
+        {b.solucion.observacionUsuario&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> {b.solucion.observacionUsuario}</p>}
+        {b.solucion.continuidad&&<p className="why" style={{marginTop:4}}>{b.solucion.continuidad}</p>}
+      </>) : (
+        <p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>
+      ))}
+      {b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium.texto}</p>}
       {b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium)}>✦ Ver cómo, en Premium →</p>}
       <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
       <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
