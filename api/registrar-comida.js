@@ -140,32 +140,14 @@ function esVersionCasera(textoNormalizado) {
   return PALABRAS_CASERO.some((p) => textoNormalizado.includes(normalizar(p)));
 }
 
-// Motor de invitación Premium contextual — Directiva "Refactor de Contenido / Comercial v1".
-// Las 6 variables NO son el contenido (sección 3): son metadato de clasificación, no el
-// mensaje en sí. El elemento concreto ("¿qué estoy modificando?") sale de
-// soluciones.categoria -- dato real y curado, verificado en Supabase antes de esta
-// implementación: las 14 reglas Premium actuales tienen categoria poblada al 100%
-// (0 excepciones hoy). La acción específica (soluciones.adaptacion, el "cómo") nunca se
-// revela acá -- eso es exclusivamente lo que Premium desbloquea.
-const ETIQUETA_DIMENSION = {
-  "cantidad": "un ajuste de cantidad",
-  "combinacion": "una combinación distinta",
-  "frecuencia de consumo": "un ajuste de frecuencia",
-  "momento": "un cambio de momento",
-  "preparacion": "una forma de preparación distinta",
-  "sustitucion de producto": "un reemplazo concreto",
-};
-function construirInvitacionPremium(categoria, variableModificada) {
-  const clave = normalizar((variableModificada || "").trim());
-  const etiqueta = ETIQUETA_DIMENSION[clave];
-  const cat = (categoria || "").trim();
-  if (etiqueta && cat) {
-    return `Existe ${etiqueta} para esto: "${cat}". Podés experimentarlo en Premium y observar qué notás.`;
-  }
-  // Directiva, sección 2: "Regla Premium sin adaptación suficientemente concreta -> no
-  // generar CTA Premium fuerte, marcar para curaduría". Resguardo para el futuro -- hoy
-  // no aplica a ninguna de las 14 reglas Premium (0 sin categoria, verificado).
-  return "Podés experimentar con una alternativa concreta para esto y observar qué notás.";
+// Motor de invitación Premium contextual — Directiva "Refactor de Píldoras Premium".
+// Puntos 2 y 11: variable_modificada y categoria son metadato de clasificación/contexto,
+// NUNCA sustituto de la acción concreta en el texto del CTA -- viajan aparte (para
+// instrumentación / continuidad hacia Premium), no se redactan dentro de la frase.
+// El texto ancla al caso concreto que el usuario ya tiene arriba en la misma tarjeta
+// (combinacion + resultado), sin nombrar una categoría abstracta ni revelar la técnica.
+function construirInvitacionPremium() {
+  return "Para esto que acabás de consultar, hay una acción concreta que podés probar. Premium te la muestra, junto con qué observar y cómo seguir.";
 }
 
 // ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
@@ -261,10 +243,11 @@ export default async function handler(req, res) {
     }
 
     // 1. Traer las Reglas con su Solución ya embebida (join nativo de Supabase, en un solo viaje).
-    // Incluye nivel_acceso (de la regla) y categoria (de la solución) -- ambos necesarios
-    // para la separación Free/Premium correcta (Directiva Refactor v1, sección 5).
+    // Incluye nivel_acceso (de la regla), categoria/variable_modificada (metadato) y los 4
+    // campos estructurados para la píldora en capas -- todos necesarios para la separación
+    // Free/Premium y el modelo de píldora vigentes.
     const reglas = await supabaseFetch(
-      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,soluciones(nombre_hackeo,adaptacion,variable_modificada,categoria)`
+      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,soluciones(nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad)`
     );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
@@ -367,20 +350,28 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
       });
     }
 
-    // 5. Armar bloqueos reales. Directiva "Refactor de Contenido / Comercial v1", sección 2
-    // — regla crítica de separación, corregida en esta tanda:
-    //   REGLA GRATUITA (r.nivel_acceso === "gratuito"): su adaptación SIEMPRE se muestra
-    //     completa, para cualquier usuario, sin importar si es Premium o no -- y NUNCA
-    //     genera una invitación Premium sobre esa misma adaptación (no se vende lo gratis).
-    //   REGLA PREMIUM (r.nivel_acceso === "Premium"): la adaptación solo se muestra si el
-    //     USUARIO además es Premium. Si no lo es, se oculta y se genera la invitación
-    //     contextual (construirInvitacionPremium) en su lugar.
-    // Bug encontrado y corregido: la versión anterior gateaba `solucion` únicamente por el
-    // tier del usuario (esPremiumComida), ignorando r.nivel_acceso -- por eso una regla
-    // gratuita como "Milanesa con Papas Fritas" le ocultaba su propia adaptación gratuita a
-    // un usuario no-Premium y encima la ofrecía como si fuera un gancho Premium. No se tocó
-    // reglas.nivel_acceso en la base -- ya estaba correctamente clasificado.
+    // 5. Armar bloqueos reales. Directiva "Refactor de Píldoras Premium":
+    //   REGLA GRATUITA: adaptación siempre completa, para cualquier usuario, sin CTA.
+    //   REGLA PREMIUM + usuario no-Premium: adaptación oculta, se genera invitación
+    //     contextual en su lugar. El objeto de invitación lleva variable/categoria como
+    //     metadato aparte (nunca dentro del texto -- punto 2 y 11 de la directiva).
+    //   REGLA PREMIUM + usuario Premium: adaptación completa, en capas (armarSolucion) si
+    //     accion_usuario/observacion_usuario/contexto_activacion/continuidad ya están
+    //     curados; si no, bloque único con adaptacion completa (punto 7: nunca se arma la
+    //     separación por lógica creativa en JS, se espera la curaduría en la fuente).
     const esPremiumComida = nivelAcceso === "Premium";
+    function armarSolucion(soluciones, reglaEsPremium) {
+      if (!soluciones) return null;
+      return {
+        nombre: soluciones.nombre_hackeo || "",
+        adaptacion: soluciones.adaptacion || "",
+        accionUsuario: soluciones.accion_usuario || null,
+        observacionUsuario: soluciones.observacion_usuario || null,
+        contextoActivacion: soluciones.contexto_activacion || null,
+        continuidad: soluciones.continuidad || null,
+        premium: reglaEsPremium,
+      };
+    }
     const bloqueos = bloqueosReales.map((r, i) => {
       const reglaEsPremium = r.nivel_acceso === "Premium";
       const puedeVerAdaptacion = Boolean(r.soluciones) && (!reglaEsPremium || esPremiumComida);
@@ -389,11 +380,13 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
         combinacion: r.combinacion || "",
         resultado: r.resultado || "",
         nivelRiesgo: r.nivel_riesgo || "Bajo",
-        solucion: puedeVerAdaptacion
-          ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "", premium: reglaEsPremium }
-          : null,
+        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
         invitacionPremium: debeInvitarAPremium
-          ? construirInvitacionPremium(r.soluciones.categoria, r.soluciones.variable_modificada)
+          ? {
+              texto: construirInvitacionPremium(),
+              variable: r.soluciones.variable_modificada || null,
+              categoria: r.soluciones.categoria || null,
+            }
           : null,
         bloqueoId: bloqueosCreados[i]?.id,
       };
@@ -409,9 +402,7 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
       return {
         combinacion: r.combinacion || "",
         mensaje: "Ya aplicaste este hackeo con la versión casera.",
-        solucion: puedeVerAdaptacion
-          ? { nombre: r.soluciones.nombre_hackeo || "", adaptacion: r.soluciones.adaptacion || "" }
-          : null,
+        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
       };
     });
 
