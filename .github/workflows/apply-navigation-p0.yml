@@ -1,0 +1,73 @@
+name: Apply P0 navigation corrections
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-navigation-p0.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply corrections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('inicio.html')
+          s = p.read_text()
+
+          replacements = [
+            (
+              '  .saved { color:var(--mint); font-size:11px; margin-top:8px; }',
+              '  .saved { display:block; margin-top:11px; padding:12px 13px; border:1px solid rgba(143,168,155,.32); border-radius:13px; background:rgba(143,168,155,.10); color:var(--text); font-size:12.5px; font-weight:800; line-height:1.35; text-align:center; }\n  .saved::first-letter { color:var(--mint); }\n  .premium-context { margin-top:12px; background:rgba(197,160,89,.08); border:1px solid rgba(197,160,89,.24); border-radius:15px; padding:13px; }\n  .premium-context h3 { margin:0 0 6px; font-size:14px; }\n  .premium-context p { margin:0 0 7px; color:var(--muted); font-size:11.5px; line-height:1.45; }'
+            ),
+            (
+              '  function buscar(text){setQ(text);irA("descubrir")}',
+              '  const INTENCIONES_SIN_ANTES=["sueno","dormir","descanso","descansar","hidratacion","agua","energia","cansancio","agotamiento","fatiga","foco","concentracion","atencion"];\n  function esConsultaNoComida(texto){\n    const n=normalize(texto);\n    return INTENCIONES_SIN_ANTES.some(k=>n===k || n.includes(k));\n  }\n  function puedeLlevarAntesDeComer(e,consulta){\n    const intenciones=[e?.intencionPrincipal,...(e?.intencionesSecundarias||[])].filter(Boolean).map(normalize);\n    return !esConsultaNoComida(consulta) && !intenciones.some(i=>INTENCIONES_SIN_ANTES.some(k=>i===k || i.includes(k)));\n  }\n  function buscar(text){setQ(text);irA("descubrir")} '
+            ),
+            (
+              'onClick={()=>s.placeholder)}',
+              'onClick={()=>s.placeholder)}'
+            ),
+            (
+              '<div className="chips">{SITUACIONES_ANTES.map(s=><button className="chip" key={s.label} onClick={()=>setBeforePlaceholder(s.placeholder)}>{s.label}</button>)}</div>',
+              '<div className="chips">{SITUACIONES_ANTES.map(s=><button className="chip" key={s.label} onClick={()=>{setBefore("");setBeforeResult(null);setMsg("");setBeforePlaceholder(s.placeholder)}}>{s.label}</button>)}</div>'
+            ),
+            (
+              '<button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");irA(\'descubrir\');setQ("")}}>Llevarlo a "Antes de comer" →</button>',
+              '{puedeLlevarAntesDeComer(e,q)&&<button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");setBeforeResult(null);setMsg("");irA(\'descubrir\');setQ("")}}>Llevarlo a "Antes de comer" →</button>}'
+            ),
+            (
+              'function irAPremiumConContexto(combinacion,invitacion){ setUltimoHallazgo({combinacion,invitacion}); irA(\'premium\'); }',
+              'function irAPremiumConContexto(combinacion,invitacion){ setUltimoHallazgo({combinacion,invitacion}); irA(\'premium\'); }'
+            ),
+            (
+              'setMsg("Guardado. Podés volver cuando quieras y sumar otro evento.");',
+              'setMsg("✓ Observación guardada. Mi Día ya está actualizado.");'
+            ),
+            (
+              '<section className="hero"><div className="eyebrow">Tercer mundo</div><h1>{ultimoHallazgo?`Sobre "${ultimoHallazgo.combinacion}"`:"Lo que Premium te da ahora mismo"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion.texto:"Cuando una comida o situación tiene una forma distinta de resolverse, Premium te muestra cuál es esa alternativa concreta y qué observar después — al toque, sin esperar semanas de registros."}</p></section>\n        <div className="premium"><h2>Y con el tiempo, se pone mejor</h2>',
+              '<section className="hero"><div className="eyebrow">Laboratorio Premium</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion.texto:"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></section>\n        {ultimoHallazgo&&<div className="premium-context"><h3>Tu oportunidad ahora</h3><p>{ultimoHallazgo.invitacion.variable?`Variable para experimentar: ${ultimoHallazgo.invitacion.variable}.`:"Hay una forma concreta de experimentar con este hallazgo."}</p><p>Premium te muestra el cómo, qué observar y cómo continuar la comparación.</p><button className="primary" onClick={()=>{}}>Ver experimento</button></div>}\n        <div className="premium"><h2>Aprendizaje que se acumula</h2>'
+            ),
+          ]
+
+          for old,new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Missing expected fragment: {old[:100]}')
+              s=s.replace(old,new,1)
+
+          p.write_text(s)
+          PY
+      - name: Commit corrections and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add inicio.html .github/workflows/apply-navigation-p0.yml
+          git commit -m 'Apply P0 navigation and feedback corrections'
+          git push
+          git rm .github/workflows/apply-navigation-p0.yml
+          git commit -m 'Remove temporary navigation correction workflow'
+          git push
