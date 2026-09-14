@@ -309,8 +309,7 @@ function BeforeResult({data,original,onIrPremium}){
       ))}
       {b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium.texto}</p>}
       {b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium)}>✦ Ver cómo, en Premium →</p>}
-      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> cómo te sentís en las horas siguientes — energía, digestión, lo que corresponda.</p>
-      <p className="why" style={{marginTop:4}}>Siguiente paso: si esto se repite, registralo en Mi Día para poder comparar con el tiempo.</p>
+      
     </div>):<div className="card">
       <h3>No encontramos una alerta específica</h3>
       <p><b>Qué detectamos:</b> hoy no tenemos una señal suficientemente clara cargada para esta combinación — eso no significa que sea "perfecta".</p>
