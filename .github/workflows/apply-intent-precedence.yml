@@ -1,0 +1,134 @@
+name: Apply Intent Engine precedence
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'Apply Intent Engine precedence') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch precedence sorter
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('api/registrar-comida.js')
+          s = p.read_text(encoding='utf-8')
+          old = '''    // Orden por especificidad (31/07/2026): una regla de un solo grupo de palabras clave
+    // (ej. "tarta, tartas, pascualina") suele nombrar un plato puntual — más directamente
+    // relacionada con lo que el usuario escribió. Una regla de varios grupos separados por
+    // ";" (ej. "carne roja ; queso, crema, lacteos") es una interacción entre ingredientes
+    // sueltos, más genérica. Mostrar primero lo específico evita que el usuario tenga que
+    // leer 2-3 avisos genéricos antes de llegar al que realmente nombra su plato.
+const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
+
+    // P0-D (28/08/2026) — Precedencia entre reglas empatadas en especificidad. Estos dos
+    // criterios SOLO desempatan dentro del mismo nivel de especificidad, nunca invierten
+    // el orden que ya existía arriba:
+    // 1) Seguridad: una regla de riesgo Alto nunca puede quedar detrás de una de menor riesgo.
+    // 2) Posición: entre las que quedan, gana la que el usuario nombró primero en su texto
+    //    (el plato base casi siempre se dice antes que el acompañamiento).
+    const riesgoRank = (r) => (r.nivel_riesgo === "Alto" ? 0 : r.nivel_riesgo === "Medio" ? 1 : 2);
+    function posicionMatch(r) {
+      const claves = (r.palabras_clave || "").replace(/^tip:/i, "").trim()
+        .split(/[;,]/).map((k) => normalizar(k.trim())).filter(Boolean);
+      let mejor = Infinity;
+      for (const clave of claves) {
+        const m = new RegExp(`\\\\b${escapeRegex(clave)}\\\\b`).exec(textoParaMatching);
+        if (m && m.index < mejor) mejor = m.index;
+      }
+      return mejor;
+    }
+    function ordenarPorPrecedencia(lista) {
+      return [...lista].sort((a, b) => {
+        const espDiff = especificidad(a) - especificidad(b);
+        if (espDiff !== 0) return espDiff;
+        const riesgoDiff = riesgoRank(a) - riesgoRank(b);
+        if (riesgoDiff !== 0) return riesgoDiff;
+        return posicionMatch(a) - posicionMatch(b);
+      });
+    }
+'''
+          new = '''    // INTENT ENGINE — PRECEDENCIA REAL (14/09/2026)
+    // La precedencia ya no depende solo de "una regla = un grupo". El motor usa
+    // la semántica de la regla: familia + prioridad_motor + especificidad.
+    // Convención vigente de datos:
+    //   >=15 = identidad/familia o regla primaria
+    //   1-2  = contexto/transversal/secundaria
+    // Las reglas con familia_key conservan la identidad del plato; las transversales
+    // no pueden robarla. prioridad_motor es el desempate estructural, no decorativo.
+    const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
+    const prioridadMotor = (r) => Number.isFinite(Number(r.prioridad_motor)) ? Number(r.prioridad_motor) : 0;
+    const tieneFamilia = (r) => Boolean((r.familia_key || "").trim());
+    const longitudClave = (r) => {
+      const claves = (r.palabras_clave || "").replace(/^tip:/i, "").trim()
+        .split(/[;,]/).map((k) => normalizar(k.trim())).filter(Boolean);
+      let mejor = 0;
+      for (const clave of claves) {
+        if (contienePalabraCompleta(textoParaMatching, clave)) mejor = Math.max(mejor, clave.length);
+      }
+      return mejor;
+    };
+
+    // Seguridad y precedencia: el riesgo solo desempata cuando la intención estructural
+    // es equivalente. Una alerta transversal de riesgo no desplaza la identidad del plato.
+    const riesgoRank = (r) => (r.nivel_riesgo === "Alto" ? 0 : r.nivel_riesgo === "Medio" ? 1 : 2);
+    function posicionMatch(r) {
+      const claves = (r.palabras_clave || "").replace(/^tip:/i, "").trim()
+        .split(/[;,]/).map((k) => normalizar(k.trim())).filter(Boolean);
+      let mejor = Infinity;
+      for (const clave of claves) {
+        const m = new RegExp(`\\\\b${escapeRegex(clave)}\\\\b`).exec(textoParaMatching);
+        if (m && m.index < mejor) mejor = m.index;
+      }
+      return mejor;
+    }
+
+    function ordenarPorPrecedencia(lista) {
+      return [...lista].sort((a, b) => {
+        // 1) Una regla con familia es identidad/contexto del dominio; una regla sin familia
+        //    es transversal y nunca debe robar la identidad primaria.
+        const familiaDiff = Number(tieneFamilia(b)) - Number(tieneFamilia(a));
+        if (familiaDiff !== 0) return familiaDiff;
+
+        // 2) Dentro del mismo territorio, prioridad_motor define la intención dominante.
+        const prioridadDiff = prioridadMotor(b) - prioridadMotor(a);
+        if (prioridadDiff !== 0) return prioridadDiff;
+
+        // 3) Si la prioridad empata, una frase de plato más larga es más específica que
+        //    su nombre genérico ("pollo con pure" > "pollo").
+        const claveDiff = longitudClave(b) - longitudClave(a);
+        if (claveDiff !== 0) return claveDiff;
+
+        // 4) Luego preferimos identidad simple frente a combinaciones transversales.
+        const espDiff = especificidad(a) - especificidad(b);
+        if (espDiff !== 0) return espDiff;
+
+        // 5) Seguridad y, finalmente, posición en el texto.
+        const riesgoDiff = riesgoRank(a) - riesgoRank(b);
+        if (riesgoDiff !== 0) return riesgoDiff;
+        return posicionMatch(a) - posicionMatch(b);
+      });
+    }
+'''
+          if old not in s:
+              raise SystemExit('No se encontró exactamente el bloque de precedencia esperado; no se modifica nada.')
+          s = s.replace(old, new, 1)
+          old_select = 'reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,soluciones('
+          new_select = 'reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,familia_key,prioridad_motor,soluciones('
+          if old_select not in s:
+              raise SystemExit('No se encontró el SELECT de reglas esperado; no se modifica nada.')
+          s = s.replace(old_select, new_select, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Remove one-shot workflow
+        run: rm -f .github/workflows/apply-intent-precedence.yml
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api/registrar-comida.js .github/workflows/apply-intent-precedence.yml
+          git commit -m "Apply Intent Engine precedence"
+          git push
