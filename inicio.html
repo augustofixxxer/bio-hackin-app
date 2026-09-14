@@ -308,7 +308,7 @@ function BeforeResult({data,original,onIrPremium}){
         <p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>
       ))}
       {b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium.texto}</p>}
-      {b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium)}>✦ Ver cómo, en Premium →</p>}
+      {b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium)}>✦ Experimentar el cómo, en Premium →</p>}
       
     </div>):<div className="card">
       <h3>No encontramos una alerta específica</h3>
