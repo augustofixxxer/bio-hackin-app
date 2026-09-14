@@ -247,7 +247,7 @@ export default async function handler(req, res) {
     // campos estructurados para la píldora en capas -- todos necesarios para la separación
     // Free/Premium y el modelo de píldora vigentes.
     const reglas = await supabaseFetch(
-      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,soluciones(nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad)`
+      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,familia_key,prioridad_motor,soluciones(nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad)`
     );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
@@ -269,20 +269,21 @@ export default async function handler(req, res) {
     const coincidencias = evaluaciones.filter((e) => e.coincide && !e.esTip).map((e) => e.regla);
     const coincidenciasTip = evaluaciones.filter((e) => e.coincide && e.esTip).map((e) => e.regla);
 
-    // Orden por especificidad (31/07/2026): una regla de un solo grupo de palabras clave
-    // (ej. "tarta, tartas, pascualina") suele nombrar un plato puntual — más directamente
-    // relacionada con lo que el usuario escribió. Una regla de varios grupos separados por
-    // ";" (ej. "carne roja ; queso, crema, lacteos") es una interacción entre ingredientes
-    // sueltos, más genérica. Mostrar primero lo específico evita que el usuario tenga que
-    // leer 2-3 avisos genéricos antes de llegar al que realmente nombra su plato.
-const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
-
-    // P0-D (28/08/2026) — Precedencia entre reglas empatadas en especificidad. Estos dos
-    // criterios SOLO desempatan dentro del mismo nivel de especificidad, nunca invierten
-    // el orden que ya existía arriba:
-    // 1) Seguridad: una regla de riesgo Alto nunca puede quedar detrás de una de menor riesgo.
-    // 2) Posición: entre las que quedan, gana la que el usuario nombró primero en su texto
-    //    (el plato base casi siempre se dice antes que su acompañamiento).
+    // INTENT ENGINE — PRECEDENCIA REAL (14/09/2026)
+    // La identidad del plato se resuelve antes que los patrones transversales.
+    // familia_key + prioridad_motor son criterios reales del motor.
+    const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
+    const prioridadMotor = (r) => Number.isFinite(Number(r.prioridad_motor)) ? Number(r.prioridad_motor) : 0;
+    const tieneFamilia = (r) => Boolean((r.familia_key || "").trim());
+    const longitudClave = (r) => {
+      const claves = (r.palabras_clave || "").replace(/^tip:/i, "").trim()
+        .split(/[;,]/).map((k) => normalizar(k.trim())).filter(Boolean);
+      let mejor = 0;
+      for (const clave of claves) {
+        if (contienePalabraCompleta(textoParaMatching, clave)) mejor = Math.max(mejor, clave.length);
+      }
+      return mejor;
+    };
     const riesgoRank = (r) => (r.nivel_riesgo === "Alto" ? 0 : r.nivel_riesgo === "Medio" ? 1 : 2);
     function posicionMatch(r) {
       const claves = (r.palabras_clave || "").replace(/^tip:/i, "").trim()
@@ -296,6 +297,12 @@ const especificidad = (r) => ((r.palabras_clave || "").includes(";") ? 1 : 0);
     }
     function ordenarPorPrecedencia(lista) {
       return [...lista].sort((a, b) => {
+        const familiaDiff = Number(tieneFamilia(b)) - Number(tieneFamilia(a));
+        if (familiaDiff !== 0) return familiaDiff;
+        const prioridadDiff = prioridadMotor(b) - prioridadMotor(a);
+        if (prioridadDiff !== 0) return prioridadDiff;
+        const claveDiff = longitudClave(b) - longitudClave(a);
+        if (claveDiff !== 0) return claveDiff;
         const espDiff = especificidad(a) - especificidad(b);
         if (espDiff !== 0) return espDiff;
         const riesgoDiff = riesgoRank(a) - riesgoRank(b);
