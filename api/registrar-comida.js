@@ -147,7 +147,7 @@ function esVersionCasera(textoNormalizado) {
 // El texto ancla al caso concreto que el usuario ya tiene arriba en la misma tarjeta
 // (combinacion + resultado), sin nombrar una categoría abstracta ni revelar la técnica.
 function construirInvitacionPremium() {
-  return "Para esto que acabás de consultar, hay una acción concreta que podés probar. Premium te la muestra, junto con qué observar y cómo seguir.";
+  return "Esto se puede experimentar de distintas maneras. ¿Querés probar el cómo? Premium te guía con una opción concreta para esta comida.";
 }
 
 // ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
