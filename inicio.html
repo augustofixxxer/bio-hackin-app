@@ -234,7 +234,7 @@ function App(){
               {e.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Probá:</b> {e.accionTexto}</p>}
               {e.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {e.observacionTexto}</p>}
               {e.continuidadTexto&&<p style={{marginTop:4,color:'var(--mint)',fontSize:'12px'}}>{e.continuidadTexto}</p>}
-              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,{texto:"Para esto que acabás de consultar, hay una acción concreta que podés probar.",variable:null,categoria:null})}>✦ Ver cómo, en Premium →</p>}
+              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,{texto:"Para esto que acabás de consultar, hay una acción concreta que podés probar.",variable:null,categoria:null})}>✦ Experimentar el cómo, en Premium →</p>}
               {!e.accionTexto&&<p style={{marginTop:8,color:'var(--muted)',fontSize:'12px',fontStyle:'italic'}}>Todavía no tenemos un experimento puntual cargado para esto — preferimos no inventarte uno.</p>}
               <button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");irA('descubrir');setQ("")}}>Llevarlo a "Antes de comer" →</button>
             </div>):<div className="empty">Buscaste "{q}" y no encontramos una relación suficientemente clara todavía. Eso no significa que no exista; significa que preferimos no inventarte una respuesta. Probá con otras palabras, o registralo en Mi Día para que empecemos a ver patrones con el tiempo.</div>}
