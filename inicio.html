@@ -6,333 +6,51 @@
 <title>Reseteo Propio — Tu punto de partida</title>
 <style>
   * { box-sizing: border-box; }
-  :root {
-    --bg: #0f1715;
-    --surface: #17211e;
-    --surface-2: #1d2925;
-    --text: #f2efe9;
-    --muted: #aab5af;
-    --accent: #c5a059;
-    --mint: #8fa89b;
-    --border: rgba(255,255,255,.12);
-  }
+  :root { --bg:#0f1715; --surface:#17211e; --surface-2:#1d2925; --text:#f2efe9; --muted:#aab5af; --accent:#c5a059; --mint:#8fa89b; --border:rgba(255,255,255,.12); }
   body { margin:0; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; }
-  button,input,textarea,select { font:inherit; }
-  button { -webkit-tap-highlight-color:transparent; }
+  button,input,textarea,select { font:inherit; } button { -webkit-tap-highlight-color:transparent; }
   .wrap { max-width:640px; margin:0 auto; padding:20px 15px 92px; display:flex; flex-direction:column; }
-  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; order:0; }
-  .brand { font-weight:800; letter-spacing:.02em; }
-  .status { font-size:11px; color:var(--mint); }
-  .hero { margin-bottom:14px; order:1; }
-  .eyebrow { color:var(--accent); font-size:10px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; margin-bottom:7px; }
-  h1 { font-size:29px; line-height:1.08; margin:0 0 8px; }
-  .hero p { color:var(--muted); line-height:1.45; margin:0; font-size:13px; max-width:560px; }
-  .search { display:flex; gap:8px; background:var(--surface); border:1px solid rgba(197,160,89,.34); border-radius:17px; padding:10px 11px; box-shadow:0 10px 24px rgba(0,0,0,.18); order:2; }
-  .search input { flex:1; min-width:0; background:transparent; border:0; outline:0; color:var(--text); font-size:15px; }
-  .search button { border:0; border-radius:12px; background:var(--accent); color:#2a1d08; padding:9px 12px; font-weight:800; cursor:pointer; }
-  .section-title { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:800; margin:16px 0 7px; order:6; }
-  .hooks { display:grid; gap:7px; order:7; }
-  .hook { width:100%; text-align:left; background:transparent; border:1px solid rgba(255,255,255,.08); color:var(--text); border-radius:13px; padding:10px 12px; cursor:pointer; }
-  .hook strong { display:block; font-size:12.5px; margin-bottom:2px; }
-  .hook span { color:var(--muted); font-size:10.5px; line-height:1.35; }
-  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-  .chip { border:1px solid var(--border); background:transparent; color:var(--muted); border-radius:999px; padding:5px 9px; font-size:10px; font-weight:700; cursor:pointer; }
-  .before { margin-top:16px; background:linear-gradient(180deg,rgba(197,160,89,.10),rgba(197,160,89,.025)); border:1px solid rgba(197,160,89,.28); border-radius:19px; padding:14px; order:4; }
-  .before h2 { font-size:16px; margin:0 0 4px; }
-  .before p { margin:0 0 10px; color:var(--muted); font-size:11.5px; line-height:1.4; }
-  textarea { width:100%; min-height:72px; resize:vertical; background:rgba(0,0,0,.14); border:1px solid var(--border); border-radius:13px; color:var(--text); padding:10px; outline:0; }
-  .primary { width:100%; margin-top:8px; border:0; border-radius:13px; padding:11px; background:var(--accent); color:#2a1d08; font-weight:800; cursor:pointer; }
-  .secondary { width:100%; border:1px solid var(--border); border-radius:13px; padding:10px; background:transparent; color:var(--text); font-weight:700; cursor:pointer; }
-  .result { margin-top:10px; display:grid; gap:8px; order:3; }
-  .card { background:var(--surface-2); border:1px solid var(--border); border-radius:15px; padding:12px; }
-  .card h3 { margin:0 0 6px; font-size:13px; }
-  .card p { margin:0; color:var(--muted); font-size:11.5px; line-height:1.48; }
-  .why { color:var(--accent)!important; font-weight:700; margin-top:7px!important; }
-  .empty { color:var(--muted); font-size:11.5px; line-height:1.45; padding:8px 2px; }
-  .tabs { position:fixed; left:0; right:0; bottom:0; background:rgba(15,23,21,.97); border-top:1px solid var(--border); backdrop-filter:blur(12px); display:flex; justify-content:center; z-index:10; }
-  .tabs-inner { max-width:640px; width:100%; display:grid; grid-template-columns:repeat(3,1fr); }
-  .tab { background:none; border:0; color:var(--muted); padding:10px 4px 11px; cursor:pointer; font-size:10px; font-weight:800; }
-  .tab.active { color:var(--text); }
-  .tab small { display:block; font-size:8px; font-weight:500; margin-top:2px; color:var(--muted); }
-  .notice { margin-top:10px; font-size:10.5px; color:var(--muted); line-height:1.4; }
-  .loading { color:var(--muted); font-size:12px; margin-top:10px; }
-  .event-grid { display:grid; gap:10px; }
-  .event { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:15px; }
-  .event h3 { margin:0 0 4px; font-size:15px; }
-  .event p { color:var(--muted); font-size:12px; line-height:1.45; margin:0 0 11px; }
-  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  select { width:100%; background:#111a17; color:var(--text); border:1px solid var(--border); border-radius:12px; padding:10px; }
-  .saved { display:block; margin-top:11px; padding:12px 13px; border:1px solid rgba(143,168,155,.32); border-radius:13px; background:rgba(143,168,155,.10); color:var(--text); font-size:12.5px; font-weight:800; line-height:1.35; text-align:center; }
-  .premium-context { margin-top:12px; background:rgba(197,160,89,.08); border:1px solid rgba(197,160,89,.24); border-radius:15px; padding:13px; }
-  .premium-context h3 { margin:0 0 6px; font-size:14px; }
-  .premium-context p { margin:0 0 7px; color:var(--muted); font-size:11.5px; line-height:1.45; }
-  .premium { background:linear-gradient(180deg,rgba(143,168,155,.12),rgba(197,160,89,.06)); border:1px solid rgba(143,168,155,.22); border-radius:19px; padding:15px; }
-  .premium h2 { margin:0 0 7px; font-size:17px; }
-  .premium p { margin:0 0 10px; color:var(--muted); font-size:11.5px; line-height:1.45; }
-  .pill { display:inline-block; border:1px solid rgba(197,160,89,.26); color:var(--accent); border-radius:999px; padding:4px 8px; font-size:9px; margin:2px 2px 0 0; }
-  footer { margin-top:22px!important; padding-top:12px!important; order:20; }
-  @media (max-width:420px){ h1{font-size:26px;} .wrap{padding-left:13px;padding-right:13px;} .hero p{font-size:12.5px;} }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; order:0; } .brand{font-weight:800;letter-spacing:.02em}.status{font-size:11px;color:var(--mint)}
+  .hero{margin-bottom:14px;order:1}.eyebrow{color:var(--accent);font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:7px}h1{font-size:29px;line-height:1.08;margin:0 0 8px}.hero p{color:var(--muted);line-height:1.45;margin:0;font-size:13px;max-width:560px}
+  .search{display:flex;gap:8px;background:var(--surface);border:1px solid rgba(197,160,89,.34);border-radius:17px;padding:10px 11px;box-shadow:0 10px 24px rgba(0,0,0,.18);order:2}.search input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font-size:15px}.search button{border:0;border-radius:12px;background:var(--accent);color:#2a1d08;padding:9px 12px;font-weight:800;cursor:pointer}
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:16px 0 7px;order:6}.hooks{display:grid;gap:7px;order:7}.hook{width:100%;text-align:left;background:transparent;border:1px solid rgba(255,255,255,.08);color:var(--text);border-radius:13px;padding:10px 12px;cursor:pointer}.hook strong{display:block;font-size:12.5px;margin-bottom:2px}.hook span{color:var(--muted);font-size:10.5px;line-height:1.35}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.chip{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;cursor:pointer}.before{margin-top:16px;background:linear-gradient(180deg,rgba(197,160,89,.10),rgba(197,160,89,.025));border:1px solid rgba(197,160,89,.28);border-radius:19px;padding:14px;order:4}.before h2{font-size:16px;margin:0 0 4px}.before p{margin:0 0 10px;color:var(--muted);font-size:11.5px;line-height:1.4}textarea{width:100%;min-height:72px;resize:vertical;background:rgba(0,0,0,.14);border:1px solid var(--border);border-radius:13px;color:var(--text);padding:10px;outline:0}.primary{width:100%;margin-top:8px;border:0;border-radius:13px;padding:11px;background:var(--accent);color:#2a1d08;font-weight:800;cursor:pointer}.secondary{width:100%;border:1px solid var(--border);border-radius:13px;padding:10px;background:transparent;color:var(--text);font-weight:700;cursor:pointer}
+  .result{margin-top:10px;display:grid;gap:8px;order:3}.card{background:var(--surface-2);border:1px solid var(--border);border-radius:15px;padding:12px}.card h3{margin:0 0 6px;font-size:13px}.card p{margin:0;color:var(--muted);font-size:11.5px;line-height:1.48}.why{color:var(--accent)!important;font-weight:700;margin-top:7px!important}.empty{color:var(--muted);font-size:11.5px;line-height:1.45;padding:8px 2px}.tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(15,23,21,.97);border-top:1px solid var(--border);backdrop-filter:blur(12px);display:flex;justify-content:center;z-index:10}.tabs-inner{max-width:640px;width:100%;display:grid;grid-template-columns:repeat(3,1fr)}.tab{background:none;border:0;color:var(--muted);padding:10px 4px 11px;cursor:pointer;font-size:10px;font-weight:800}.tab.active{color:var(--text)}.tab small{display:block;font-size:8px;font-weight:500;margin-top:2px;color:var(--muted)}.notice{margin-top:10px;font-size:10.5px;color:var(--muted);line-height:1.4}.loading{color:var(--muted);font-size:12px;margin-top:10px}.event-grid{display:grid;gap:10px}.event{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:15px}.event h3{margin:0 0 4px;font-size:15px}.event p{color:var(--muted);font-size:12px;line-height:1.45;margin:0 0 11px}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}select{width:100%;background:#111a17;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px}.saved{display:block;margin-top:11px;padding:12px 13px;border:1px solid rgba(143,168,155,.32);border-radius:13px;background:rgba(143,168,155,.10);color:var(--text);font-size:12.5px;font-weight:800;line-height:1.35;text-align:center}.premium-context{margin-top:12px;background:rgba(197,160,89,.08);border:1px solid rgba(197,160,89,.24);border-radius:15px;padding:13px}.premium-context h3{margin:0 0 6px;font-size:14px}.premium-context p{margin:0 0 7px;color:var(--muted);font-size:11.5px;line-height:1.45}.premium{background:linear-gradient(180deg,rgba(143,168,155,.12),rgba(197,160,89,.06));border:1px solid rgba(143,168,155,.22);border-radius:19px;padding:15px}.premium h2{margin:0 0 7px;font-size:17px}.premium p{margin:0 0 10px;color:var(--muted);font-size:11.5px;line-height:1.45}.pill{display:inline-block;border:1px solid rgba(197,160,89,.26);color:var(--accent);border-radius:999px;padding:4px 8px;font-size:9px;margin:2px 2px 0 0}footer{margin-top:22px!important;padding-top:12px!important;order:20}@media (max-width:420px){h1{font-size:26px}.wrap{padding-left:13px;padding-right:13px}.hero p{font-size:12.5px}}
 </style>
 </head>
-<body>
-<div id="root"></div>
-<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
-<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<body><div id="root"></div>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
 <script type="text/babel">
 const {useEffect,useMemo,useState}=React;
-
-function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-function lsRemove(k){try{localStorage.removeItem(k)}catch(e){}}
-
-const HOOKS=[
-  {text:"¿Te quedás sin energía durante el día?",terms:["energia","cansancio","agotamiento","fatiga","sin energia"]},
-  {text:"¿Comés y después te sentís pesado o con sueño?",terms:["pesadez","sueño","somnolencia","digestión","pesado"]},
-  {text:"¿Tenés hambre poco después de comer?",terms:["hambre","saciedad","antojo","picar","comer"]},
-  {text:"¿Dormís, pero no sentís que descansás?",terms:["sueño","dormir","descanso","descansar"]},
-  {text:"¿Te cuesta mantener el foco?",terms:["foco","concentracion","concentración","atencion","atención"]},
-  {text:"¿Querés mejorar una comida sin dejar de comerla?",terms:["preparacion","coccion","cantidad","sustitucion","comida"]},
-];
-
-// Situaciones de entrada para "Antes de comer": no crean un motor nuevo, solo guían
-// qué escribir en el mismo cuadro de texto de siempre. No inventamos análisis para
-// "entrenar" o "dormir" en sí mismos -- el motor real solo evalúa texto de comida.
-const SITUACIONES_ANTES=[
-  {label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},
-  {label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"},
-  {label:"🏋️ Antes de entrenar",placeholder:"Ej: banana con manteca de maní"},
-  {label:"😴 Antes de dormir",placeholder:"Ej: té de manzanilla con cerezas"},
-];
-
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}} function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}} function lsRemove(k){try{localStorage.removeItem(k)}catch(e){}}
+const HOOKS=[{text:"¿Te quedás sin energía durante el día?",terms:["energia","cansancio","agotamiento","fatiga","sin energia"]},{text:"¿Comés y después te sentís pesado o con sueño?",terms:["pesadez","sueño","somnolencia","digestión","pesado"]},{text:"¿Tenés hambre poco después de comer?",terms:["hambre","saciedad","antojo","picar","comer"]},{text:"¿Dormís, pero no sentís que descansás?",terms:["sueño","dormir","descanso","descansar"]},{text:"¿Te cuesta mantener el foco?",terms:["foco","concentracion","concentración","atencion","atención"]},{text:"¿Querés mejorar una comida sin dejar de comerla?",terms:["preparacion","coccion","cantidad","sustitucion","comida"]}];
+const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"},{label:"🏋️ Antes de entrenar",placeholder:"Ej: banana con manteca de maní"},{label:"😴 Antes de dormir",placeholder:"Ej: té de manzanilla con cerezas"}];
 function normalize(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-function scoreEntry(e,q){
-  const n=normalize(q); if(!n)return 0;
-  const fields=[e.combinacion,e.resultado,e.mecanismo,e.intencionPrincipal,e.familia,...(e.intencionesSecundarias||[])].map(normalize);
-  let s=0;
-  if(fields[0]&&fields[0].includes(n))s+=80;
-  if(fields[1]&&fields[1].includes(n))s+=55;
-  if(fields[2]&&fields[2].includes(n))s+=40;
-  if(fields[3]&&fields[3].includes(n))s+=45;
-  if(fields[4]&&fields[4].includes(n))s+=35;
-  fields.slice(5).forEach(f=>{if(f&&f.includes(n))s+=25});
-  n.split(/\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=4}));
-  return s;
-}
-function explain(e,q){
-  const n=normalize(q);
-  if(e.intencionPrincipal && normalize(e.intencionPrincipal).includes(n)) return `Aparece porque preguntaste por "${q}" y esta ficha está vinculada directamente con esa intención.`;
-  if(e.familia && normalize(e.familia).includes(n)) return `Aparece porque preguntaste por "${q}" y esta ficha pertenece a una familia relacionada.`;
-  return `Aparece porque preguntaste por "${q}" y el contenido de esta ficha tiene relación con eso.`;
-}
-
+const INTENT_ALIASES={energia:["energia","cansancio","fatiga","agotamiento","sin energia","sin energía","bajon","bajón"],descanso_sueno:["sueño","sueno","dormir","descanso","descansar","no descanso","duermo y no descanso"],hambre_saciedad:["hambre","quedar con hambre","me quedo con hambre","saciedad","antojo","picar"],digestion:["digestión","digestion","pesadez","pesado","hinchado","hinchazón","hinchazon","inflamación","inflamacion"],entrenamiento:["entrenar","entrenamiento","ejercicio","actividad física","actividad fisica"],recuperacion:["recuperación","recuperacion","recuperar","después de entrenar","despues de entrenar"],foco_concentracion:["foco","concentración","concentracion","atención","atencion"]};
+function resolveIntent(q){const n=normalize(q);for(const [intent,aliases] of Object.entries(INTENT_ALIASES)){if(aliases.some(a=>n===normalize(a)||n.includes(normalize(a))))return intent}return null}
+function scoreEntry(e,q){const n=normalize(q);if(!n)return 0;const fields=[e.combinacion,e.resultado,e.mecanismo,e.intencionPrincipal,e.familia,...(e.intencionesSecundarias||[])].map(normalize);let s=0;if(fields[0]&&fields[0].includes(n))s+=80;if(fields[1]&&fields[1].includes(n))s+=55;if(fields[2]&&fields[2].includes(n))s+=40;if(fields[3]&&fields[3].includes(n))s+=45;if(fields[4]&&fields[4].includes(n))s+=35;fields.slice(5).forEach(f=>{if(f&&f.includes(n))s+=25});n.split(/\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=4}));return s}
+function explain(e,q,intent){if(intent&&normalize(e.intencionPrincipal)===normalize(intent))return `Aparece porque "${q}" corresponde directamente con esta situación.`;if(e.intencionPrincipal&&normalize(e.intencionPrincipal).includes(normalize(q)))return `Aparece porque preguntaste por "${q}" y esta ficha está vinculada directamente con esa intención.`;if(e.familia&&normalize(e.familia).includes(normalize(q)))return `Aparece porque preguntaste por "${q}" y esta ficha pertenece a una familia relacionada.`;return `Aparece porque preguntaste por "${q}" y el contenido de esta ficha tiene relación con eso.`}
 function App(){
-  const [usuario,setUsuario]=useState(null); const [data,setData]=useState(null); const [tab,setTab]=useState("descubrir");
-  const [q,setQ]=useState(""); const [before,setBefore]=useState(""); const [beforePlaceholder,setBeforePlaceholder]=useState("Ej: milanesa con papas fritas"); const [beforeResult,setBeforeResult]=useState(null); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState("");
-  const [energy,setEnergy]=useState(""); const [dig,setDig]=useState(""); const [sleep,setSleep]=useState(""); const [water,setWater]=useState(""); const [activity,setActivity]=useState("");
-  const [comidaTexto,setComidaTexto]=useState(""); const [comidaBusy,setComidaBusy]=useState(false); const [comidaMsg,setComidaMsg]=useState(""); const [comidaResult,setComidaResult]=useState(null);
-  // Contexto del último hallazgo que llevó a Premium (Directiva "Cierre Comercial v1",
-  // sección 3: el título de Premium debe continuar el contexto, no ser genérico).
-  // Vive en el mismo componente que ya controla "tab" -- no es una arquitectura nueva.
-  const [ultimoHallazgo,setUltimoHallazgo]=useState(null); // {combinacion, invitacion}
-
-  useEffect(()=>{
-    let u=null; try{u=JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){}
-    if(!u){ window.location.href="/index.html"; return; }
-    if(lsGet("reseteo_terminos_v1")!=="true" || lsGet("reseteo_onboarding_v1")!=="true"){ window.location.href="/index.html"; return; }
-    setUsuario(u);
-    fetch("/api/data").then(r=>r.json()).then(d=>setData(d)).catch(()=>setData({entradas:[]}));
-  },[]);
-
-  // Botón físico de retroceso (Android): navega entre pantallas del flujo actual,
-  // no saca de la app ni vuelve al onboarding.
-  useEffect(()=>{
-    function onPop(e){ setTab((e.state && e.state.tab) || "descubrir"); }
-    history.replaceState({tab:"descubrir"},"");
-    window.addEventListener("popstate",onPop);
-    return ()=>window.removeEventListener("popstate",onPop);
-  },[]);
-  function irA(t){ setTab(t); history.pushState({tab:t},""); }
-  function irAPremiumConContexto(combinacion,invitacion,experimento){ setUltimoHallazgo({combinacion,invitacion,experimento}); irA('premium'); }
-  // Recuperación de "Cerrar sesión" (Directiva Premium Contextual, punto 5).
-  // Réplica exacta del comportamiento original de index.html: borra únicamente
-  // reseteo_usuario y reseteo_terminos_v1 -- reseteo_onboarding_v1 y
-  // reseteo_condicion_medica quedan intactos, igual que en la versión anterior.
-  // inicio.html es una página aparte (no un estado interno como en index.html),
-  // así que en vez de setUsuario(null) se redirige directamente al login.
-  function cerrarSesion(){
-    lsRemove("reseteo_usuario");
-    lsRemove("reseteo_terminos_v1");
-    window.location.href="/index.html";
-  }
-
-  // Objetivo del onboarding: reordena qué situación aparece primero, nunca oculta
-  // ni bloquea el resto. Si no hay coincidencia real, el orden queda igual (no se
-  // fabrica una diferencia que no existe).
-  const hooksOrdenados=useMemo(()=>{
-    const obj=normalize(lsGet("reseteo_objetivo_grupo")||"");
-    if(!obj)return HOOKS;
-    const coincide=(h)=>h.terms.some(t=>obj.includes(normalize(t))||normalize(t).includes(obj));
-    const relevantes=HOOKS.filter(coincide), resto=HOOKS.filter(h=>!coincide(h));
-    return relevantes.length? [...relevantes,...resto] : HOOKS;
-  },[]);
-
-  const results=useMemo(()=>{
-    if(!data)return [];
-    const all=data.entradas||[]; const n=normalize(q);
-    if(!n)return [];
-    return all.map(e=>({e,s:scoreEntry(e,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,7);
-  },[data,q]);
-
-  const INTENCIONES_SIN_ANTES=["sueno","dormir","descanso","descansar","hidratacion","agua","energia","cansancio","agotamiento","fatiga","foco","concentracion","atencion"];
-  function esConsultaNoComida(texto){const n=normalize(texto);return INTENCIONES_SIN_ANTES.some(k=>n===k||n.includes(k));}
-  function puedeLlevarAntesDeComer(e,consulta){const intenciones=[e?.intencionPrincipal,...(e?.intencionesSecundarias||[])].filter(Boolean).map(normalize);return !esConsultaNoComida(consulta)&&!intenciones.some(i=>INTENCIONES_SIN_ANTES.some(k=>i===k||i.includes(k)));}
-  function buscar(text){setQ(text);irA("descubrir")}
-
-  async function analizarAntes(){
-    if(!before.trim())return;
-    setBusy(true);setBeforeResult(null);setMsg("");
-    try{
-      const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto:before.trim(),soloVista:true})});
-      const d=await r.json(); if(!r.ok)throw new Error(d.error||"No se pudo consultar");
-      setBeforeResult(d);
-    }catch(e){setMsg(e.message||"No se pudo consultar ahora.")}
-    finally{setBusy(false)}
-  }
-
-  async function guardarBienestar(){
-    const body={}; if(energy)body.energia=energy;if(dig)body.digestion=dig;if(sleep)body.sueno=sleep;if(water)body.hidratacion=water;if(activity)body.actividad_fisica=activity;
-    if(!Object.keys(body).length){setMsg("Elegí al menos un dato para registrar.");return}
-    setBusy(true);setMsg("");
-    try{const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setMsg("✓ Observación guardada. Mi Día ya está actualizado.");}
-    catch(e){setMsg(e.message||"No se pudo guardar.")}
-    finally{setBusy(false)}
-  }
-
-  async function registrarComidaMiDia(){
-    if(!comidaTexto.trim())return;
-    setComidaBusy(true);setComidaMsg("");setComidaResult(null);
-    try{
-      const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify({texto:comidaTexto.trim()})});
-      const d=await r.json(); if(!r.ok)throw new Error(d.error||"No se pudo guardar");
-      setComidaResult(d); setComidaTexto(""); setComidaMsg("Comida registrada. Podés sumar otra cuando quieras.");
-    }catch(e){setComidaMsg(e.message||"No se pudo guardar.")}
-    finally{setComidaBusy(false)}
-  }
-
-  if(!usuario)return null;
-  return <>
-    <main className="wrap">
-      <div className="top"><div className="brand">Reseteo Propio</div><div className="status">Tu espacio personal</div></div>
-      {tab==="descubrir" && <>
-        <section className="hero">
-          <div className="eyebrow">Empezá por lo que necesitás ahora</div>
-          <h1>¿Qué querés entender hoy?</h1>
-          <p>Buscá una situación, una sensación o algo que estés por comer. Te damos contexto para que puedas decidir y probar por vos mismo.</p>
-        </section>
-        <div className="search"><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.target.blur()} placeholder="Ej: sueño después de comer, hambre, energía..."/><button onClick={(e)=>e.target.blur()}>Buscar</button></div>
-
-        {q ? (
-          <div className="result">
-            {results.length?results.map(({e})=><div className="card" key={e.id}>
-              <h3>{e.combinacion||"Sin título"}</h3>
-              <p>{e.resultado||e.mecanismo||"Información disponible para esta situación."}</p>
-              <p className="why">{explain(e,q)}</p>
-              {e.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Probá:</b> {e.accionTexto}</p>}
-              {e.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {e.observacionTexto}</p>}
-              {e.continuidadTexto&&<p style={{marginTop:4,color:'var(--mint)',fontSize:'12px'}}>{e.continuidadTexto}</p>}
-              {e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,{texto:"Para esto que acabás de consultar, hay una acción concreta que podés probar.",variable:null,categoria:null},{accionUsuario:e.accionTexto,observacionUsuario:e.observacionTexto,continuidad:e.continuidadTexto})}>✦ Experimentar el cómo, en Premium →</p>}
-              {!e.accionTexto&&<p style={{marginTop:8,color:'var(--muted)',fontSize:'12px',fontStyle:'italic'}}>Todavía no tenemos un experimento puntual cargado para esto — preferimos no inventarte uno.</p>}
-              {puedeLlevarAntesDeComer(e,q)&&<button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");setBeforeResult(null);setMsg("");irA('descubrir');setQ("")}}>Llevarlo a "Antes de comer" →</button>}
-            </div>):<div className="empty">Buscaste "{q}" y no encontramos una relación suficientemente clara todavía. Eso no significa que no exista; significa que preferimos no inventarte una respuesta. Probá con otras palabras, o registralo en Mi Día para que empecemos a ver patrones con el tiempo.</div>}
-          </div>
-        ) : (
-          <>
-            <div className="section-title">Tal vez estás buscando esto</div>
-            <div className="hooks">{hooksOrdenados.map(h=><button className="hook" key={h.text} onClick={()=>buscar(h.terms[0])}><strong>{h.text}</strong><span>Entrá por la situación, no por una lista de alimentos.</span></button>)}</div>
-          </>
-        )}
-
-        <section className="before">
-          <h2>🍽️ Antes de comer o hacer algo</h2>
-          <p>Consultá primero. No hace falta registrar nada: queremos ayudarte en el momento en que tomás la decisión.</p>
-          <div className="chips">{SITUACIONES_ANTES.map(s=><button className="chip" key={s.label} onClick={()=>{setBefore("");setBeforeResult(null);setMsg("");setBeforePlaceholder(s.placeholder)}}>{s.label}</button>)}</div>
-          <textarea value={before} onChange={e=>setBefore(e.target.value)} placeholder={beforePlaceholder} />
-          <button className="primary" onClick={analizarAntes} disabled={busy}>{busy?"Consultando...":"Consultar antes"}</button>
-          {msg&&<div className="notice">{msg}</div>}
-          {beforeResult&&<BeforeResult data={beforeResult} original={before} onIrPremium={irAPremiumConContexto} />}
-        </section>
-      </>}
-
-      {tab==="midi" && <>
-        <section className="hero"><div className="eyebrow">Segundo mundo</div><h1>Tu día, tus registros</h1><p>Acá no venís a buscar información. Venís a contar qué pasó. Cada comida y cada observación son eventos independientes.</p></section>
-        <div className="event-grid">
-          <div className="event"><h3>🍽️ Registrar una comida</h3><p>Podés registrar varias durante el mismo día. El texto queda tal como lo escribís.</p><textarea value={comidaTexto} onChange={e=>setComidaTexto(e.target.value)} placeholder="Ej: milanesa con papas fritas" /><button className="primary" onClick={registrarComidaMiDia} disabled={comidaBusy}>{comidaBusy?"Guardando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} original={comidaTexto} onIrPremium={irAPremiumConContexto} />}</div>
-          <div className="event"><h3>⚡ Cómo me sentí</h3><p>Elegí solo lo que quieras registrar ahora. No hace falta completar todo.</p>
-            <div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="1">1 — Muy baja</option><option value="2">2 — Baja</option><option value="3">3 — Media</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select>
-            <select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="1">1 — Muy mala</option><option value="2">2 — Mala</option><option value="3">3 — Normal</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select></div>
-            <div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="menos_6h">Menos de 6 h</option><option value="6_7h">6–7 h</option><option value="7_9h">7–9 h</option><option value="mas_9h">Más de 9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="menos_1l">Menos de 1 L</option><option value="1_2l">1–2 L</option><option value="2_3l">2–3 L</option><option value="mas_3l">Más de 3 L</option></select></div>
-            <select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="sedentario">Sedentario</option><option value="activo">Activo</option><option value="muy_activo">Muy activo</option></select>
-            <button className="primary" onClick={guardarBienestar} disabled={busy}>{busy?"Guardando...":"Guardar observación"}</button>{msg&&<div className="saved">{msg}</div>}
-          </div>
-        </div>
-      </>}
-
-      {tab==="premium" && <>
-        <section className="hero"><div className="eyebrow">Laboratorio Premium</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion.texto:"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></section>
-        {ultimoHallazgo&&<div className="premium-context"><h3>Tu experimento</h3>{ultimoHallazgo.experimento?.accionUsuario&&<p><b>Qué hacer:</b> {ultimoHallazgo.experimento.accionUsuario}</p>}{ultimoHallazgo.experimento?.observacionUsuario&&<p><b>Qué observar:</b> {ultimoHallazgo.experimento.observacionUsuario}</p>}{ultimoHallazgo.experimento?.contextoActivacion&&<p><b>Cuándo:</b> {ultimoHallazgo.experimento.contextoActivacion}</p>}{ultimoHallazgo.experimento?.continuidad&&<p><b>Cómo continuar:</b> {ultimoHallazgo.experimento.continuidad}</p>}{!ultimoHallazgo.experimento?.accionUsuario&&<p>Este hallazgo tiene una oportunidad Premium asociada. El detalle del experimento aparece al activarlo.</p>}</div>}
-        <div className="premium"><h2>Aprendizaje que se acumula</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></div>
-      </>}
-
-      <footer style={{marginTop:28,paddingTop:16,borderTop:'1px solid var(--border)',textAlign:'center'}}>
-        <a href="privacidad.html" style={{fontSize:11,color:'var(--muted)',textDecoration:'none'}}>Política de privacidad</a>
-        <span style={{margin:'0 8px',color:'var(--border)'}}>·</span>
-        <button onClick={cerrarSesion} style={{background:'none',border:'none',fontSize:11,color:'var(--muted)',cursor:'pointer',padding:0}}>Cerrar sesión ({usuario?.email||''})</button>
-      </footer>
-    </main>
-    <div className="tabs"><div className="tabs-inner">
-      <button className={'tab '+(tab==='descubrir'?'active':'')} onClick={()=>irA('descubrir')}>🔎 DESCUBRIR<small>Encontrar respuestas</small></button>
-      <button className={'tab '+(tab==='midi'?'active':'')} onClick={()=>irA('midi')}>📓 MI DÍA<small>Registrar lo que pasó</small></button>
-      <button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>irA('premium')}>✦ PREMIUM<small>Entender patrones</small></button>
-    </div></div>
-  </>;
-}
-
-function BeforeResult({data,original,onIrPremium}){
-  const blocks=data.bloqueos||[]; const suggestions=data.sugerencias||[];
-  const esCompuesto=blocks.length>1;
-  return <div className="result">
-    {esCompuesto && original && <p className="notice" style={{marginBottom:2}}>Esto es parte de lo que registraste: "{original}"</p>}
-    {blocks.length?blocks.map((b,i)=><div className="card" key={i}>
-      <h3>{b.combinacion||"Señal detectada"}</h3>
-      <p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>
-      {b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}
-      {b.solucion && (b.solucion.accionUsuario ? (<>
-        <p style={{marginTop:8,color:'var(--text)'}}><b>Qué hacer:</b> {b.solucion.accionUsuario}</p>
-        {b.solucion.contextoActivacion&&<p style={{marginTop:4,color:'var(--text)'}}><b>Cómo aplicarlo:</b> {b.solucion.contextoActivacion}</p>}
-        {b.solucion.observacionUsuario&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> {b.solucion.observacionUsuario}</p>}
-        {b.solucion.continuidad&&<p className="why" style={{marginTop:4}}>{b.solucion.continuidad}</p>}
-      </>) : (
-        <p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>
-      ))}
-      {b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium.texto}</p>}
-      {b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium,b.solucion||null)}>✦ Experimentar el cómo, en Premium →</p>}
-      
-    </div>):<div className="card">
-      <h3>No encontramos una alerta específica</h3>
-      <p><b>Qué detectamos:</b> hoy no tenemos una señal suficientemente clara cargada para esta combinación — eso no significa que sea "perfecta".</p>
-      <p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué podés hacer:</b> comerla con confianza y prestar atención a cómo te sentís después.</p>
-      <p className="why" style={{marginTop:4}}>Siguiente paso: si la repetís seguido, registrala en Mi Día — con más registros podemos empezar a ver patrones reales, no solo reglas generales.</p>
-    </div>}
-    {suggestions.length>0&&suggestions.map((s,i)=><div className="card" key={'s'+i}>
-      <h3>También puede interesarte</h3>
-      <p>{s.adaptacion||s.recomendacion||s.nombre||String(s)}</p>
-      {s.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Podés probar:</b> {s.accionTexto}</p>}
-      {s.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {s.observacionTexto}</p>}
-    </div>)}
-  </div>
-}
+const [usuario,setUsuario]=useState(null),[data,setData]=useState(null),[tab,setTab]=useState("descubrir"),[q,setQ]=useState(""),[before,setBefore]=useState(""),[beforePlaceholder,setBeforePlaceholder]=useState("Ej: milanesa con papas fritas"),[beforeResult,setBeforeResult]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState(""),[energy,setEnergy]=useState(""),[dig,setDig]=useState(""),[sleep,setSleep]=useState(""),[water,setWater]=useState(""),[activity,setActivity]=useState(""),[comidaTexto,setComidaTexto]=useState(""),[comidaBusy,setComidaBusy]=useState(false),[comidaMsg,setComidaMsg]=useState(""),[comidaResult,setComidaResult]=useState(null),[ultimoHallazgo,setUltimoHallazgo]=useState(null);
+useEffect(()=>{let u=null;try{u=JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){}if(!u){window.location.href="/index.html";return}if(lsGet("reseteo_terminos_v1")!=="true"||lsGet("reseteo_onboarding_v1")!=="true"){window.location.href="/index.html";return}setUsuario(u);fetch("/api/data").then(r=>r.json()).then(d=>setData(d)).catch(()=>setData({entradas:[]}))},[]);
+useEffect(()=>{function onPop(e){setTab((e.state&&e.state.tab)||"descubrir")}history.replaceState({tab:"descubrir"},"");window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]);
+function irA(t){setTab(t);history.pushState({tab:t},"")} function irAPremiumConContexto(combinacion,invitacion,experimento){setUltimoHallazgo({combinacion,invitacion,experimento});irA('premium')} function cerrarSesion(){lsRemove("reseteo_usuario");lsRemove("reseteo_terminos_v1");window.location.href="/index.html"}
+const hooksOrdenados=useMemo(()=>{const obj=normalize(lsGet("reseteo_objetivo_grupo")||"");if(!obj)return HOOKS;const coincide=h=>h.terms.some(t=>obj.includes(normalize(t))||normalize(t).includes(obj));const relevantes=HOOKS.filter(coincide),resto=HOOKS.filter(h=>!coincide(h));return relevantes.length?[...relevantes,...resto]:HOOKS},[]);
+const results=useMemo(()=>{if(!data)return [];const all=data.entradas||[],n=normalize(q);if(!n)return [];const intent=resolveIntent(q);let candidates=all;if(intent){candidates=all.filter(e=>normalize(e.intencionPrincipal)===normalize(intent));}const ranked=candidates.map(e=>({e,s:scoreEntry(e,q)})).filter(x=>x.s>0).sort((a,b)=>{const pa=Number(a.e.prioridadBusqueda||a.e.orden_prioridad||0),pb=Number(b.e.prioridadBusqueda||b.e.orden_prioridad||0);return b.s-a.s||pb-pa});return ranked.slice(0,3)},[data,q]);
+const INTENCIONES_SIN_ANTES=["sueno","dormir","descanso","descansar","hidratacion","agua","energia","cansancio","agotamiento","fatiga","foco","concentracion","atencion"];
+function esConsultaNoComida(texto){const n=normalize(texto);return INTENCIONES_SIN_ANTES.some(k=>n===k||n.includes(k))} function puedeLlevarAntesDeComer(e,consulta){const intenciones=[e?.intencionPrincipal,...(e?.intencionesSecundarias||[])].filter(Boolean).map(normalize);return !esConsultaNoComida(consulta)&&!intenciones.some(i=>INTENCIONES_SIN_ANTES.some(k=>i===k||i.includes(k)))} function buscar(text){setQ(text);irA("descubrir")}
+async function analizarAntes(){if(!before.trim())return;setBusy(true);setBeforeResult(null);setMsg("");try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto:before.trim(),soloVista:true})});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo consultar");setBeforeResult(d)}catch(e){setMsg(e.message||"No se pudo consultar ahora.")}finally{setBusy(false)}}
+async function guardarBienestar(){const body={};if(energy)body.energia=energy;if(dig)body.digestion=dig;if(sleep)body.sueno=sleep;if(water)body.hidratacion=water;if(activity)body.actividad_fisica=activity;if(!Object.keys(body).length){setMsg("Elegí al menos un dato para registrar.");return}setBusy(true);setMsg("");try{const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setMsg("✓ Observación guardada. Mi Día ya está actualizado.")}catch(e){setMsg(e.message||"No se pudo guardar.")}finally{setBusy(false)}}
+async function registrarComidaMiDia(){if(!comidaTexto.trim())return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario.pase||""}`},body:JSON.stringify({texto:comidaTexto.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setComidaResult(d);setComidaTexto("");setComidaMsg("Comida registrada. Podés sumar otra cuando quieras.")}catch(e){setComidaMsg(e.message||"No se pudo guardar.")}finally{setComidaBusy(false)}}
+if(!usuario)return null;return <><main className="wrap">
+<div className="top"><div className="brand">Reseteo Propio</div><div className="status">Tu espacio personal</div></div>
+{tab==="descubrir"&&<><section className="hero"><div className="eyebrow">Empezá por lo que necesitás ahora</div><h1>¿Qué querés entender hoy?</h1><p>Buscá una situación, una sensación o algo que estés por comer. Te damos contexto para que puedas decidir y probar por vos mismo.</p></section>
+<div className="search"><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&e.target.blur()} placeholder="Ej: sueño después de comer, hambre, energía..."/><button onClick={e=>e.target.blur()}>Buscar</button></div>
+{q?(<div className="result">{results.length?results.map(({e})=><div className="card" key={e.id}><h3>{e.combinacion||"Sin título"}</h3><p>{e.resultado||e.mecanismo||"Información disponible para esta situación."}</p><p className="why">{explain(e,q,resolveIntent(q))}</p>{e.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Probá:</b> {e.accionTexto}</p>}{e.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {e.observacionTexto}</p>}{e.continuidadTexto&&<p style={{marginTop:4,color:'var(--mint)',fontSize:'12px'}}>{e.continuidadTexto}</p>}{e.accionTexto&&<p className="why" style={{marginTop:8,cursor:'pointer'}} onClick={()=>irAPremiumConContexto(e.combinacion,{texto:"Para esto que acabás de consultar, hay una acción concreta que podés probar.",variable:null,categoria:null},{accionUsuario:e.accionTexto,observacionUsuario:e.observacionTexto,continuidad:e.continuidadTexto})}>✦ Experimentar el cómo, en Premium →</p>}{!e.accionTexto&&<p style={{marginTop:8,color:'var(--muted)',fontSize:'12px',fontStyle:'italic'}}>Todavía no tenemos un experimento puntual cargado para esto — preferimos no inventarte uno.</p>}{puedeLlevarAntesDeComer(e,q)&&<button className="secondary" style={{marginTop:10}} onClick={()=>{setBefore(e.combinacion||"");setBeforeResult(null);setMsg("");irA('descubrir');setQ("")}}>Llevarlo a "Antes de comer" →</button>}</div>):<div className="empty">Buscaste "{q}" y no encontramos una relación suficientemente clara todavía. Eso no significa que no exista; significa que preferimos no inventarte una respuesta. Probá con otras palabras, o registralo en Mi Día para que empecemos a ver patrones con el tiempo.</div>}</div>):(<><div className="section-title">Tal vez estás buscando esto</div><div className="hooks">{hooksOrdenados.map(h=><button className="hook" key={h.text} onClick={()=>buscar(h.terms[0])}><strong>{h.text}</strong><span>Entrá por la situación, no por una lista de alimentos.</span></button>)}</div></>)}
+<section className="before"><h2>🍽️ Antes de comer o hacer algo</h2><p>Consultá primero. No hace falta registrar nada: queremos ayudarte en el momento en que tomás la decisión.</p><div className="chips">{SITUACIONES_ANTES.map(s=><button className="chip" key={s.label} onClick={()=>{setBefore("");setBeforeResult(null);setMsg("");setBeforePlaceholder(s.placeholder)}}>{s.label}</button>)}</div><textarea value={before} onChange={e=>setBefore(e.target.value)} placeholder={beforePlaceholder}/><button className="primary" onClick={analizarAntes} disabled={busy}>{busy?"Consultando...":"Consultar antes"}</button>{msg&&<div className="notice">{msg}</div>}{beforeResult&&<BeforeResult data={beforeResult} original={before} onIrPremium={irAPremiumConContexto}/>}</section></>}
+{tab==="midi"&&<><section className="hero"><div className="eyebrow">Segundo mundo</div><h1>Tu día, tus registros</h1><p>Acá no venís a buscar información. Venís a contar qué pasó. Cada comida y cada observación son eventos independientes.</p></section><div className="event-grid"><div className="event"><h3>🍽️ Registrar una comida</h3><p>Podés registrar varias durante el mismo día. El texto queda tal como lo escribís.</p><textarea value={comidaTexto} onChange={e=>setComidaTexto(e.target.value)} placeholder="Ej: milanesa con papas fritas"/><button className="primary" onClick={registrarComidaMiDia} disabled={comidaBusy}>{comidaBusy?"Guardando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} original={comidaTexto} onIrPremium={irAPremiumConContexto}/>}</div><div className="event"><h3>⚡ Cómo me sentí</h3><p>Elegí solo lo que quieras registrar ahora. No hace falta completar todo.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="1">1 — Muy baja</option><option value="2">2 — Baja</option><option value="3">3 — Media</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="1">1 — Muy mala</option><option value="2">2 — Mala</option><option value="3">3 — Normal</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="menos_6h">Menos de 6 h</option><option value="6_7h">6–7 h</option><option value="7_9h">7–9 h</option><option value="mas_9h">Más de 9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="menos_1l">Menos de 1 L</option><option value="1_2l">1–2 L</option><option value="2_3l">2–3 L</option><option value="mas_3l">Más de 3 L</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="sedentario">Sedentario</option><option value="activo">Activo</option><option value="muy_activo">Muy activo</option></select><button className="primary" onClick={guardarBienestar} disabled={busy}>{busy?"Guardando...":"Guardar observación"}</button>{msg&&<div className="saved">{msg}</div>}</div></div></>}
+{tab==="premium"&&<><section className="hero"><div className="eyebrow">Laboratorio Premium</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion.texto:"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></section>{ultimoHallazgo&&<div className="premium-context"><h3>Tu experimento</h3>{ultimoHallazgo.experimento?.accionUsuario&&<p><b>Qué hacer:</b> {ultimoHallazgo.experimento.accionUsuario}</p>}{ultimoHallazgo.experimento?.observacionUsuario&&<p><b>Qué observar:</b> {ultimoHallazgo.experimento.observacionUsuario}</p>}{ultimoHallazgo.experimento?.contextoActivacion&&<p><b>Cuándo:</b> {ultimoHallazgo.experimento.contextoActivacion}</p>}{ultimoHallazgo.experimento?.continuidad&&<p><b>Cómo continuar:</b> {ultimoHallazgo.experimento.continuidad}</p>}{!ultimoHallazgo.experimento?.accionUsuario&&<p>Este hallazgo tiene una oportunidad Premium asociada. El detalle del experimento aparece al activarlo.</p>}</div>}<div className="premium"><h2>Aprendizaje que se acumula</h2><p>A medida que sumás registros en Mi Día, empezamos a cruzar tu alimentación con tu energía, descanso y digestión para mostrarte relaciones reales sobre tu propio cuerpo — no genéricas.</p><div><span className="pill">Comparación personal ahora</span><span className="pill">Mis patrones</span><span className="pill">Relaciones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></div></>}
+<footer style={{marginTop:28,paddingTop:16,borderTop:'1px solid var(--border)',textAlign:'center'}}><a href="privacidad.html" style={{fontSize:11,color:'var(--muted)',textDecoration:'none'}}>Política de privacidad</a><span style={{margin:'0 8px',color:'var(--border)'}}>·</span><button onClick={cerrarSesion} style={{background:'none',border:'none',fontSize:11,color:'var(--muted)',cursor:'pointer',padding:0}}>Cerrar sesión ({usuario?.email||''})</button></footer></main><div className="tabs"><div className="tabs-inner"><button className={'tab '+(tab==='descubrir'?'active':'')} onClick={()=>irA('descubrir')}>🔎 DESCUBRIR<small>Encontrar respuestas</small></button><button className={'tab '+(tab==='midi'?'active':'')} onClick={()=>irA('midi')}>📓 MI DÍA<small>Registrar lo que pasó</small></button><button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>irA('premium')}>✦ PREMIUM<small>Entender patrones</small></button></div></div></>}
+function BeforeResult({data,original,onIrPremium}){const blocks=data.bloqueos||[],suggestions=data.sugerencias||[],esCompuesto=blocks.length>1;return <div className="result">{esCompuesto&&original&&<p className="notice" style={{marginBottom:2}}>Esto es parte de lo que registraste: "{original}"</p>}{blocks.length?blocks.map((b,i)=><div className="card" key={i}><h3>{b.combinacion||"Señal detectada"}</h3><p><b>Qué detectamos:</b> {b.resultado||"Hay una señal cargada para esta combinación."}</p>{b.nivelRiesgo&&<p className="why">Por qué importa: {b.nivelRiesgo==='Alto'?"esta combinación tiene una interacción real a tener en cuenta, no es solo una preferencia.":"es una señal a considerar, sin ser una alerta grave."}</p>}{b.solucion&&(b.solucion.accionUsuario?(<><p style={{marginTop:8,color:'var(--text)'}}><b>Qué hacer:</b> {b.solucion.accionUsuario}</p>{b.solucion.contextoActivacion&&<p style={{marginTop:4,color:'var(--text)'}}><b>Cómo aplicarlo:</b> {b.solucion.contextoActivacion}</p>}{b.solucion.observacionUsuario&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué observar:</b> {b.solucion.observacionUsuario}</p>}{b.solucion.continuidad&&<p className="why" style={{marginTop:4}}>{b.solucion.continuidad}</p>}</>):(<p style={{marginTop:8,color:'var(--text)'}}><b>Qué podés probar:</b> {b.solucion.adaptacion||b.solucion.nombre}</p>))}{b.invitacionPremium&&<p style={{marginTop:6,color:'var(--text)',fontSize:'12.5px'}}>{b.invitacionPremium.texto}</p>}{b.invitacionPremium&&<p className="why" style={{marginTop:2,cursor:'pointer'}} onClick={()=>onIrPremium(b.combinacion,b.invitacionPremium,b.solucion||null)}>✦ Experimentar el cómo, en Premium →</p>}</div>):<div className="card"><h3>No encontramos una alerta específica</h3><p><b>Qué detectamos:</b> hoy no tenemos una señal suficientemente clara cargada para esta combinación — eso no significa que sea "perfecta".</p><p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Qué podés hacer:</b> comerla con confianza y prestar atención a cómo te sentís después.</p><p className="why" style={{marginTop:4}}>Siguiente paso: si la repetís seguido, registrala en Mi Día — con más registros podemos empezar a ver patrones reales, no solo reglas generales.</p></div>}{suggestions.length>0&&suggestions.map((s,i)=><div className="card" key={'s'+i}><h3>También puede interesarte</h3><p>{s.adaptacion||s.recomendacion||s.nombre||String(s)}</p>{s.accionTexto&&<p style={{marginTop:8,color:'var(--text)'}}><b>Podés probar:</b> {s.accionTexto}</p>}{s.observacionTexto&&<p style={{marginTop:4,color:'var(--muted)',fontSize:'12.5px'}}><b>Observá:</b> {s.observacionTexto}</p>}</div>)}</div>}
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
-</body>
-</html>
+</script></body></html>
