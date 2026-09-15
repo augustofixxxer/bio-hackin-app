@@ -1,0 +1,116 @@
+name: Activate semantic Explorer selector v2
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-explorer-selector-v2.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace flat Explorer selector
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('inicio.html')
+          s=p.read_text()
+          old='''function scoreEntry(e,q){
+  const n=normalize(q); if(!n)return 0;
+  const fields=[e.combinacion,e.resultado,e.mecanismo,e.intencionPrincipal,e.familia,...(e.intencionesSecundarias||[])].map(normalize);
+  let s=0;
+  if(fields[0]&&fields[0].includes(n))s+=80;
+  if(fields[1]&&fields[1].includes(n))s+=55;
+  if(fields[2]&&fields[2].includes(n))s+=40;
+  if(fields[3]&&fields[3].includes(n))s+=45;
+  if(fields[4]&&fields[4].includes(n))s+=35;
+  fields.slice(5).forEach(f=>{if(f&&f.includes(n))s+=25});
+  n.split(/\\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=4}));
+  return s;
+}
+function explain(e,q){
+  const n=normalize(q);
+  if(e.intencionPrincipal && normalize(e.intencionPrincipal).includes(n)) return `Aparece porque preguntaste por "${q}" y esta ficha está vinculada directamente con esa intención.`;
+  if(e.familia && normalize(e.familia).includes(n)) return `Aparece porque preguntaste por "${q}" y esta ficha pertenece a una familia relacionada.`;
+  return `Aparece porque preguntaste por "${q}" y el contenido de esta ficha tiene relación con eso.`;
+}
+'''
+          new='''const BUSQUEDA_SEMANTICA=[
+  {intencion:"energia",terminos:["energia","energía","cansancio","fatiga","agotamiento","sin energia","sin energía","bajon","bajón"]},
+  {intencion:"descanso_sueno",terminos:["sueño","dormir","descanso","descansar","no descanso","duermo y no descanso"]},
+  {intencion:"hambre_saciedad",terminos:["hambre","quedar con hambre","me quedo con hambre","saciedad","antojo","picar"]},
+  {intencion:"digestion",terminos:["digestión","digestion","pesadez","pesado","hinchado","hinchazón","inflamación"]},
+  {intencion:"entrenamiento",terminos:["entrenar","entrenamiento","ejercicio","actividad física","actividad fisica"]},
+  {intencion:"recuperacion",terminos:["recuperación","recuperacion","recuperar","después de entrenar","despues de entrenar"]},
+  {intencion:"foco_concentracion",terminos:["foco","concentración","concentracion","atención","atencion"]},
+];
+function resolverIntencion(q){
+  const n=normalize(q);
+  if(!n)return null;
+  let mejor=null;
+  for(const item of BUSQUEDA_SEMANTICA){
+    for(const termino of item.terminos){
+      const t=normalize(termino);
+      if(n===t || n.includes(t) || t.includes(n)){
+        const score=t.length;
+        if(!mejor || score>mejor.score)mejor={intencion:item.intencion,score};
+      }
+    }
+  }
+  return mejor?.intencion||null;
+}
+function scoreEntry(e,q,intencion){
+  const n=normalize(q); if(!n)return 0;
+  if(intencion && e.intencionPrincipal!==intencion)return 0;
+  const fields=[e.combinacion,e.resultado,e.mecanismo,e.intencionPrincipal,e.familia,...(e.intencionesSecundarias||[])].map(normalize);
+  let s=intencion&&e.intencionPrincipal===intencion?1000:0;
+  if(fields[0]&&fields[0].includes(n))s+=90;
+  if(fields[1]&&fields[1].includes(n))s+=50;
+  if(fields[2]&&fields[2].includes(n))s+=45;
+  if(fields[3]&&fields[3].includes(n))s+=40;
+  if(fields[4]&&fields[4].includes(n))s+=25;
+  n.split(/\\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=3}));
+  return s + Number(e.prioridadBusqueda||0);
+}
+function explain(e,q,intencion){
+  if(intencion && e.intencionPrincipal===intencion){
+    const labels={energia:"energía y cansancio",descanso_sueno:"sueño y descanso",hambre_saciedad:"hambre y saciedad",digestion:"digestión",entrenamiento:"entrenamiento",recuperacion:"recuperación",foco_concentracion:"foco y concentración"};
+    return `La vinculamos directamente con ${labels[intencion]||q}.`;
+  }
+  if(e.familia && normalize(e.familia).includes(normalize(q))) return `La vinculamos con la familia "${e.familia}".`;
+  return `La vinculamos con el contenido que escribiste.`;
+}
+'''
+          if old not in s:
+            raise SystemExit('selector original no encontrado; no se modifica inicio.html')
+          s=s.replace(old,new,1)
+          old2='''  const results=useMemo(()=>{
+    if(!data)return []; const all=data.entradas||[]; const n=normalize(q);
+    if(!n)return [];
+    return all.map(e=>({e,s:scoreEntry(e,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,7);
+  },[data,q]);
+'''
+          new2='''  const intencionBusqueda=useMemo(()=>resolverIntencion(q),[q]);
+  const results=useMemo(()=>{
+    if(!data)return [];
+    const all=data.entradas||[];
+    const n=normalize(q);
+    if(!n)return [];
+    const ranked=all.map(e=>({e,s:scoreEntry(e,q,intencionBusqueda)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s);
+    return ranked.slice(0,3);
+  },[data,q,intencionBusqueda]);
+'''
+          if old2 not in s:
+            raise SystemExit('selector de resultados original no encontrado; no se modifica inicio.html')
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+      - name: Commit applied selector
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add inicio.html
+          git diff --cached --quiet || git commit -m "fix: activate semantic explorer selector"
+          git push
