@@ -1,5 +1,4 @@
-name: Fix real UI functional contract
-# Trigger real UI correction after verified no-op
+name: Direct UI correction
 on:
   push:
     branches: [main]
@@ -7,38 +6,49 @@ permissions:
   contents: write
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message, 'fix: apply real UI functional correction') && !contains(github.event.head_commit.message, 'fix: real UI functional contract') }}
+    if: ${{ !contains(github.event.head_commit.message, 'fix: direct UI functional contract') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Patch actual inicio.html
-        shell: python
-        run: |
-          from pathlib import Path
-          p=Path('inicio.html'); s=p.read_text(encoding='utf-8')
-          old='''async function registrarComida(){const texto=comidaTexto.trim();if(!texto)return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();setComidaResult(b)}catch(e){setComidaMsg("No pudimos registrar esta comida ahora.")}finally{setComidaBusy(false)}}'''
-          new='''async function registrarComida(){const texto=comidaTexto.trim();if(!texto)return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();if(!r.ok)throw new Error(b.error||"No pudimos registrar esta comida ahora.");const principal=b.bloqueos?.[0]||b.resueltos?.[0]||null;const tip=b.sugerencias?.[0]||null;setComidaResult({...b,combinacion:principal?.combinacion||tip?.nombre||"Registro recibido",resultado:principal?.resultado||principal?.mensaje||tip?.mecanismo||"La comida fue registrada correctamente.",adaptacion:principal?.solucion?.adaptacion||null,invitacionPremium:principal?.invitacionPremium||null,solucion:principal?.solucion||null})}catch(e){setComidaMsg(e.message||"No pudimos registrar esta comida ahora.")}finally{setComidaBusy(false)}}'''
-          if old not in s: raise SystemExit('registrarComida fragment not found')
-          s=s.replace(old,new,1)
-          old='function registrarBienestar(){setComidaMsg("✓ Observación guardada. Mi Día ya está actualizado.")}'
-          new='''async function registrarBienestar(){const u=(()=>{try{return JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){return null}})();const pase=u?.pase||"";const body={energia:energy||undefined,digestion:dig||undefined,sueno:sleep?Number(sleep):undefined,hidratacion:water?Number(water):undefined,actividad_fisica:activity?Number(activity):undefined};if(!Object.values(body).some(v=>v!==undefined)){setComidaMsg("Elegí al menos una señal para guardar.");return}try{const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",...(pase?{Authorization:`Bearer ${pase}`}:{})},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setComidaMsg("✓ Observación guardada. Mi Día ya está actualizado.")}catch(e){setComidaMsg(e.message||"No pudimos guardar la observación ahora.")}}'''
-          if old not in s: raise SystemExit('registrarBienestar fragment not found')
-          s=s.replace(old,new,1)
-          start=s.find('{tab==="mi-dia"&&<>'); end=s.find('{tab==="premium"&&<>',start)
-          if start<0 or end<0: raise SystemExit('Mi Día block not found')
-          mi='''{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta y registrá cómo te sentís.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste y recibí una devolución.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<div className="result"><div className="card"><h3>{comidaResult.combinacion}</h3><p>{comidaResult.adaptacion||comidaResult.resultado}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}</div></div><div className="event-grid"><div className="event"><h3>Cómo te sentís</h3><p>Registrá una o varias señales.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="7">7 h</option><option value="8">8 h</option><option value="9">9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="0.5">0,5 L</option><option value="1">1 L</option><option value="1.5">1,5 L</option><option value="2">2 L</option><option value="2.5">2,5 L</option><option value="3">3 L</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="0">0 min</option><option value="20">20 min</option><option value="40">40 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select><button className="primary" onClick={registrarBienestar}>Guardar cómo me sentí</button></div></div></>}'''
-          s=s[:start]+mi+s[end:]
-          marker='</div>\nReactDOM.createRoot(document.getElementById("root")).render(<App/>);'
-          footer='''</div><footer><button className="secondary" style={{marginBottom:8}} onClick={cerrarSesion}>Cerrar sesión</button><a href="/privacidad.html" style={{color:"var(--muted)",fontSize:"11px",textDecoration:"none"}}>Política de privacidad</a></footer>\nReactDOM.createRoot(document.getElementById("root")).render(<App/>);'''
-          if marker not in s: raise SystemExit('root closing marker not found')
-          s=s.replace(marker,footer,1)
-          p.write_text(s,encoding='utf-8')
-      - name: Validate
+      - name: Apply deterministic inicio.html
         shell: bash
         run: |
-          grep -q 'principal=b.bloqueos?.\[0\]' inicio.html
+          cat > inicio.html <<'EOF'
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reseteo Propio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0f1715;color:#f2efe9;font-family:Arial,sans-serif}button,input,textarea,select{font:inherit}.wrap{max-width:640px;margin:auto;padding:20px 14px 100px}.top{display:flex;justify-content:space-between;margin-bottom:18px}.brand{font-weight:800}.status{color:#8fa89b;font-size:11px}.hero{margin-bottom:16px}.eyebrow{color:#c5a059;font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:700}h1{font-size:28px;line-height:1.1;margin:7px 0}.hero p,.muted{color:#aab5af;font-size:13px;line-height:1.45}.search,.card,.event{background:#17211e;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px}.search{display:flex;gap:8px}.search input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#f2efe9}.search button,.primary{background:#c5a059;color:#2a1d08;border:0;border-radius:12px;padding:11px 14px;font-weight:800}.secondary{background:transparent;color:#f2efe9;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px;width:100%;font-weight:700}.result{display:grid;gap:9px;margin-top:12px}.card h3,.event h3{margin:0 0 6px;font-size:14px}.card p,.event p{margin:0 0 9px;color:#aab5af;font-size:12px;line-height:1.45}.event{margin-top:10px}.event textarea,.event select{width:100%;background:#111a17;color:#f2efe9;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}.event textarea{min-height:80px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.primary{width:100%;margin-top:8px}.saved{margin-top:10px;padding:10px;border-radius:11px;background:rgba(143,168,155,.1);border:1px solid rgba(143,168,155,.3);font-size:12px;text-align:center}.tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(15,23,21,.98);border-top:1px solid rgba(255,255,255,.12);z-index:5}.tabs-inner{max-width:640px;margin:auto;display:grid;grid-template-columns:repeat(3,1fr)}.tab{background:none;border:0;color:#aab5af;padding:11px 4px;font-size:10px;font-weight:800}.tab.active{color:#f2efe9}.premium{background:rgba(197,160,89,.08);border:1px solid rgba(197,160,89,.25);border-radius:16px;padding:14px}.premium h2{margin:0 0 7px;font-size:18px}.premium p{color:#aab5af;font-size:12px;line-height:1.45}footer{text-align:center;margin-top:25px;padding-top:12px}footer a{color:#aab5af;font-size:11px;text-decoration:none}@media(max-width:420px){h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<script type="text/babel">
+const {useState}=React;
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function cerrarSesion(){try{localStorage.removeItem('reseteo_usuario');localStorage.removeItem('reseteo_terminos_v1')}catch(e){}window.location.href='/index.html'}
+function pase(){try{return JSON.parse(lsGet('reseteo_usuario')||'null')?.pase||''}catch(e){return ''}}
+function App(){
+ const [tab,setTab]=useState('descubrir'),[texto,setTexto]=useState(''),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[resultado,setResultado]=useState(null),[energy,setEnergy]=useState(''),[dig,setDig]=useState(''),[sleep,setSleep]=useState(''),[water,setWater]=useState(''),[activity,setActivity]=useState('');
+ async function registrarComida(){const t=texto.trim();if(!t)return;setBusy(true);setMsg('');setResultado(null);try{const r=await fetch('/api/registrar-comida',{method:'POST',headers:{'Content-Type':'application/json',...(pase()?{Authorization:'Bearer '+pase()}: {})},body:JSON.stringify({texto:t,soloVista:false})});const b=await r.json();if(!r.ok)throw Error(b.error||'No pudimos registrar esta comida ahora.');const x=b.bloqueos?.[0]||b.resueltos?.[0]||b.sugerencias?.[0]||null;const sol=x?.solucion||null;setResultado({titulo:x?.combinacion||x?.nombre||'Registro recibido',texto:x?.adaptacion||sol?.adaptacion||x?.resultado||x?.mensaje||x?.mecanismo||'La comida fue registrada correctamente.',premium:x?.invitacionPremium||b.invitacionPremium||null});}catch(e){setMsg(e.message||'No pudimos registrar esta comida ahora.')}finally{setBusy(false)}}
+ async function registrarBienestar(){const body={energia:energy||undefined,digestion:dig||undefined,sueno:sleep?Number(sleep):undefined,hidratacion:water?Number(water):undefined,actividad_fisica:activity?Number(activity):undefined};if(!Object.values(body).some(v=>v!==undefined)){setMsg('Elegí al menos una señal para guardar.');return}setBusy(true);setMsg('');try{const r=await fetch('/api/registrar-bienestar',{method:'POST',headers:{'Content-Type':'application/json',...(pase()?{Authorization:'Bearer '+pase()}: {})},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||'No se pudo guardar');setMsg('✓ Observación guardada. Mi Día ya está actualizado.')}catch(e){setMsg(e.message||'No pudimos guardar la observación ahora.')}finally{setBusy(false)}}
+ return <><main className="wrap"><div className="top"><div className="brand">RESETEO PROPIO</div><div className="status">Activo</div></div>
+ {tab==='descubrir'&&<><section className="hero"><div className="eyebrow">DESCUBRIR</div><h1>¿Qué querés entender hoy?</h1><p>Escribí una comida concreta o una situación y recibí una devolución.</p></section><div className="search"><input value={texto} onChange={e=>{setTexto(e.target.value);setMsg('');setResultado(null)}} placeholder="Ej: milanesa con papas fritas"/><button onClick={registrarComida} disabled={busy}>{busy?'...':'Analizar'}</button></div>{msg&&<div className="saved">{msg}</div>}{resultado&&<div className="result"><div className="card"><h3>{resultado.titulo}</h3><p>{resultado.texto}</p>{resultado.premium&&<button className="secondary" onClick={()=>setTab('premium')}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}<section className="event"><h3>Consultas rápidas</h3><p>Probá con: cansancio, digestión, sueño, hambre o foco.</p></section></>}
+ {tab==='mi-dia'&&<><section className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida y registrá cómo te sentís.</p></section><section className="event"><h3>Registrar comida</h3><p>Escribí qué comiste y recibí una devolución.</p><textarea value={texto} onChange={e=>{setTexto(e.target.value);setMsg('');setResultado(null)}} placeholder="Ej: arroz con pollo"></textarea><button className="primary" onClick={registrarComida} disabled={busy}>{busy?'Registrando...':'Registrar comida'}</button>{resultado&&<div className="result"><div className="card"><h3>{resultado.titulo}</h3><p>{resultado.texto}</p>{resultado.premium&&<button className="secondary" onClick={()=>setTab('premium')}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}</section><section className="event"><h3>Cómo te sentís</h3><p>Guardá una o varias señales.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row"><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="7">7 h</option><option value="8">8 h</option><option value="9">9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="0.5">0,5 L</option><option value="1">1 L</option><option value="1.5">1,5 L</option><option value="2">2 L</option><option value="2.5">2,5 L</option><option value="3">3 L</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="0">0 min</option><option value="20">20 min</option><option value="40">40 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select><button className="primary" onClick={registrarBienestar} disabled={busy}>{busy?'Guardando...':'Guardar cómo me sentí'}</button>{msg&&<div className="saved">{msg}</div>}</section></>}
+ {tab==='premium'&&<section className="premium"><div className="eyebrow">PREMIUM</div><h2>Experimentá el cómo.</h2><p>Premium convierte el hallazgo en una opción concreta para probar, observar y repetir.</p><button className="primary" onClick={()=>setTab('descubrir')}>Volver a Descubrir</button></section>}
+ <footer><button className="secondary" onClick={cerrarSesion}>Cerrar sesión</button><div style={{marginTop:10}}><a href="/privacidad.html">Política de privacidad</a></div></footer></main><nav className="tabs"><div className="tabs-inner"><button className={'tab '+(tab==='descubrir'?'active':'')} onClick={()=>setTab('descubrir')}>DESCUBRIR<small>Explorar</small></button><button className={'tab '+(tab==='mi-dia'?'active':'')} onClick={()=>setTab('mi-dia')}>MI DÍA<small>Registrar</small></button><button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>setTab('premium')}>PREMIUM<small>Experimentar</small></button></div></nav></>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>
+EOF
           grep -q 'registrar-bienestar' inicio.html
           grep -q 'Energía' inicio.html
           grep -q 'Digestión' inicio.html
@@ -46,13 +56,10 @@ jobs:
           grep -q 'Actividad física' inicio.html
           grep -q 'Cerrar sesión' inicio.html
           grep -q 'privacidad.html' inicio.html
+          grep -q 'registrar-comida' inicio.html
           git diff --check
-      - name: Commit actual UI
-        shell: bash
-        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add inicio.html
-          git diff --cached --quiet && { echo NO-OP; exit 0; }
-          git commit -m 'fix: real UI functional contract'
+          git commit -m 'fix: direct UI functional contract'
           git push origin HEAD:main
