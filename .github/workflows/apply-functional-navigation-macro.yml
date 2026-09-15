@@ -11,54 +11,68 @@ permissions:
 
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message, 'fix: restore functional navigation macro') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Validate target exists
-        run: |
-          test -f inicio.html
-          grep -q 'function irA(t)' inicio.html
-          grep -q 'registrar-comida' inicio.html
-
-      - name: Apply functional navigation macro
+      - name: Apply functional navigation corrections
         shell: python
         run: |
           from pathlib import Path
+          import re
+
           p = Path("inicio.html")
-          s = p.read_text()
+          s = p.read_text(encoding="utf-8")
+          original = s
 
-          old = 'function irA(t){setTab(t);history.pushState({tab:t},"")}'
-          new = 'function irA(t){setTab(t);history.pushState({tab:t},"");window.scrollTo({top:0,behavior:"smooth"})}'
-          if old in s and new not in s:
-              s = s.replace(old, new, 1)
+          # 1) Navigation always returns to the top.
+          s = re.sub(
+              r'function irA\(t\)\{setTab\(t\);history\.pushState\(\{tab:t\},""\)\}',
+              'function irA(t){setTab(t);history.pushState({tab:t},"");window.scrollTo({top:0,behavior:"smooth"})}',
+              s,
+              count=1,
+          )
 
-          old = '<input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ej: cansancio, hambre, digestión..." />'
-          new = '<input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ej: cansancio, hambre, digestión..." />{q.trim()&&<button className="secondary" style={{width:"auto",marginTop:0,padding:"8px 10px"}} onClick={()=>{setQ("");setMsg("");setBefore("");setBeforeResult(null)}}>Limpiar</button>}'
-          if old in s and 'onClick={()=>{setQ("");setMsg("");setBefore("");setBeforeResult(null)}}' not in s:
-              s = s.replace(old, new, 1)
+          # 2) Search gets an explicit clear/reset control once text exists.
+          if 'aria-label="Limpiar búsqueda"' not in s:
+              pattern = r'(<input value=\{q\} onChange=\{e=>setQ\(e\.target\.value\)\} placeholder="Ej: cansancio, hambre, digestión\.\.\." />)'
+              replacement = r'\1{q.trim()&&<button className="secondary" aria-label="Limpiar búsqueda" style={{width:"auto",marginTop:0,padding:"8px 10px"}} onClick={()=>{setQ("");setMsg("");setBefore("");setBeforeResult(null)}}>Limpiar</button>}'
+              s, n = re.subn(pattern, replacement, s, count=1)
+              if n == 0:
+                  raise SystemExit("No se encontró el campo de búsqueda esperado")
 
-          # Make the navigation tabs reflect the actual selected tab.
-          old = '<button className="tab active" onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className="tab" onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className="tab" onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
-          new = '<button className={"tab "+(tab==="descubrir"?"active":"")} onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
-          if old in s and new not in s:
-              s = s.replace(old, new, 1)
+          # 3) Bottom navigation reflects the actual selected tab.
+          if 'tab==="mi-dia"' not in s:
+              pattern = r'<button className="tab active" onClick=\{\(\)=>irA\("descubrir"\)\}>Descubrir<small>Explorar</small></button><button className="tab" onClick=\{\(\)=>irA\("mi-dia"\)\}>Mi Día<small>Registrar</small></button><button className="tab" onClick=\{\(\)=>irA\("premium"\)\}>Premium<small>Experimentar</small></button>'
+              replacement = '<button className={"tab "+(tab==="descubrir"?"active":"")} onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
+              s, n = re.subn(pattern, replacement, s, count=1)
+              if n == 0:
+                  raise SystemExit("No se encontró la navegación inferior esperada")
 
-          p.write_text(s)
+          p.write_text(s, encoding="utf-8")
+          print("changed:", s != original)
 
-      - name: Verify patch and commit
+      - name: Verify
         shell: bash
         run: |
-          grep -q 'setQ("");setMsg("")' inicio.html
+          test -f inicio.html
+          grep -q 'function irA(t)' inicio.html
+          grep -q 'aria-label="Limpiar búsqueda"' inicio.html
           grep -q 'tab==="mi-dia"' inicio.html
           git diff --check
+
+      - name: Commit only if needed
+        shell: bash
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add inicio.html
           if git diff --cached --quiet; then
-            echo 'No changes required'
+            echo 'No changes required; workflow completed successfully.'
             exit 0
           fi
-          git commit -m 'fix: restore functional navigation macro'
+          git commit -m 'fix: apply functional navigation corrections'
           git push
