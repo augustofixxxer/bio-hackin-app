@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply functional navigation corrections
+      - name: Apply functional corrections
         shell: python
         run: |
           from pathlib import Path
@@ -45,27 +45,34 @@ jobs:
               if n == 0:
                   raise SystemExit("No se encontró el campo de búsqueda esperado")
 
-          # The previous correction made the bottom buttons visually active but the page
-          # still rendered only Descubrir. Make the three existing tabs actual views,
-          # reusing the already-present state and registrar-comida API.
           if 'tab==="mi-dia"&&<>' not in s:
               marker = '<div className="hero"><div className="eyebrow">EXPLORADOR</div>'
               if marker not in s:
                   raise SystemExit("No se encontró el inicio de la vista Explorador")
               s = s.replace(marker, '{tab==="descubrir"&&<><div className="hero"><div className="eyebrow">EXPLORADOR</div>', 1)
-
               marker = '</div><div className="tabs"><div className="tabs-inner">'
               if marker not in s:
                   raise SystemExit("No se encontró el cierre de la vista Explorador")
-
-              extra = '''</div></>}{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta y recibí una devolución visible. Después podés volver a Descubrir.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste. No hace falta describirlo perfecto.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&(comidaResult.bloqueos?.length>0||comidaResult.sugerencias?.length>0)&&<div className="result">{comidaResult.combinacion&&<div className="card"><h3>{comidaResult.combinacion}</h3><p>{comidaResult.adaptacion||comidaResult.resultado||"Registro recibido."}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div>}</div>}</div></div></>}{tab==="premium"&&<><div className="hero"><div className="eyebrow">LABORATORIO PREMIUM</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion?.texto||"Hay una oportunidad concreta para experimentar con este hallazgo.":"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></div>{ultimoHallazgo&&<div className="premium-context"><h3>Tu oportunidad ahora</h3><p>{ultimoHallazgo.experimento?.accionUsuario||"Hay una forma concreta de experimentar con este hallazgo."}</p>{ultimoHallazgo.experimento?.observacionUsuario&&<p><strong>Observá:</strong> {ultimoHallazgo.experimento.observacionUsuario}</p>}{ultimoHallazgo.experimento?.continuidad&&<p><strong>Cómo continuar:</strong> {ultimoHallazgo.experimento.continuidad}</p>}<button className="primary" onClick={()=>{}}>Ver experimento</button></div>}<div className="premium"><h2>Aprendizaje que se acumula</h2><p>Compará lo que probás, observá qué cambia y construí patrones personales con el tiempo.</p><span className="pill">Comparación personal</span><span className="pill">Mis patrones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></>}<div className="tabs"><div className="tabs-inner">'''
+              extra = '''</div></>}{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta y recibí una devolución visible. Después podés volver a Descubrir.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste. No hace falta describirlo perfecto.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&(comidaResult.bloqueos?.length>0||comidaResult.sugerencias?.length>0)&&<div className="result">{comidaResult.combinacion&&<div className="card"><h3>{comidaResult.combinacion}</h3><p>{comidaResult.adaptacion||comidaResult.resultado||"Registro recibido."}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div>}</div>}</div></div> </>}{tab==="premium"&&<><div className="hero"><div className="eyebrow">LABORATORIO PREMIUM</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion?.texto||"Hay una oportunidad concreta para experimentar con este hallazgo.":"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></div>{ultimoHallazgo&&<div className="premium-context"><h3>Tu oportunidad ahora</h3><p>{ultimoHallazgo.experimento?.accionUsuario||"Hay una forma concreta de experimentar con este hallazgo."}</p>{ultimoHallazgo.experimento?.observacionUsuario&&<p><strong>Observá:</strong> {ultimoHallazgo.experimento.observacionUsuario}</p>}{ultimoHallazgo.experimento?.continuidad&&<p><strong>Cómo continuar:</strong> {ultimoHallazgo.experimento.continuidad}</p>}<button className="primary" onClick={()=>{}}>Ver experimento</button></div>}<div className="premium"><h2>Aprendizaje que se acumula</h2><p>Compará lo que probás, observá qué cambia y construí patrones personales con el tiempo.</p><span className="pill">Comparación personal</span><span className="pill">Mis patrones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></>}<div className="tabs"><div className="tabs-inner">'''
               s = s.replace(marker, extra, 1)
 
-          # Make the tabs react to the current view if they are still static.
           old_tabs = '<button className="tab active" onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className="tab" onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className="tab" onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
           new_tabs = '<button className={"tab "+(tab==="descubrir"?"active":"")} onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
           if old_tabs in s:
               s = s.replace(old_tabs, new_tabs, 1)
+
+          # Food registration: never hide a real backend response just because its
+          # bloqueos/sugerencias arrays are empty.
+          old_food = '{comidaResult&&(comidaResult.bloqueos?.length>0||comidaResult.sugerencias?.length>0)&&<div className="result">{comidaResult.combinacion&&<div className="card"><h3>{comidaResult.combinacion}</h3><p>{comidaResult.adaptacion||comidaResult.resultado||"Registro recibido."}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div>}</div>}'
+          new_food = '{comidaResult&&<div className="result">{comidaResult.combinacion&&<div className="card"><h3>{comidaResult.combinacion}</h3><p>{comidaResult.adaptacion||comidaResult.resultado||"Registro recibido."}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div>}{!comidaResult.combinacion&&!comidaResult.error&&<div className="card"><h3>Registro recibido</h3><p>La comida quedó procesada. Podés volver a Descubrir para explorarla.</p></div>}{comidaResult.error&&<div className="card"><h3>No pudimos procesarla</h3><p>{comidaResult.error}</p></div>}</div>}'
+          if old_food in s:
+              s = s.replace(old_food, new_food, 1)
+
+          # Premium context: invitation is already a string; don't dereference .texto.
+          s = s.replace('ultimoHallazgo.invitacion?.texto||"Hay una oportunidad concreta para experimentar con este hallazgo."', 'ultimoHallazgo.invitacion||"Hay una oportunidad concreta para experimentar con este hallazgo."', 1)
+
+          # Remove the no-op CTA instead of pretending an experiment execution layer exists.
+          s = s.replace('<button className="primary" onClick={()=>{}}>Ver experimento</button>', '', 1)
 
           p.write_text(s, encoding="utf-8")
 
@@ -77,7 +84,9 @@ jobs:
           grep -q 'tab==="mi-dia"&&<>' inicio.html
           grep -q 'tab==="premium"&&<>' inicio.html
           grep -q 'aria-label="Limpiar búsqueda"' inicio.html
-          grep -q 'registrarComida' inicio.html
+          grep -q 'comidaResult&&<div className="result">' inicio.html
+          grep -q 'ultimoHallazgo.invitacion||' inicio.html
+          ! grep -q 'onClick={()=>{}}>Ver experimento' inicio.html
           git diff --check
 
       - name: Commit with remote-safe retry
@@ -90,7 +99,7 @@ jobs:
             echo 'No changes required; workflow completed successfully.'
             exit 0
           fi
-          git commit -m 'fix: make primary app tabs functional'
+          git commit -m 'fix: complete functional result and premium bridge'
           for attempt in 1 2 3 4 5; do
             if git push origin HEAD:main; then
               echo 'Push succeeded.'
