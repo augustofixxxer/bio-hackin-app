@@ -1,0 +1,49 @@
+name: apply-boundary
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-boundary.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch boundary
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('inicio.html')
+          s=p.read_text()
+          old='''const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"},{label:"🏋️ Antes de entrenar",placeholder:"Ej: banana con manteca de maní"},{label:"😴 Antes de dormir",placeholder:"Ej: té de manzanilla con cerezas"}];'''
+          new='''const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"}];
+const CONSULTAS_ANTES_NO_COMIDA=["sueno","sueño","dormir","descanso","descansar","hidratacion","hidratación","agua","energia","energía","cansancio","agotamiento","fatiga","foco","concentracion","concentración","atencion","atención","entrenar","entrenamiento","ejercicio","actividad fisica","actividad física","recuperacion","recuperación"];
+function esConsultaNoComidaAntes(texto){const n=normalize(texto);return CONSULTAS_ANTES_NO_COMIDA.some(t=>n===normalize(t)||n.includes(normalize(t)));}'''
+          if old not in s: raise SystemExit('situaciones marker not found')
+          s=s.replace(old,new,1)
+          old2='''async function analizarAntes(){
+const texto=before.trim();
+if(!texto)return;
+setBusy(true);setMsg("");setBeforeResult(null);
+try{'''
+          new2='''async function analizarAntes(){
+const texto=before.trim();
+if(!texto)return;
+if(esConsultaNoComidaAntes(texto)){setBeforeResult({bloqueado:true,mensaje:"Esta consulta pertenece al Explorador, no a Antes de comer. Probá buscarla arriba para encontrar la situación correspondiente."});setMsg("");return;}
+setBusy(true);setMsg("");setBeforeResult(null);
+try{'''
+          if old2 not in s: raise SystemExit('analizar marker not found')
+          s=s.replace(old2,new2,1)
+          old3='''<section className="before">
+    <h2>🍽️ Antes de comer o hacer algo</h2>
+    <p>Consultá primero. No hace falta registrar nada: queremos ayudarte en el momento en que tomás la decisión.</p>'''
+          new3='''<section className="before">
+    <h2>🍽️ Antes de comer o tomar algo</h2>
+    <p>Consultá una comida o bebida concreta antes de decidir. No hace falta registrarla: primero vemos qué podés experimentar.</p>'''
+          if old3 not in s: raise SystemExit('section marker not found')
+          s=s.replace(old3,new3,1)
+          old4='''{beforeResult&&beforeResult.bloqueado&&<div className="empty">{beforeResult.mensaje}</div>}'''
+          if old4 not in s:
+            marker='''{beforeResult&&beforeResult.blocks&&beforeResult.blocks.length>0'''
+            if marker not in s: raise SystemExit('result marker not found')
+            s=s.replace(marker,'{beforeResult&&beforeResult.bloqueado&&<div className="empty">{beforeResult.mensaje}</div>}'+marker,1)
+          p.write_text(s)
