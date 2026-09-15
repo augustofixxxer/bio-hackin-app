@@ -28,7 +28,7 @@ jobs:
   if(fields[3]&&fields[3].includes(n))s+=45;
   if(fields[4]&&fields[4].includes(n))s+=35;
   fields.slice(5).forEach(f=>{if(f&&f.includes(n))s+=25});
-  n.split(/\\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=4}));
+  n.split(/\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=4}));
   return s;
 }
 function explain(e,q){
@@ -72,7 +72,7 @@ function scoreEntry(e,q,intencion){
   if(fields[2]&&fields[2].includes(n))s+=45;
   if(fields[3]&&fields[3].includes(n))s+=40;
   if(fields[4]&&fields[4].includes(n))s+=25;
-  n.split(/\\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=3}));
+  n.split(/\s+/).filter(Boolean).forEach(word=>fields.forEach(f=>{if(f.includes(word))s+=3}));
   return s + Number(e.prioridadBusqueda||0);
 }
 function explain(e,q,intencion){
@@ -113,4 +113,10 @@ function explain(e,q,intencion){
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add inicio.html
           git diff --cached --quiet || git commit -m "fix: activate semantic explorer selector"
+          git push
+      - name: Remove one-shot workflow
+        if: success()
+        run: |
+          git rm .github/workflows/apply-explorer-selector-v2.yml
+          git commit -m "chore: remove one-shot explorer selector workflow"
           git push
