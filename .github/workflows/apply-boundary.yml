@@ -1,39 +1,52 @@
 name: apply-boundary
+
 on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/workflows/apply-boundary.yml'
+      - ".github/workflows/apply-boundary.yml"
+
 jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Patch boundary
-        shell: python
         run: |
+          python3 - <<'PY'
           from pathlib import Path
-          p=Path('inicio.html')
-          s=p.read_text()
-          old='''const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"},{label:"🏋️ Antes de entrenar",placeholder:"Ej: banana con manteca de maní"},{label:"😴 Antes de dormir",placeholder:"Ej: té de manzanilla con cerezas"}];'''
-          new='''const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"}];
-const CONSULTAS_ANTES_NO_COMIDA=["sueno","sueño","dormir","descanso","descansar","hidratacion","hidratación","agua","energia","energía","cansancio","agotamiento","fatiga","foco","concentracion","concentración","atencion","atención","entrenar","entrenamiento","ejercicio","actividad fisica","actividad física","recuperacion","recuperación"];
-function esConsultaNoComidaAntes(texto){const n=normalize(texto);return CONSULTAS_ANTES_NO_COMIDA.some(t=>n===normalize(t)||n.includes(normalize(t)));}'''
-          if old not in s: raise SystemExit('situaciones marker not found')
-          s=s.replace(old,new,1)
-          old2='''async function analizarAntes(){if(!before.trim())return;setBusy(true);setBeforeResult(null);setMsg("");try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto:before.trim(),soloVista:true})});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo consultar");setBeforeResult(d)}catch(e){setMsg(e.message||"No se pudo consultar ahora.")}finally{setBusy(false)}}'''
-          new2='''async function analizarAntes(){const texto=before.trim();if(!texto)return;if(esConsultaNoComidaAntes(texto)){setBeforeResult({bloqueado:true,mensaje:"Esta consulta pertenece al Explorador, no a Antes de comer. Probá buscarla arriba para encontrar la situación correspondiente."});setMsg("");return;}setBusy(true);setBeforeResult(null);setMsg("");try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto,soloVista:true})});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo consultar");setBeforeResult(d)}catch(e){setMsg(e.message||"No se pudo consultar ahora.")}finally{setBusy(false)}}'''
-          if old2 not in s: raise SystemExit('analizar marker not found')
-          s=s.replace(old2,new2,1)
-          old3='''<h2>🍽️ Antes de comer o hacer algo</h2>'''
-          new3='''<h2>🍽️ Antes de comer o tomar algo</h2>'''
-          if old3 not in s: raise SystemExit('title marker not found')
-          s=s.replace(old3,new3,1)
-          old4='''<p>Consultá primero. No hace falta registrar nada: queremos ayudarte en el momento en que tomás la decisión.</p>'''
-          new4='''<p>Consultá una comida o bebida concreta antes de decidir. No hace falta registrarla: primero vemos qué podés experimentar.</p>'''
-          if old4 not in s: raise SystemExit('body marker not found')
-          s=s.replace(old4,new4,1)
-          marker='''{beforeResult&&beforeResult.blocks&&beforeResult.blocks.length>0'''
-          if marker not in s: raise SystemExit('result marker not found')
-          s=s.replace(marker,'{beforeResult&&beforeResult.bloqueado&&<div className="empty">{beforeResult.mensaje}</div>}'+marker,1)
+          p = Path("inicio.html")
+          s = p.read_text()
+
+          old = 'const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"},{label:"🏋️ Antes de entrenar",placeholder:"Ej: banana con manteca de maní"},{label:"😴 Antes de dormir",placeholder:"Ej: té de manzanilla con cerezas"}];'
+          new = 'const SITUACIONES_ANTES=[{label:"🍽️ Voy a comer algo",placeholder:"Ej: milanesa con papas fritas"},{label:"🥤 Voy a tomar algo",placeholder:"Ej: gaseosa, fernet con cola, mate cocido"}];\nconst CONSULTAS_ANTES_NO_COMIDA=["sueno","sueño","dormir","descanso","descansar","hidratacion","hidratación","agua","energia","energía","cansancio","agotamiento","fatiga","foco","concentracion","concentración","atencion","atención","entrenar","entrenamiento","ejercicio","actividad fisica","actividad física","recuperacion","recuperación","hambre","quedar con hambre","saciedad","antojo","picar"];\nfunction esConsultaNoComidaAntes(texto){const n=normalize(texto);return CONSULTAS_ANTES_NO_COMIDA.some(t=>n===normalize(t)||n.includes(normalize(t)));}'
+          if old not in s:
+              raise SystemExit("situaciones marker not found")
+          s = s.replace(old, new, 1)
+
+          old2 = 'async function analizarAntes(){if(!before.trim())return;setBusy(true);setBeforeResult(null);setMsg("");try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto:before.trim(),soloVista:true})});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo consultar");setBeforeResult(d)}catch(e){setMsg(e.message||"No se pudo consultar ahora.")}finally{setBusy(false)}}'
+          new2 = 'async function analizarAntes(){const texto=before.trim();if(!texto)return;if(esConsultaNoComidaAntes(texto)){setBeforeResult({bloqueado:true,mensaje:"Esta consulta pertenece al Explorador, no a Antes de comer. Probá buscarla arriba para encontrar la situación correspondiente."});setMsg("");return;}setBusy(true);setBeforeResult(null);setMsg("");try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${usuario?.pase||""}`},body:JSON.stringify({texto,soloVista:true})});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo consultar");setBeforeResult(d)}catch(e){setMsg(e.message||"No se pudo consultar ahora.")}finally{setBusy(false)}}'
+          if old2 not in s:
+              raise SystemExit("analizar marker not found")
+          s = s.replace(old2, new2, 1)
+
+          old3 = '<h2>🍽️ Antes de comer o hacer algo</h2>'
+          new3 = '<h2>🍽️ Antes de comer o tomar algo</h2>'
+          if old3 not in s:
+              raise SystemExit("title marker not found")
+          s = s.replace(old3, new3, 1)
+
+          old4 = '<p>Consultá primero. No hace falta registrar nada: queremos ayudarte en el momento en que tomás la decisión.</p>'
+          new4 = '<p>Consultá una comida o bebida concreta antes de decidir. No hace falta registrarla: primero vemos qué podés experimentar.</p>'
+          if old4 not in s:
+              raise SystemExit("body marker not found")
+          s = s.replace(old4, new4, 1)
+
+          marker = '{beforeResult&&beforeResult.blocks&&beforeResult.blocks.length>0'
+          if marker not in s:
+              raise SystemExit("result marker not found")
+          s = s.replace(marker, '{beforeResult&&beforeResult.bloqueado&&<div className="empty">{beforeResult.mensaje}</div>}'+marker, 1)
+
           p.write_text(s)
+          PY
