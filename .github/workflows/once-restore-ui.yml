@@ -1,0 +1,55 @@
+name: Once restore UI
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply targeted UI integration
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p = Path('inicio.html')
+          s = p.read_text(encoding='utf-8')
+          if 'tab==="mi-dia"&&<>' in s:
+              raise SystemExit(0)
+          marker = '<div className="hero"><div className="eyebrow">EXPLORADOR</div>'
+          if marker not in s:
+              raise SystemExit('explorer marker missing')
+          s = s.replace(marker, '{tab==="descubrir"&&<><div className="hero"><div className="eyebrow">EXPLORADOR</div>', 1)
+          marker2 = '</div><div className="tabs"><div className="tabs-inner">'
+          if marker2 not in s:
+              raise SystemExit('tabs marker missing')
+          extra = '''</div></>}{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta o cómo te sentís. Después podés volver a Descubrir.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste. No hace falta describirlo perfecto.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} original={comidaTexto} onIrPremium={irAPremiumConContexto}/>}</div></div><div className="event-grid"><div className="event"><h3>Cómo te sentís</h3><p>Podés registrar cada señal por separado; no hace falta completar todo.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño (horas)</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación (litros)</option><option value="0.5">0,5</option><option value="1">1</option><option value="1.5">1,5</option><option value="2">2</option><option value="2.5">2,5</option><option value="3">3</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física (minutos)</option><option value="0">0</option><option value="20">20</option><option value="40">40</option><option value="60">60</option><option value="90">90</option><option value="120">120</option></select><button className="primary" onClick={registrarBienestar}>Guardar cómo me sentí</button></div></div></>}{tab==="premium"&&<><div className="hero"><div className="eyebrow">LABORATORIO PREMIUM</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion||"Hay una oportunidad concreta para experimentar con este hallazgo.":"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></div>{ultimoHallazgo&&<div className="premium-context"><h3>Tu oportunidad ahora</h3><p>{ultimoHallazgo.experimento?.accionUsuario||"Hay una forma concreta de experimentar con este hallazgo."}</p>{ultimoHallazgo.experimento?.observacionUsuario&&<p><strong>Observá:</strong> {ultimoHallazgo.experimento.observacionUsuario}</p>}{ultimoHallazgo.experimento?.continuidad&&<p><strong>Cómo continuar:</strong> {ultimoHallazgo.experimento.continuidad}</p>}</div>}<div className="premium"><h2>Aprendizaje que se acumula</h2><p>Compará lo que probás, observá qué cambia y construí patrones personales con el tiempo.</p><span className="pill">Comparación personal</span><span className="pill">Mis patrones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div>}<div className="tabs"><div className="tabs-inner">'''
+          s = s.replace(marker2, extra, 1)
+          old_tabs = '<button className="tab active" onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className="tab" onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className="tab" onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
+          new_tabs = '<button className={"tab "+(tab==="descubrir"?"active":"")} onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
+          if old_tabs in s:
+              s = s.replace(old_tabs, new_tabs, 1)
+          p.write_text(s, encoding='utf-8')
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -e
+          grep -q 'tab==="descubrir"&&<>' inicio.html
+          grep -q 'tab==="mi-dia"&&<>' inicio.html
+          grep -q 'tab==="premium"&&<>' inicio.html
+          grep -q 'BeforeResult data={comidaResult}' inicio.html
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add inicio.html
+          git commit -m 'fix: surgical UI integration'
+          git push origin HEAD:main
