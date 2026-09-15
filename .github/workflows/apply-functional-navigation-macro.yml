@@ -1,22 +1,26 @@
 name: Apply functional navigation macro
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: functional-navigation-macro
+  cancel-in-progress: false
 
 jobs:
   apply:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout latest main
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Apply functional navigation corrections
         shell: python
@@ -26,9 +30,7 @@ jobs:
 
           p = Path("inicio.html")
           s = p.read_text(encoding="utf-8")
-          original = s
 
-          # 1) Navigation always returns to the top.
           s = re.sub(
               r'function irA\(t\)\{setTab\(t\);history\.pushState\(\{tab:t\},""\)\}',
               'function irA(t){setTab(t);history.pushState({tab:t},"");window.scrollTo({top:0,behavior:"smooth"})}',
@@ -36,7 +38,6 @@ jobs:
               count=1,
           )
 
-          # 2) Search gets an explicit clear/reset control once text exists.
           if 'aria-label="Limpiar búsqueda"' not in s:
               pattern = r'(<input value=\{q\} onChange=\{e=>setQ\(e\.target\.value\)\} placeholder="Ej: cansancio, hambre, digestión\.\.\." />)'
               replacement = r'\1{q.trim()&&<button className="secondary" aria-label="Limpiar búsqueda" style={{width:"auto",marginTop:0,padding:"8px 10px"}} onClick={()=>{setQ("");setMsg("");setBefore("");setBeforeResult(null)}}>Limpiar</button>}'
@@ -44,7 +45,6 @@ jobs:
               if n == 0:
                   raise SystemExit("No se encontró el campo de búsqueda esperado")
 
-          # 3) Bottom navigation reflects the actual selected tab.
           if 'tab==="mi-dia"' not in s:
               pattern = r'<button className="tab active" onClick=\{\(\)=>irA\("descubrir"\)\}>Descubrir<small>Explorar</small></button><button className="tab" onClick=\{\(\)=>irA\("mi-dia"\)\}>Mi Día<small>Registrar</small></button><button className="tab" onClick=\{\(\)=>irA\("premium"\)\}>Premium<small>Experimentar</small></button>'
               replacement = '<button className={"tab "+(tab==="descubrir"?"active":"")} onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
@@ -53,9 +53,8 @@ jobs:
                   raise SystemExit("No se encontró la navegación inferior esperada")
 
           p.write_text(s, encoding="utf-8")
-          print("changed:", s != original)
 
-      - name: Verify
+      - name: Validate
         shell: bash
         run: |
           test -f inicio.html
@@ -64,7 +63,7 @@ jobs:
           grep -q 'tab==="mi-dia"' inicio.html
           git diff --check
 
-      - name: Commit only if needed
+      - name: Commit with remote-safe retry
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
@@ -75,4 +74,14 @@ jobs:
             exit 0
           fi
           git commit -m 'fix: apply functional navigation corrections'
-          git push
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo 'Push succeeded.'
+              exit 0
+            fi
+            echo "Push rejected; synchronizing with latest main (attempt $attempt)."
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo 'Unable to push after 5 synchronized attempts.'
+          exit 1
