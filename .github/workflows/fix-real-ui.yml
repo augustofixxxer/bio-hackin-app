@@ -1,0 +1,61 @@
+name: Fix real UI functional contract
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: apply real UI functional correction') && !contains(github.event.head_commit.message, 'fix: real UI functional contract') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch actual inicio.html
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('inicio.html'); s=p.read_text(encoding='utf-8')
+
+          old='''async function registrarComida(){const texto=comidaTexto.trim();if(!texto)return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();setComidaResult(b)}catch(e){setComidaMsg("No pudimos registrar esta comida ahora.")}finally{setComidaBusy(false)}}'''
+          new='''async function registrarComida(){const texto=comidaTexto.trim();if(!texto)return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();if(!r.ok)throw new Error(b.error||"No pudimos registrar esta comida ahora.");const principal=b.bloqueos?.[0]||b.resueltos?.[0]||null;const tip=b.sugerencias?.[0]||null;setComidaResult({...b,combinacion:principal?.combinacion||tip?.nombre||"Registro recibido",resultado:principal?.resultado||principal?.mensaje||tip?.mecanismo||"La comida fue registrada correctamente.",adaptacion:principal?.solucion?.adaptacion||null,invitacionPremium:principal?.invitacionPremium||null,solucion:principal?.solucion||null})}catch(e){setComidaMsg(e.message||"No pudimos registrar esta comida ahora.")}finally{setComidaBusy(false)}}'''
+          if old not in s: raise SystemExit('registrarComida fragment not found')
+          s=s.replace(old,new,1)
+
+          old='function registrarBienestar(){setComidaMsg("✓ Observación guardada. Mi Día ya está actualizado.")}'
+          new='''async function registrarBienestar(){const u=(()=>{try{return JSON.parse(lsGet("reseteo_usuario")||"null")}catch(e){return null}})();const pase=u?.pase||"";const body={energia:energy||undefined,digestion:dig||undefined,sueno:sleep?Number(sleep):undefined,hidratacion:water?Number(water):undefined,actividad_fisica:activity?Number(activity):undefined};if(!Object.values(body).some(v=>v!==undefined)){setComidaMsg("Elegí al menos una señal para guardar.");return}try{const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",...(pase?{Authorization:`Bearer ${pase}`}:{})},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"No se pudo guardar");setComidaMsg("✓ Observación guardada. Mi Día ya está actualizado.")}catch(e){setComidaMsg(e.message||"No pudimos guardar la observación ahora.")}}'''
+          if old not in s: raise SystemExit('registrarBienestar fragment not found')
+          s=s.replace(old,new,1)
+
+          start=s.find('{tab==="mi-dia"&&<>'); end=s.find('{tab==="premium"&&<>',start)
+          if start<0 or end<0: raise SystemExit('Mi Día block not found')
+          mi='''{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta y registrá cómo te sentís.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste y recibí una devolución.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<div className="result"><div className="card"><h3>{comidaResult.combinacion}</h3><p>{comidaResult.adaptacion||comidaResult.resultado}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}</div></div><div className="event-grid"><div className="event"><h3>Cómo te sentís</h3><p>Registrá una o varias señales.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="7">7 h</option><option value="8">8 h</option><option value="9">9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="0.5">0,5 L</option><option value="1">1 L</option><option value="1.5">1,5 L</option><option value="2">2 L</option><option value="2.5">2,5 L</option><option value="3">3 L</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="0">0 min</option><option value="20">20 min</option><option value="40">40 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select><button className="primary" onClick={registrarBienestar}>Guardar cómo me sentí</button></div></div></>}'''
+          s=s[:start]+mi+s[end:]
+
+          marker='</div>\nReactDOM.createRoot(document.getElementById("root")).render(<App/>);'
+          footer='''</div><footer><button className="secondary" style={{marginBottom:8}} onClick={cerrarSesion}>Cerrar sesión</button><a href="/privacidad.html" style={{color:"var(--muted)",fontSize:"11px",textDecoration:"none"}}>Política de privacidad</a></footer>\nReactDOM.createRoot(document.getElementById("root")).render(<App/>);'''
+          if marker not in s: raise SystemExit('root closing marker not found')
+          s=s.replace(marker,footer,1)
+          p.write_text(s,encoding='utf-8')
+      - name: Validate
+        shell: bash
+        run: |
+          grep -q 'principal=b.bloqueos?.\[0\]' inicio.html
+          grep -q 'registrar-bienestar' inicio.html
+          grep -q 'Energía' inicio.html
+          grep -q 'Digestión' inicio.html
+          grep -q 'Hidratación' inicio.html
+          grep -q 'Actividad física' inicio.html
+          grep -q 'Cerrar sesión' inicio.html
+          grep -q 'privacidad.html' inicio.html
+          git diff --check
+      - name: Commit actual UI
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add inicio.html
+          git diff --cached --quiet && { echo NO-OP; exit 0; }
+          git commit -m 'fix: real UI functional contract'
+          git push origin HEAD:main
