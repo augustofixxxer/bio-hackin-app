@@ -1,89 +1,50 @@
 name: once surgical UI patch
-
 on:
   push:
-    branches: [main]
-
+    branches:
+      - main
 permissions:
   contents: write
-
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, 'chore: stage one-time surgical UI patch') && !contains(github.event.head_commit.message, 'fix: surgical UI integration') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Apply surgical patch
-        shell: python
+      - name: Patch inicio
+        shell: bash
         run: |
+          python3 - <<'PY'
           from pathlib import Path
-          import re
-          import subprocess
-
-          p = Path('inicio.html')
-          s = p.read_text(encoding='utf-8')
-
-          if 'tab==="mi-dia"&&<>' in s or "tab==='mi-dia'&&<>" in s:
-              raise SystemExit('UI views already integrated; refusing duplicate patch')
-
-          # 1) Authenticate food/bienestar writes with the existing signed session pass.
-          old_food = re.search(r'async function registrarComida\(\)\{.*?\nfunction registrarBienestar\(\)\{.*?\}', s, re.S)
-          if not old_food:
-              raise SystemExit('Could not locate registrarComida/registrarBienestar contract')
-          new_food = '''async function registrarComida(){const texto=comidaTexto.trim();if(!texto)return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const pase=(()=>{try{return JSON.parse(lsGet("reseteo_usuario")||"null")?.pase||""}catch(e){return ""}})();const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",...(pase?{Authorization:"Bearer "+pase}: {})},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();if(!r.ok)throw Error(b.error||"No pudimos registrar esta comida ahora.");setComidaResult(b)}catch(e){setComidaMsg(e.message||"No pudimos registrar esta comida ahora.")}finally{setComidaBusy(false)}}
+          import re, subprocess
+          p=Path('inicio.html')
+          s=p.read_text(encoding='utf-8')
+          if 'tab==="mi-dia"&&<>' in s:
+              raise SystemExit(0)
+          m=re.search(r'async function registrarComida\(\)\{.*?\nfunction registrarBienestar\(\)\{.*?\}',s,re.S)
+          if not m: raise SystemExit('food/bienestar marker missing')
+          funcs='''async function registrarComida(){const texto=comidaTexto.trim();if(!texto)return;setComidaBusy(true);setComidaMsg("");setComidaResult(null);try{const pase=(()=>{try{return JSON.parse(lsGet("reseteo_usuario")||"null")?.pase||""}catch(e){return ""}})();const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json",...(pase?{Authorization:"Bearer "+pase}: {})},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();if(!r.ok)throw Error(b.error||"No pudimos registrar esta comida ahora.");setComidaResult(b)}catch(e){setComidaMsg(e.message||"No pudimos registrar esta comida ahora.")}finally{setComidaBusy(false)}}
 async function registrarBienestar(){const body={energia:energy||undefined,digestion:dig||undefined,sueno:sleep?Number(sleep):undefined,hidratacion:water?Number(water):undefined,actividad_fisica:activity?Number(activity):undefined};if(!Object.values(body).some(v=>v!==undefined)){setComidaMsg("Elegí al menos una señal para guardar.");return}setComidaBusy(true);setComidaMsg("");try{const pase=(()=>{try{return JSON.parse(lsGet("reseteo_usuario")||"null")?.pase||""}catch(e){return ""}})();const r=await fetch("/api/registrar-bienestar",{method:"POST",headers:{"Content-Type":"application/json",...(pase?{Authorization:"Bearer "+pase}: {})},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||"No se pudo guardar");setComidaMsg("✓ Observación guardada. Mi Día ya está actualizado.")}catch(e){setComidaMsg(e.message||"No pudimos guardar la observación ahora.")}finally{setComidaBusy(false)}}'''
-          s = s[:old_food.start()] + new_food + s[old_food.end():]
-
-          # 2) Render the backend response contract without inventing a new backend shape.
-          marker = 'function App(){'
-          if marker not in s:
-              raise SystemExit('App marker not found')
-          before_result = '''function BeforeResult({data,onIrPremium}){if(!data)return null;if(data.error)return <div className="result"><div className="card"><h3>No pudimos procesarla</h3><p>{data.error}</p></div></div>;const first=data.resueltos?.[0]||data.bloqueos?.[0]||data.sugerencias?.[0]||null;const sol=first?.solucion||first?.soluciones?.[0]||first?.soluciones||null;if(!first)return <div className="result"><div className="card"><h3>Registro recibido</h3><p>La comida quedó procesada y guardada.</p></div></div>;const combinacion=first.combinacion||first.nombre||first.mecanismo||first.resultado||"Registro recibido";const adaptacion=first.adaptacion||first.resultado||sol?.adaptacion||first.mensaje||"La comida fue procesada.";const accion=sol?.accion_usuario||first.accion_usuario;const observacion=sol?.observacion_usuario||first.observacion_usuario;const continuidad=sol?.continuidad||first.continuidad;const invitacion=first.invitacionPremium||data.invitacionPremium;return <div className="result"><div className="card"><h3>{combinacion}</h3><p>{adaptacion}</p>{accion&&<p><strong>Qué hacer:</strong> {accion}</p>}{observacion&&<p><strong>Observá:</strong> {observacion}</p>}{continuidad&&<p><strong>Cómo continuar:</strong> {continuidad}</p>}{invitacion&&<button className="secondary" onClick={()=>onIrPremium(combinacion,invitacion,sol||first)}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}
+          s=s[:m.start()]+funcs+s[m.end():]
+          s=s.replace('function App(){','''function BeforeResult({data,onIrPremium}){if(!data)return null;if(data.error)return <div className="result"><div className="card"><h3>No pudimos procesarla</h3><p>{data.error}</p></div></div>;const first=data.resueltos?.[0]||data.bloqueos?.[0]||data.sugerencias?.[0]||null;if(!first)return <div className="result"><div className="card"><h3>Registro recibido</h3><p>La comida quedó procesada y guardada.</p></div></div>;const sol=first.solucion||first.soluciones?.[0]||first.soluciones||{};const titulo=first.combinacion||first.nombre||first.mecanismo||first.resultado||"Registro recibido";const texto=first.adaptacion||first.resultado||sol.adaptacion||first.mensaje||"La comida fue procesada.";const premium=first.invitacionPremium||data.invitacionPremium;return <div className="result"><div className="card"><h3>{titulo}</h3><p>{texto}</p>{(sol.accion_usuario||first.accion_usuario)&&<p><strong>Qué hacer:</strong> {sol.accion_usuario||first.accion_usuario}</p>}{(sol.observacion_usuario||first.observacion_usuario)&&<p><strong>Observá:</strong> {sol.observacion_usuario||first.observacion_usuario}</p>}{(sol.continuidad||first.continuidad)&&<p><strong>Cómo continuar:</strong> {sol.continuidad||first.continuidad}</p>}{premium&&<button className="secondary" onClick={()=>onIrPremium(titulo,premium,sol||first)}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}
+function App(){''',1)
+          start=s.find('return <div className="wrap">'); hero=s.find('<div className="hero">',start); tabs=s.find('<div className="tabs"><div className="tabs-inner">',start); end=s.find('\nReactDOM.createRoot',tabs)
+          if min(start,hero,tabs,end)<0: raise SystemExit('render markers missing')
+          prefix=s[start:hero]; discover=s[hero:tabs]; close=s.find('</div></div>',tabs); tabsm=s[tabs:close]
+          mi='''{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta o cómo te sentís. Después podés volver a Descubrir.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste. No hace falta describirlo perfecto.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} onIrPremium={irAPremiumConContexto}/>}</div></div><div className="event-grid"><div className="event"><h3>Cómo te sentís</h3><p>Podés registrar cada señal por separado.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño (horas)</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación (litros)</option><option value="0.5">0,5</option><option value="1">1</option><option value="1.5">1,5</option><option value="2">2</option><option value="2.5">2,5</option><option value="3">3</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física (minutos)</option><option value="0">0</option><option value="20">20</option><option value="40">40</option><option value="60">60</option><option value="90">90</option><option value="120">120</option></select><button className="primary" onClick={registrarBienestar} disabled={comidaBusy}>{comidaBusy?"Guardando...":"Guardar cómo me sentí"}</button></div></div></>}
 '''
-          s = s.replace(marker, before_result + marker, 1)
-
-          # 3) Mount Mi Día and Premium while preserving the existing Discover shell verbatim.
-          start = s.find('return <div className="wrap">')
-          tabs = s.find('<div className="tabs"><div className="tabs-inner">', start)
-          hero = s.find('<div className="hero">', start)
-          if start < 0 or tabs < 0 or hero < 0 or hero > tabs:
-              raise SystemExit('Could not locate existing render shell boundaries')
-
-          prefix = s[start:hero]
-          discover = s[hero:tabs]
-          tabs_rest = s[tabs:]
-          close_tabs = tabs_rest.find('</div></div>')
-          if close_tabs < 0:
-              raise SystemExit('Could not locate tabs closure')
-          tabs_markup = tabs_rest[:close_tabs]
-
-          mi_dia = '''{tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Sumá una comida concreta o cómo te sentís. Después podés volver a Descubrir.</p></div><div className="event-grid"><div className="event"><h3>Registrar comida</h3><p>Escribí qué comiste. No hace falta describirlo perfecto.</p><textarea value={comidaTexto} onChange={e=>{setComidaTexto(e.target.value);setComidaMsg("");setComidaResult(null)}} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<BeforeResult data={comidaResult} onIrPremium={irAPremiumConContexto}/>}</div></div><div className="event-grid"><div className="event"><h3>Cómo te sentís</h3><p>Podés registrar cada señal por separado; no hace falta completar todo.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño (horas)</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación (litros)</option><option value="0.5">0,5</option><option value="1">1</option><option value="1.5">1,5</option><option value="2">2</option><option value="2.5">2,5</option><option value="3">3</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física (minutos)</option><option value="0">0</option><option value="20">20</option><option value="40">40</option><option value="60">60</option><option value="90">90</option><option value="120">120</option></select><button className="primary" onClick={registrarBienestar} disabled={comidaBusy}>{comidaBusy?"Guardando...":"Guardar cómo me sentí"}</button></div></div></>}
+          prem='''{tab==="premium"&&<><div className="hero"><div className="eyebrow">LABORATORIO PREMIUM</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion||"Hay una oportunidad concreta para experimentar con este hallazgo.":"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></div>{ultimoHallazgo&&<div className="premium-context"><h3>Tu oportunidad ahora</h3><p>{ultimoHallazgo.experimento?.accionUsuario||ultimoHallazgo.experimento?.accion_usuario||"Hay una forma concreta de experimentar con este hallazgo."}</p>{(ultimoHallazgo.experimento?.observacionUsuario||ultimoHallazgo.experimento?.observacion_usuario)&&<p><strong>Observá:</strong> {ultimoHallazgo.experimento?.observacionUsuario||ultimoHallazgo.experimento?.observacion_usuario}</p>}{(ultimoHallazgo.experimento?.continuidad||ultimoHallazgo.experimento?.continuidadTexto)&&<p><strong>Cómo continuar:</strong> {ultimoHallazgo.experimento?.continuidad||ultimoHallazgo.experimento?.continuidadTexto}</p>}</div>}<div className="premium"><h2>Aprendizaje que se acumula</h2><p>Compará lo que probás, observá qué cambia y construí patrones personales con el tiempo.</p><span className="pill">Comparación personal</span><span className="pill">Mis patrones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></>}
 '''
-          premium = '''{tab==="premium"&&<><div className="hero"><div className="eyebrow">LABORATORIO PREMIUM</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá con lo que descubrís"}</h1><p>{ultimoHallazgo?ultimoHallazgo.invitacion||"Hay una oportunidad concreta para experimentar con este hallazgo.":"Premium convierte un hallazgo concreto en una oportunidad de experimentación y comparación personal."}</p></div>{ultimoHallazgo&&<div className="premium-context"><h3>Tu oportunidad ahora</h3><p>{ultimoHallazgo.experimento?.accionUsuario||ultimoHallazgo.experimento?.accion_usuario||"Hay una forma concreta de experimentar con este hallazgo."}</p>{(ultimoHallazgo.experimento?.observacionUsuario||ultimoHallazgo.experimento?.observacion_usuario)&&<p><strong>Observá:</strong> {ultimoHallazgo.experimento?.observacionUsuario||ultimoHallazgo.experimento?.observacion_usuario}</p>}{(ultimoHallazgo.experimento?.continuidad||ultimoHallazgo.experimento?.continuidadTexto)&&<p><strong>Cómo continuar:</strong> {ultimoHallazgo.experimento?.continuidad||ultimoHallazgo.experimento?.continuidadTexto}</p>}</div>}<div className="premium"><h2>Aprendizaje que se acumula</h2><p>Compará lo que probás, observá qué cambia y construí patrones personales con el tiempo.</p><span className="pill">Comparación personal</span><span className="pill">Mis patrones</span><span className="pill">Experimentos</span><span className="pill">Continuidad</span></div></>}
-'''
-          footer = '''<footer><button className="secondary" onClick={cerrarSesion}>Cerrar sesión</button><div style={{marginTop:10}}><a href="/privacidad.html">Política de privacidad</a></div></footer>'''
-          active_tabs = tabs_markup.replace('className="tab active"', 'className={"tab "+(tab==="descubrir"?"active":"")}', 1).replace('className="tab" onClick={()=>irA("mi-dia")}', 'className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}', 1).replace('className="tab" onClick={()=>irA("premium")}', 'className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}', 1)
-          new_return = prefix + '{tab==="descubrir"&&<>' + discover + '</>}' + mi_dia + premium + active_tabs + '</div></div>' + footer + '</div>}'
-
-          end_return = s.find('\nReactDOM.createRoot', tabs)
-          if end_return < 0:
-              raise SystemExit('Could not locate App closing boundary')
-          s = s[:start] + new_return + s[end_return:]
-
-          # 4) Remove this one-time writer before committing the actual UI patch.
-          wf = Path('.github/workflows/once-surgical-ui-patch.yml')
-          if not wf.exists():
-              raise SystemExit('One-time workflow disappeared unexpectedly')
-          wf.unlink()
-
-          p.write_text(s, encoding='utf-8')
-
+          footer='<footer><button className="secondary" onClick={cerrarSesion}>Cerrar sesión</button><div style={{marginTop:10}}><a href="/privacidad.html">Política de privacidad</a></div></footer>'
+          tabsm=tabsm.replace('className="tab active"','className={"tab "+(tab==="descubrir"?"active":"")}',1).replace('className="tab" onClick={()=>irA("mi-dia")}','className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}',1).replace('className="tab" onClick={()=>irA("premium")}','className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}',1)
+          ret=prefix+'{tab==="descubrir"&&<>'+discover+'</>}'+mi+prem+tabsm+'</div></div>'+footer+'</div>}'
+          s=s[:start]+ret+s[end:]
+          p.write_text(s,encoding='utf-8')
           subprocess.run(['git','config','user.name','reseteo-surgical-patch'],check=True)
           subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'],check=True)
-          subprocess.run(['git','add','inicio.html','.github/workflows/once-surgical-ui-patch.yml'],check=True)
+          subprocess.run(['git','rm','.github/workflows/once-surgical-ui-patch.yml'],check=True)
+          subprocess.run(['git','add','inicio.html'],check=True)
           subprocess.run(['git','commit','-m','fix: surgical UI integration'],check=True)
           subprocess.run(['git','push'],check=True)
+          PY
