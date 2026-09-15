@@ -1,0 +1,73 @@
+name: Apply functional navigation macro
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: restore functional navigation macro') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch functional routes and clear controls
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('inicio.html')
+          s = p.read_text()
+
+          old = 'function irA(t){setTab(t);history.pushState({tab:t},"")} function irAPremiumConContexto(combinacion,invitacion,experimento){setUltimoHallazgo({combinacion,invitacion,experimento});irA(\'premium\')} function cerrarSesion(){lsRemove("reseteo_usuario");lsRemove("reseteo_terminos_v1");window.location.href="/index.html"}'
+          new = 'function irA(t){setTab(t);history.pushState({tab:t},"");window.scrollTo({top:0,behavior:"smooth"})} function irAPremiumConContexto(combinacion,invitacion,experimento){setUltimoHallazgo({combinacion,invitacion,experimento});irA("premium")} function limpiarBusqueda(){setQ("");setMsg("");setBefore("");setBeforeResult(null);window.scrollTo({top:0,behavior:"smooth"})} function cerrarSesion(){lsRemove("reseteo_usuario");lsRemove("reseteo_terminos_v1");window.location.href="/index.html"}'
+          if old not in s: raise SystemExit('navigation function target not found')
+          s = s.replace(old,new,1)
+
+          old = '<div className="wrap"><div className="top">'
+          new = '<div className="wrap"><div className="top">'
+          if old not in s: raise SystemExit('wrap target not found')
+
+          old = '<div className="search"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ej: cansancio, hambre, digestión..." /><button onClick={()=>{const el=document.querySelector(\'.result\');if(el)el.scrollIntoView({behavior:\'smooth\',block:\'start\'})}}>Buscar</button></div>'
+          new = '<div className="search"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ej: cansancio, hambre, digestión..." />{q.trim()&&<button className="secondary" style={{width:"auto",marginTop:0,padding:"8px 10px"}} onClick={limpiarBusqueda}>Limpiar</button>}<button onClick={()=>{const el=document.querySelector(\'.result\');if(el)el.scrollIntoView({behavior:\'smooth\',block:\'start\'})}}>Buscar</button></div>'
+          if old not in s: raise SystemExit('search target not found')
+          s = s.replace(old,new,1)
+
+          marker = '<div className="hero"><div className="eyebrow">EXPLORADOR</div>'
+          if s.count(marker) != 1: raise SystemExit('discovery marker not found')
+          s = s.replace(marker, '{tab==="descubrir"&&<><div className="hero"><div className="eyebrow">EXPLORADOR</div>',1)
+
+          tabs_marker = '<div className="tabs"><div className="tabs-inner">'
+          if s.count(tabs_marker) != 1: raise SystemExit('tabs marker not found')
+          insert = '''</div>}
+          {tab==="mi-dia"&&<><div className="hero"><div className="eyebrow">MI DÍA</div><h1>Registrá lo que pasó.</h1><p>Acá no buscás respuestas: dejás datos para poder reconocer patrones después.</p></div><div className="event-grid"><div className="event"><h3>🍽️ Registrar una comida</h3><p>Escribí lo que comiste. El registro se guarda y muestra la devolución disponible.</p><textarea value={comidaTexto} onChange={e=>setComidaTexto(e.target.value)} placeholder="Ej: milanesa con papas fritas"></textarea><button className="primary" onClick={registrarComida} disabled={comidaBusy}>{comidaBusy?"Registrando...":"Registrar comida"}</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}{comidaResult&&<div className="result"><div className="card"><h3>{comidaResult.combinacion||comidaTexto||"Registro realizado"}</h3><p>{comidaResult.adaptacion||comidaResult.resultado||comidaResult.descripcion||"Registro recibido. No hay una devolución específica cargada para esta combinación todavía."}</p>{comidaResult.invitacionPremium&&<button className="secondary" onClick={()=>irAPremiumConContexto(comidaResult.combinacion||comidaTexto,comidaResult.invitacionPremium,comidaResult.solucion||null)}>✦ Experimentar el cómo, en Premium →</button>}</div></div>}</div><div className="event"><h3>⚡ Cómo me sentí</h3><p>Registrá una observación rápida. No hace falta completar todo.</p><div className="row"><select value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="1">1 — Muy baja</option><option value="2">2 — Baja</option><option value="3">3 — Media</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select><select value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="1">1 — Muy mala</option><option value="2">2 — Mala</option><option value="3">3 — Normal</option><option value="4">4 — Buena</option><option value="5">5 — Muy buena</option></select></div><div className="row" style={{marginTop:8}}><select value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="menos_6h">Menos de 6 h</option><option value="6_7h">6–7 h</option><option value="7_9h">7–9 h</option><option value="mas_9h">Más de 9 h</option></select><select value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="menos_1l">Menos de 1 L</option><option value="1_2l">1–2 L</option><option value="2_3l">2–3 L</option><option value="mas_3l">Más de 3 L</option></select></div><select value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="sedentario">Sedentario</option><option value="activo">Activo</option><option value="muy_activo">Muy activo</option></select><button className="primary" onClick={registrarBienestar}>Guardar observación</button>{comidaMsg&&<div className="saved">{comidaMsg}</div>}</div></div></>}
+          {tab==="premium"&&<><div className="hero"><div className="eyebrow">PREMIUM</div><h1>{ultimoHallazgo?`Experimentar con "${ultimoHallazgo.combinacion}"`:"Experimentá el cómo."}</h1><p>{ultimoHallazgo?.invitacion?.texto||"Convertí un hallazgo concreto en un experimento guiado y acumulá aprendizaje sobre tus propios patrones."}</p></div>{ultimoHallazgo&&<div className="premium-context"><h3>Tu experimento</h3>{ultimoHallazgo.experimento?.accionUsuario&&<p><b>Qué hacer:</b> {ultimoHallazgo.experimento.accionUsuario}</p>}{ultimoHallazgo.experimento?.observacionUsuario&&<p><b>Qué observar:</b> {ultimoHallazgo.experimento.observacionUsuario}</p>}{ultimoHallazgo.experimento?.continuidad&&<p><b>Cómo continuar:</b> {ultimoHallazgo.experimento.continuidad}</p>}</div>}<div className="premium"><h2>Laboratorio personal</h2><p>Premium vive acá: en el detalle de cómo experimentar, observar y comparar. No es una tarjeta comercial aislada.</p><span className="pill">Experimentos</span><span className="pill">Mis patrones</span><span className="pill">Comparación personal</span></div></>}
+          '''
+          s = s.replace(tabs_marker, insert + tabs_marker, 1)
+
+          old = '<button className="tab active" onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className="tab" onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className="tab" onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
+          new = '<button className={"tab "+(tab==="descubrir"?"active":"")} onClick={()=>irA("descubrir")}>Descubrir<small>Explorar</small></button><button className={"tab "+(tab==="mi-dia"?"active":"")} onClick={()=>irA("mi-dia")}>Mi Día<small>Registrar</small></button><button className={"tab "+(tab==="premium"?"active":"")} onClick={()=>irA("premium")}>Premium<small>Experimentar</small></button>'
+          if old not in s: raise SystemExit('tab buttons target not found')
+          s = s.replace(old,new,1)
+
+          old = 'const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();setComidaResult(b)'
+          new = 'const r=await fetch("/api/registrar-comida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto,soloVista:false})});const b=await r.json();if(!r.ok)throw new Error(b.error||"No pudimos registrar esta comida ahora.");const first=b.bloqueos?.[0]||{};setComidaResult(b.combinacion?b:{...b,combinacion:first.combinacion||texto,resultado:first.resultado||"Registro recibido."})'
+          if old not in s: raise SystemExit('food registration target not found')
+          s = s.replace(old,new,1)
+
+          # Make the visual hierarchy rules unique instead of duplicating the same selector.
+          dup = '.result .card:first-child p:nth-of-type(3){margin-top:10px!important;padding:10px 11px;background:rgba(197,160,89,.08);border-left:3px solid var(--accent);border-radius:10px;color:var(--text)!important;font-size:12.5px!important}.result .card:first-child p:nth-of-type(4){padding:7px 10px;background:rgba(255,255,255,.025);border-radius:9px;font-size:12px!important}.result .card:first-child p:nth-of-type(5){color:var(--mint)!important;font-weight:700}'
+          if s.count(dup)==2: s=s.replace(dup,dup,1).replace(dup,'',1)
+
+          p.write_text(s)
+          PY
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inicio.html
+          git commit -m "fix: restore functional navigation macro"
+          git push
