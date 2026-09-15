@@ -1,1 +1,1 @@
-temporary trigger; remove after the session contract patch completes.
+temporary trigger v2
