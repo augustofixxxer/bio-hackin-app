@@ -16,8 +16,6 @@ export default async function handler(req,res){
   const intent=String(req.query?.intent||'').trim();
   if(!intent){res.status(400).json({error:'Falta la situación.'});return;}
   try{
-    const rows=await supabaseFetch(`alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,tipo,tipo_card,badge_principal,objetivo,accion_texto,observacion_texto,continuidad_texto,rol_comercial,prioridad_busqueda,estado_curado,intencion_principal_id&intenciones.clave=eq.${encodeURIComponent(intent)}`);
-    // PostgREST no garantiza el join anterior con este esquema; resolvemos intención por separado.
     const ints=await supabaseFetch(`intenciones?select=id&clave=eq.${encodeURIComponent(intent)}`);
     const id=ints?.[0]?.id;
     const all=id?await supabaseFetch(`alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,tipo,tipo_card,badge_principal,objetivo,accion_texto,observacion_texto,continuidad_texto,rol_comercial,prioridad_busqueda,estado_curado,intencion_principal_id&intencion_principal_id=eq.${id}`):[];
