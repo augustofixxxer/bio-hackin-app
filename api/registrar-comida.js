@@ -358,10 +358,8 @@ export default async function handler(req, res) {
     }
 
     // 5. Armar bloqueos reales. Directiva "Refactor de Píldoras Premium":
-    //   REGLA GRATUITA: adaptación siempre completa, para cualquier usuario, sin CTA.
-    //   REGLA PREMIUM + usuario no-Premium: adaptación oculta, se genera invitación
-    //     contextual en su lugar. El objeto de invitación lleva variable/categoria como
-    //     metadato aparte (nunca dentro del texto -- punto 2 y 11 de la directiva).
+    //   REGLA GRATUITA: solo hallazgo/estado; si existe solución, invita a Premium.
+    //   REGLA PREMIUM + usuario no-Premium: hallazgo/estado + invitación contextual.
     //   REGLA PREMIUM + usuario Premium: adaptación completa, en capas (armarSolucion) si
     //     accion_usuario/observacion_usuario/contexto_activacion/continuidad ya están
     //     curados; si no, bloque único con adaptacion completa (punto 7: nunca se arma la
@@ -381,8 +379,10 @@ export default async function handler(req, res) {
     }
     const bloqueos = bloqueosReales.map((r, i) => {
       const reglaEsPremium = r.nivel_acceso === "Premium";
-      const puedeVerAdaptacion = Boolean(r.soluciones) && (!reglaEsPremium || esPremiumComida);
-      const debeInvitarAPremium = Boolean(r.soluciones) && reglaEsPremium && !esPremiumComida;
+      // Fase 3 — frontera Free/Premium: la tarjeta gratuita entrega solo el hallazgo/estado.
+      // La acción, observación de prueba y continuidad quedan reservadas a Premium.
+      const puedeVerAdaptacion = Boolean(r.soluciones) && esPremiumComida;
+      const debeInvitarAPremium = Boolean(r.soluciones) && !esPremiumComida;
       return {
         combinacion: r.combinacion || "",
         resultado: r.resultado || "",
@@ -400,12 +400,11 @@ export default async function handler(req, res) {
     });
 
     // 6. Armar resueltos (versión casera) como refuerzo positivo, sin crear Bloqueo.
-    // Misma regla de separación de la sección 5: si la regla es Premium y el usuario no lo
-    // es, no se revela soluciones.adaptacion tampoco acá -- el mensaje de refuerzo queda
-    // igual, solo sin el detalle de la técnica.
+    // Misma regla de separación de la sección 5: en Free no se revela la solución,
+    // independientemente del nivel de acceso de la regla.
     const resueltosRespuesta = resueltos.map((r) => {
       const reglaEsPremium = r.nivel_acceso === "Premium";
-      const puedeVerAdaptacion = Boolean(r.soluciones) && (!reglaEsPremium || esPremiumComida);
+      const puedeVerAdaptacion = Boolean(r.soluciones) && esPremiumComida;
       return {
         combinacion: r.combinacion || "",
         mensaje: "Ya aplicaste este hackeo con la versión casera.",
