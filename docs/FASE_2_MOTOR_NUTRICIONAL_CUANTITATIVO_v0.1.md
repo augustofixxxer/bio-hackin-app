@@ -241,3 +241,17 @@ El motor no podrá asumir autoridad productiva hasta demostrar:
 - USDA FNDDS 2021–2023 — documentación y bases descargables.
 - Estudios humanos sobre factores que modifican la absorción de hierro no hemo; usados aquí como soporte para diseñar el esquema, no como autorización automática de umbrales.
 
+
+## 13. Restricción de despliegue Vercel
+
+El proyecto debe tratar el límite de archivos/artefactos del plan Vercel vigente como una restricción de diseño. No se crearán archivos individuales por alimento, interacción o fixture nutricional si pueden agruparse en tablas/JSON/fixtures compactos. El nuevo motor debe minimizar el número de archivos de funciones serverless y evitar generar un archivo por entidad. La migración cuantitativa se mantiene en Supabase y en módulos compactos dentro del repositorio.
+
+Antes de cualquier despliegue se debe verificar el límite vigente del plan gratuito de Vercel y contar los archivos desplegables reales del proyecto; no se asumirá que el límite histórico sigue siendo idéntico.
+## 14. Política de artefactos
+
+- Datos nutricionales masivos: Supabase, no archivos individuales.
+- Interacciones: tabla Supabase, no un archivo por regla.
+- Tests: suite agrupada, no un archivo por caso.
+- Módulos serverless: mantener cantidad mínima y reutilizar módulos internos.
+- No generar archivos de importación temporales dentro del árbol desplegable.
+- Cualquier nueva función Vercel requiere justificar su necesidad frente al límite de archivos y al presupuesto de funciones del plan.
