@@ -74,7 +74,7 @@ for (let i = 0; i < 10; i++) {
     {
       iron_nonheme_mg: 3 + i,
       vitamin_c_mg: 30 + i,
-      phytate_mg: 10 + i,
+      phytate_mg: 20 + i,
       polyphenols_mg: 20 + i,
     },
     baseMatrix
