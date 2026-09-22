@@ -1,5 +1,5 @@
 # Fase 2 — Motor Nutricional Cuantitativo
-## Contrato técnico v0.1 — construcción controlada
+## Contrato técnico v0.2 — construcción controlada
 
 **Estado:** Implementado en rama de trabajo; no conectado al motor productivo.  
 **Rama:** `fase-2-motor-cuantitativo`  
@@ -15,33 +15,65 @@ Principio rector:
 
 Las keywords, categorías y sinónimos no pueden ser autoridad nutricional.
 
-## 2. Fuentes de composición
+## 2. Jerarquía de fuentes de composición
 
-### Fuente primaria de implementación inicial
+La base se establece **Argentina-first** para el contexto inicial del producto. Las fuentes internacionales permanecen disponibles como complemento o fallback documentado; no gobiernan por defecto alimentos o preparaciones regionales argentinas.
 
-**USDA FoodData Central / FNDDS 2021–2023**
+### Prioridad 10 — ARGENFOODS / Universidad Nacional de Luján
 
-FNDDS proporciona perfiles de nutrientes, porciones y pesos de porción para alimentos y preparaciones consumidas en el sistema WWEIA/NHANES. USDA documenta que FNDDS contiene valores de nutrientes y pesos de porción, y que sus datos permiten convertir cantidades consumidas a gramos y determinar valores de nutrientes.
+Rol: **primaria nacional**.
 
-### Fuente complementaria
+Uso: fuente preferente para composición de alimentos argentinos cuando exista un dato adecuado, trazable y suficientemente específico.
 
-**USDA FoodData Central Foundation Foods**
+### Prioridad 15 — SIFeGA / ANMAT — Buscador Nutricional
 
-Foundation Foods aporta composición analítica de alimentos individuales y valores por 100 g de porción comestible. Los pesos de porción permiten convertir los valores por 100 g a cantidades consumidas.
+Rol: **primaria para producto comercial argentino**.
 
-### Regla de procedencia
+Uso: fuente preferente cuando el alimento identificado corresponda a un producto comercial registrado y exista información nutricional declarada aplicable al producto.
 
-Cada valor cuantitativo debe conservar:
+### Prioridad 20 — SARA 2 / ENNyS 2
 
-- fuente;
-- identificador del alimento en la fuente;
-- versión/fecha de la fuente;
-- unidad;
-- base de cálculo;
-- método de transformación;
-- estado de validación.
+Rol: **primaria nacional contextual**.
 
-No se introducen valores nutricionales manuales sin procedencia.
+Uso: alimentos y preparaciones consumidos en Argentina, respetando la metodología y cobertura declaradas por la fuente.
+
+### Prioridad 40 — LATINFOODS / FAO-INFOODS
+
+Rol: **fallback regional**.
+
+Uso: cuando no exista un dato argentino adecuado y exista equivalencia regional documentada.
+
+### Prioridad 50 — USDA FoodData Central FNDDS
+
+Rol: **fallback internacional**.
+
+Uso: solo cuando no exista una fuente argentina o regional adecuada, o cuando se documente explícitamente la ausencia de equivalencia local.
+
+### Prioridad 60 — USDA FoodData Central Foundation Foods
+
+Rol: **complementaria internacional**.
+
+Uso: apoyo para alimentos con composición analítica disponible cuando no exista una fuente argentina o regional suficiente; no es autoridad por defecto para alimentos regionales argentinos.
+
+### Regla de resolución de procedencia
+
+La prioridad numérica menor tiene precedencia **solo entre fuentes que cubran adecuadamente la misma identidad alimentaria, preparación y base de cálculo**.
+
+No se permite seleccionar automáticamente una fuente por tener mejor prioridad si:
+
+- representa otra preparación;
+- representa otra forma de consumo;
+- no cubre la porción/cantidad necesaria;
+- no conserva trazabilidad suficiente;
+- o no es equivalente al alimento identificado.
+
+Si existen valores argentinos adecuados y valores internacionales para la misma identidad, gobierna el dato argentino.
+
+Si el dato argentino es incompleto pero utilizable, puede complementarse con otra fuente, dejando explícita la procedencia de cada componente.
+
+Si existen conflictos relevantes entre fuentes, no se elige silenciosamente: el registro conserva ambas procedencias y queda pendiente de resolución.
+
+Si no existe evidencia suficiente para una identidad, el motor **no infiere** el valor faltante.
 
 ## 3. Vector nutricional
 
@@ -108,6 +140,8 @@ Sí se permite:
 → vector nutricional
 → evaluación de interacciones
 ```
+
+La cantidad no puede inventarse cuando el usuario no la declara ni existe una porción trazable aplicable.
 
 ## 5. Capa 2 — interacción
 
@@ -235,18 +269,30 @@ El motor no podrá asumir autoridad productiva hasta demostrar:
 9. salida compatible con la capa editorial;
 10. ausencia de regresión en el contrato Free/Premium.
 
-## 12. Fuentes técnicas
+## 12. Fuentes técnicas y trazabilidad
 
-- USDA FoodData Central — documentación de tipos de datos.
-- USDA FNDDS 2021–2023 — documentación y bases descargables.
-- Estudios humanos sobre factores que modifican la absorción de hierro no hemo; usados aquí como soporte para diseñar el esquema, no como autorización automática de umbrales.
+Las fuentes deben conservar como mínimo:
 
+- nombre;
+- jurisdicción;
+- versión;
+- identificador del alimento;
+- fecha de referencia;
+- URI o localizador;
+- tipo de fuente;
+- rol dentro de la jerarquía;
+- prioridad;
+- condiciones de uso;
+- estado de validación.
+
+La prioridad es una **regla de procedencia**, no una puntuación de calidad nutricional.
 
 ## 13. Restricción de despliegue Vercel
 
 El proyecto debe tratar el límite de archivos/artefactos del plan Vercel vigente como una restricción de diseño. No se crearán archivos individuales por alimento, interacción o fixture nutricional si pueden agruparse en tablas/JSON/fixtures compactos. El nuevo motor debe minimizar el número de archivos de funciones serverless y evitar generar un archivo por entidad. La migración cuantitativa se mantiene en Supabase y en módulos compactos dentro del repositorio.
 
 Antes de cualquier despliegue se debe verificar el límite vigente del plan gratuito de Vercel y contar los archivos desplegables reales del proyecto; no se asumirá que el límite histórico sigue siendo idéntico.
+
 ## 14. Política de artefactos
 
 - Datos nutricionales masivos: Supabase, no archivos individuales.
