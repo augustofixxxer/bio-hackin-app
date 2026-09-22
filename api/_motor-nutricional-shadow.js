@@ -8,9 +8,10 @@ function numeroFinito(v) {
 }
 
 function pasaUmbral(valor, interaccion) {
+  // Contrato estricto: una interacción validated sin umbral numérico NO es ejecutable.
   if (!numeroFinito(valor)) return false;
   if (interaccion.umbral_estado !== "validated") return false;
-  if (!numeroFinito(interaccion.umbral_min_valor)) return true;
+  if (!numeroFinito(interaccion.umbral_min_valor)) return false;
   return valor >= interaccion.umbral_min_valor;
 }
 
@@ -19,6 +20,9 @@ function evaluarInteracciones(vector, interacciones) {
 
   for (const i of interacciones || []) {
     if (i.umbral_estado !== "validated") continue;
+    if (!numeroFinito(i.umbral_min_valor)) continue;
+    if (!numeroFinito(i.peso_relativo) || i.peso_relativo <= 0) continue;
+    if (!i.fuente_id) continue;
 
     const objetivo = vector?.[i.nutriente_objetivo];
     const modificador = vector?.[i.factor_modificador];
@@ -29,9 +33,7 @@ function evaluarInteracciones(vector, interacciones) {
     if (objetivo <= 0) continue;
     if (!pasaUmbral(modificador, i)) continue;
 
-    const peso = numeroFinito(i.peso_relativo) ? i.peso_relativo : 1;
-    const relevancia = Math.abs(modificador) * Math.abs(peso);
-
+    const relevancia = Math.abs(modificador) * Math.abs(i.peso_relativo);
     if (relevancia <= 0) continue;
 
     candidatas.push({
@@ -48,9 +50,7 @@ function evaluarInteracciones(vector, interacciones) {
   const grupos = new Map();
   for (const c of candidatas) {
     const actual = grupos.get(c.dominanceGroup);
-    if (!actual || c.relevance > actual.relevance) {
-      grupos.set(c.dominanceGroup, c);
-    }
+    if (!actual || c.relevance > actual.relevance) grupos.set(c.dominanceGroup, c);
   }
 
   const dominantes = [...grupos.values()].sort((a, b) => b.relevance - a.relevance);
