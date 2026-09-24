@@ -7,35 +7,27 @@ Este documento define el gate de comparación legacy → motor nuevo. No activa 
 ## Contrato de migración
 
 1. **Legacy permanece como fuente de verdad de producción** mientras la comparación no cierre.
-2. El motor nuevo debe disponer de una **interfaz ejecutable identificable** (`MOTOR_NUTRICIONAL_ENGINE_URL` en QA) antes de poder comparar resultados.
-3. Cada fixture debe registrar:
-   - entrada normalizada;
-   - decisión legacy;
-   - decisión nueva;
-   - divergencia;
-   - explicación de la divergencia;
-   - decisión de aceptación/rechazo.
-4. Una divergencia no explicada es un **FAIL**, no un ajuste silencioso.
+2. El motor nuevo dispone de una **interfaz ejecutable identificable**: `api/motor-nutricional-shadow.js`, protegida por `MOTOR_NUTRICIONAL_SHADOW_TOKEN` y consumible sólo desde QA/server.
+3. Cada fixture debe registrar entrada, decisión legacy, decisión nueva, divergencia, explicación y aceptación/rechazo.
+4. Una divergencia no explicada es **FAIL**, no ajuste silencioso.
 5. `estado_vector != completo` impide usar ese vector para una interacción.
 6. `estado_qa = bloqueada` en una interacción impide su activación.
 7. Free/Premium no se modifica durante esta etapa.
-8. `inicio.html` queda fuera del alcance de esta migración.
+8. `inicio.html` queda fuera del alcance.
 9. No se modifica `main` ni producción desde este gate.
+
+## Fixtures
+
+`tests/motor-nutricional-shadow.fixtures.js` contiene los 10 casos QA actuales: `pollo_papas`, `arroz_pollo`, `caballa_brocoli`, `brocoli_papa`, `guiso_lentejas`, `guiso_arroz`, `guiso_fideos`, `ravioles`, `empanadas`, `asado`.
+
+La suite exige simultáneamente `MOTOR_NUTRICIONAL_ENGINE_URL`, `MOTOR_NUTRICIONAL_SHADOW_TOKEN` y `LEGACY_ENGINE_URL`. Si falta cualquiera, el test falla cerrado y no declara comparación PASS.
 
 ## Gate de salida
 
-El Paso 3 solo puede cerrarse cuando:
-
-- existe una interfaz ejecutable del motor nuevo;
-- los fixtures de los cuatro arquetipos base pueden ejecutarse;
-- legacy y nuevo producen resultados comparables;
-- toda divergencia queda explicada y aceptada;
-- no aparecen regresiones en Free/Premium;
-- la suite shadow deja de fallar por ausencia de interfaz o datos incompletos;
-- Capa 2 continúa bloqueada hasta disponer de umbrales y evidencia científica ejecutables.
+El Paso 3 sólo puede cerrarse cuando legacy y nuevo sean ejecutables, los fixtures produzcan resultados comparables y toda divergencia quede explicada/aceptada. Los vectores incompletos y las interacciones bloqueadas continúan impidiendo activación.
 
 ## Resultado actual
 
-**BLOQUEADO CONTROLADAMENTE.**
+**INTERFAZ IMPLEMENTADA — COMPARACIÓN PENDIENTE DE EJECUCIÓN REAL.**
 
-La infraestructura de comparación ya quedó instalada en la rama de baseline congelado, pero el sistema todavía no posee una interfaz ejecutable del motor nuevo y existen vectores incompletos. Por diseño, el gate falla cerrado en lugar de declarar una migración inexistente como PASS.
+La interfaz nueva quedó instalada en la rama congelada. No se despliega a `main` ni modifica producción. La ejecución real de legacy ↔ nuevo requiere URLs/secretos de QA del entorno desplegado; la suite está diseñada para fallar cerrado si esos valores no existen.
