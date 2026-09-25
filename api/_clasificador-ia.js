@@ -1,35 +1,15 @@
 // api/_clasificador-ia.js
-// Capa de "entendimiento" (no de "decisión") — Sprint 9, recomendado y nunca implementado
-// hasta hoy (25/07/2026). Usa Groq (modelos de código abierto, nivel gratuito) para
-// reconocer qué categorías de alimento aparecen en el texto libre que escribió el usuario.
-//
-// BLINDAJE LEGAL — leer antes de tocar este archivo:
-// - La IA NUNCA genera texto libre que el usuario vaya a leer. Solo puede devolver
-//   valores de una lista cerrada (CATEGORIAS_PERMITIDAS), forzado por "Structured
-//   Outputs" con schema estricto de Groq (additionalProperties:false + enum) — el
-//   modelo no puede inventar categorías nuevas ni "colarse" con lenguaje médico.
-// - La IA nunca decide si algo es bueno/malo/riesgoso. Eso lo siguen decidiendo
-//   exclusivamente las reglas ya aprobadas en Supabase (tabla "reglas"), igual que hoy.
-// - Si Groq falla, tarda de más, o no está configurada: se devuelve null y
-//   registrar-comida.js sigue funcionando exactamente igual que hoy (sinónimos +
-//   reglas), sin bloquear ni degradar la experiencia del usuario. No intrusivo,
-//   mismo criterio que emitirEvento().
-//
-// Mismo patrón de archivo único que _instrumentacion.js y _supabase.js — no separar
-// en lib/ (lección Sprint 16).
+// Capa de "entendimiento" (no de "decisión") — clasifica categorías cerradas y exige
+// evidencia léxica explícita en el texto original antes de devolverlas.
+// Blindaje: la IA no puede introducir una categoría que el usuario no haya expresado.
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-// Lista cerrada — cada valor corresponde 1:1 a una palabra que las reglas de Supabase
-// ya reconocen literalmente (ver reglas.palabras_clave). Ampliar esta lista es barato
-// (agregar una línea acá + el sinónimo correspondiente en registrar-comida.js), pero
-// SIEMPRE debe ser una palabra ya usada por una regla real — nunca un criterio nuevo.
 const CATEGORIAS_PERMITIDAS = [
   "carne_roja", "pollo", "pescado", "legumbres", "lacteos", "harinas_refinadas",
 ];
 
-// Traduce la categoría de la IA a la palabra literal que las reglas ya reconocen.
 const MAPA_A_PALABRA_REGLA = {
   carne_roja: "carne roja",
   pollo: "pollo",
@@ -37,6 +17,30 @@ const MAPA_A_PALABRA_REGLA = {
   legumbres: "legumbres",
   lacteos: "lacteos",
   harinas_refinadas: "harinas",
+};
+
+// La IA puede interpretar sinónimos, pero nunca puede inventar una categoría.
+// Cada categoría devuelta debe tener además una evidencia explícita en el texto original.
+const EVIDENCIA_LEXICA = {
+  carne_roja: ["carne roja","bife","churrasco","vacio","matambre","costilla","cuadril","lomo","peceto","nalga","bondiola","carnaza","tapa","asado","parrillada","colita","entraña"],
+  pollo: ["pollo","suprema","pechuga","muslo","supremas"],
+  pescado: ["pescado","salmon","atun","merluza","trucha","mero","corvina","pejerrey","boga","surubi","abadejo"],
+  legumbres: ["legumbres","garbanzos","porotos","habas","arvejas","lentejas"],
+  lacteos: ["lacteos","queso","quesos","leche","crema","yogur","yogurt","ricota"],
+  harinas_refinadas: ["harina","fideos","pasta","pan","tostado","empanada","ravioles","lasana","canelones"],
+};
+
+const normalizarTexto = (texto) =>
+  String(texto ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const tieneEvidenciaLexica = (texto, categoria) => {
+  const normalizado = normalizarTexto(texto);
+  return (EVIDENCIA_LEXICA[categoria] || []).some((termino) =>
+    normalizado.includes(normalizarTexto(termino))
+  );
 };
 
 const SYSTEM_PROMPT = `Sos un clasificador de texto, no un asistente conversacional.
@@ -59,15 +63,11 @@ const JSON_SCHEMA = {
   additionalProperties: false,
 };
 
-/**
- * Devuelve un array de palabras (ya traducidas al lenguaje de las reglas) o null
- * si la IA no está configurada, falla, o tarda de más. Nunca lanza excepción.
- */
 async function clasificarComidaIA(texto) {
-  if (!GROQ_API_KEY) return null; // dormido hasta que exista la clave en Vercel
+  if (!GROQ_API_KEY) return null;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000); // no bloquea más de 3s
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
 
   try {
     const resp = await fetch(GROQ_URL, {
@@ -77,7 +77,7 @@ async function clasificarComidaIA(texto) {
         Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-oss-20b", // único modelo de Groq con Structured Outputs estricto
+        model: "openai/gpt-oss-20b",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: texto },
@@ -86,14 +86,6 @@ async function clasificarComidaIA(texto) {
           type: "json_schema",
           json_schema: { name: "clasificacion_comida", strict: true, schema: JSON_SCHEMA },
         },
-        // Fix 29/07/2026: gpt-oss-20b es un modelo "razonador" — gasta tokens pensando
-        // antes de escribir el JSON final. Con max_completion_tokens:150 se quedaba sin
-        // margen a mitad de razonamiento y nunca llegaba a producir el JSON, causando
-        // el 400 "Generated JSON does not match the expected schema" (falla documentada
-        // y reportada por otros usuarios de Groq con este modelo + structured outputs).
-        // reasoning_effort:"low" reduce el pensamiento interno al mínimo (no lo necesitamos
-        // para esta tarea, es solo clasificación cerrada) y sirve además para no acercarse
-        // al timeout de 3s ya definido más abajo. max_completion_tokens sube con margen.
         reasoning_effort: "low",
         max_completion_tokens: 300,
         temperature: 0,
@@ -116,11 +108,12 @@ async function clasificarComidaIA(texto) {
 
     return categorias
       .filter((c) => CATEGORIAS_PERMITIDAS.includes(c))
+      .filter((c) => tieneEvidenciaLexica(texto, c))
       .map((c) => MAPA_A_PALABRA_REGLA[c]);
   } catch (err) {
     clearTimeout(timeoutId);
     console.error("[clasificador-ia] fallo no bloqueante:", err);
-    return null; // el llamador sigue sin la IA, como si nunca se hubiera intentado
+    return null;
   }
 }
 
