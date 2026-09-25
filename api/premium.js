@@ -97,6 +97,41 @@ async function rutaActivarAlias(req, res) {
   }
 }
 
+// ===== ruta=estado (lectura del contrato Premium) =====
+async function rutaEstado(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ error: "Método no permitido, usar GET." });
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
+  if (!UUID_REGEX.test(usuarioId)) return res.status(400).json({ error: "usuarioId inválido." });
+
+  try {
+    const filas = await supabaseFetch(
+      `usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until,cuenta_suspendida`
+    );
+    if (!filas.length) return res.status(404).json({ error: "Usuario no encontrado." });
+    const u = filas[0];
+    const premiumVigente =
+      u.cuenta_suspendida !== true &&
+      u.nivel_acceso === "Premium" &&
+      (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
+
+    const origen = await supabaseFetch(
+      `premium_subscriptions?user_id=eq.${usuarioId}&estado=eq.aprobado&select=metodo,created_at&order=created_at.desc&limit=1`
+    );
+
+    return res.status(200).json({
+      ok: true,
+      premium: premiumVigente,
+      nivelAcceso: premiumVigente ? "Premium" : "gratuito",
+      premiumUntil: u.premium_until || null,
+      origen: origen[0]?.metodo || null,
+      modoPruebaFundador: origen[0]?.metodo === "fundador",
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "No pudimos consultar tu estado Premium." });
+  }
+}
+
 // ===== ruta=activar-fundador (modo prueba seguro) =====
 async function rutaActivarFundador(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar POST." });
@@ -358,12 +393,13 @@ export default async function handler(req, res) {
   const ruta = req.query?.ruta;
   switch (ruta) {
     case "activar-alias": return rutaActivarAlias(req, res);
+    case "estado": return rutaEstado(req, res);
     case "activar-fundador": return rutaActivarFundador(req, res);
     case "admin": return rutaAdmin(req, res);
     case "confirmar-mp": return rutaConfirmarMP(req, res);
     case "crear-preferencia": return rutaCrearPreferencia(req, res);
     case "lista-espera": return rutaListaEspera(req, res);
-    default: return res.status(400).json({ error: "Falta ?ruta= válida (activar-alias | activar-fundador | admin | confirmar-mp | crear-preferencia | lista-espera)." });
+    default: return res.status(400).json({ error: "Falta ?ruta= válida (estado | activar-alias | activar-fundador | admin | confirmar-mp | crear-preferencia | lista-espera)." });
   }
 }
 // END: /api/premium.js
