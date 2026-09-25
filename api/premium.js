@@ -97,6 +97,72 @@ async function rutaActivarAlias(req, res) {
   }
 }
 
+// ===== ruta=activar-fundador (modo prueba seguro) =====
+async function rutaActivarFundador(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar POST." });
+
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
+  if (!ADMIN_USER_ID || usuarioId !== ADMIN_USER_ID) {
+    return res.status(401).json({ error: "No autorizado." });
+  }
+
+  try {
+    const usuarios = await supabaseFetch(
+      `usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until,terminos_aceptados,cuenta_suspendida`
+    );
+    if (!usuarios.length) return res.status(404).json({ error: "Usuario no encontrado." });
+    const usuario = usuarios[0];
+
+    if (usuario.cuenta_suspendida === true) {
+      return res.status(403).json({ error: "La cuenta está suspendida." });
+    }
+    if (usuario.terminos_aceptados !== true) {
+      return res.status(403).json({ error: "Debés aceptar los Términos y Condiciones antes de activar el modo prueba." });
+    }
+
+    const existentes = await supabaseFetch(
+      `premium_subscriptions?user_id=eq.${usuarioId}&metodo=eq.fundador&estado=eq.aprobado&select=id,created_at&order=created_at.desc&limit=1`
+    );
+
+    if (existentes.length > 0 && usuario.nivel_acceso === "Premium") {
+      return res.status(200).json({
+        ok: true,
+        modoPrueba: true,
+        yaActivo: true,
+        nivelAcceso: "Premium",
+        subscriptionId: existentes[0].id,
+      });
+    }
+
+    const fila = await supabaseFetch(`premium_subscriptions`, {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        user_id: usuarioId,
+        metodo: "fundador",
+        monto: 0,
+        estado: "aprobado",
+      }),
+    });
+
+    await supabaseFetch(`usuarios?id=eq.${usuarioId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ nivel_acceso: "Premium", premium_until: null }),
+    });
+
+    return res.status(200).json({
+      ok: true,
+      modoPrueba: true,
+      yaActivo: false,
+      nivelAcceso: "Premium",
+      subscriptionId: fila[0]?.id || null,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "No se pudo activar el modo prueba Premium.", detail: String(err) });
+  }
+}
+
 // ===== ruta=admin (idéntico a premium-admin.js) =====
 async function rutaAdmin(req, res) {
   if (!ADMIN_USER_ID) return res.status(500).json({ error: "Falta configurar ADMIN_USER_ID en Vercel." });
@@ -292,11 +358,12 @@ export default async function handler(req, res) {
   const ruta = req.query?.ruta;
   switch (ruta) {
     case "activar-alias": return rutaActivarAlias(req, res);
+    case "activar-fundador": return rutaActivarFundador(req, res);
     case "admin": return rutaAdmin(req, res);
     case "confirmar-mp": return rutaConfirmarMP(req, res);
     case "crear-preferencia": return rutaCrearPreferencia(req, res);
     case "lista-espera": return rutaListaEspera(req, res);
-    default: return res.status(400).json({ error: "Falta ?ruta= válida (activar-alias | admin | confirmar-mp | crear-preferencia | lista-espera)." });
+    default: return res.status(400).json({ error: "Falta ?ruta= válida (activar-alias | activar-fundador | admin | confirmar-mp | crear-preferencia | lista-espera)." });
   }
 }
 // END: /api/premium.js
