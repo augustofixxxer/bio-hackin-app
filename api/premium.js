@@ -138,7 +138,11 @@ async function rutaActivarFundador(req, res) {
 
   const usuarioId = usuarioIdDesdeRequest(req);
   if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
-  if (!ADMIN_USER_ID || usuarioId !== ADMIN_USER_ID) {
+  if (!ADMIN_USER_ID) {
+    console.error("[premium] activar-fundador: ADMIN_USER_ID no está configurado en este entorno.");
+    return res.status(503).json({ error: "El modo prueba fundador no está configurado en este entorno." });
+  }
+  if (usuarioId !== ADMIN_USER_ID) {
     return res.status(401).json({ error: "No autorizado." });
   }
 

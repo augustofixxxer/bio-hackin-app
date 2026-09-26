@@ -5,6 +5,11 @@
       "source": "/",
       "destination": "/inicio.html",
       "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "destination": "/inicio.html",
+      "permanent": false
     }
   ]
 }
