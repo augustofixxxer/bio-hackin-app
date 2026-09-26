@@ -15,7 +15,7 @@
 <script type="text/babel">
 const {useState,useEffect}=React;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function cerrarSesion(){try{localStorage.removeItem('reseteo_usuario');localStorage.removeItem('reseteo_terminos_v1')}catch(e){}window.location.href='/index.html'}
+function cerrarSesion(){try{localStorage.removeItem('reseteo_usuario');localStorage.removeItem('reseteo_terminos_v1')}catch(e){}window.location.href='/'}
 function pase(){try{return JSON.parse(lsGet('reseteo_usuario')||'null')?.pase||''}catch(e){return ''}}
 const INTENTOS={energia:['energia','cansancio','cansado','cansada','sin energia','agotado','agotada'],descanso_sueno:['sueno','dormir','descanso','descansar','insomnio'],digestion:['digestion','pesadez','hinchazon','hinchado','hinchada'],entrenamiento:['entrenamiento','entrenar','ejercicio','actividad fisica','actividad'],foco_concentracion:['foco','concentracion','concentración','atencion','atención'],hambre_saciedad:['hambre','saciedad','antojo','antojos'],recuperacion:['recuperacion','recuperación','recuperar','despues de entrenar','después de entrenar']};
 const PILLS=[['⚡','Te quedás sin energía','cansancio','energia'],['🌙','Dormís mal','sueño','descanso_sueno'],['🌿','Pesadez después de comer','pesadez','digestion'],['🎯','Te cuesta el foco','foco','foco_concentracion'],['🍽️','Llegás con hambre','hambre','hambre_saciedad'],['🏋️','Antes de entrenar','entrenamiento','entrenamiento'],['🔄','Recuperación','recuperación','recuperacion']];
