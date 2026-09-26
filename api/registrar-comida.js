@@ -382,13 +382,16 @@ export default async function handler(req, res) {
       // Fase 3 — frontera Free/Premium: la tarjeta gratuita entrega solo el hallazgo/estado.
       // La acción, observación de prueba y continuidad quedan reservadas a Premium.
       const puedeVerAdaptacion = Boolean(r.soluciones) && esPremiumComida;
-      const debeInvitarAPremium = Boolean(r.soluciones) && !esPremiumComida;
+      // La continuidad hacia Premium no depende del nivel de acceso:
+      // si existe una solución contextual, el resultado debe ofrecer el puente.
+      // El acceso sólo define si la solución completa se revela en la devolución.
+      const tieneContinuidadPremium = Boolean(r.soluciones);
       return {
         combinacion: r.combinacion || "",
         resultado: r.resultado || "",
         nivelRiesgo: r.nivel_riesgo || "Bajo",
         solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
-        invitacionPremium: debeInvitarAPremium
+        invitacionPremium: tieneContinuidadPremium
           ? {
               texto: construirInvitacionPremium(),
               variable: r.soluciones.variable_modificada || null,
