@@ -20,7 +20,8 @@ import { usuarioIdDesdeRequest } from "./_sesion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID?.trim();
+const ADMIN_USER_EMAIL = process.env.ADMIN_USER_EMAIL?.trim().toLowerCase();
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 const DIAS_PREMIUM = 30;
 const MONTO_ALIAS = 10000;
@@ -138,11 +139,32 @@ async function rutaActivarFundador(req, res) {
 
   const usuarioId = usuarioIdDesdeRequest(req);
   if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
-  if (!ADMIN_USER_ID) {
-    console.error("[premium] activar-fundador: ADMIN_USER_ID no está configurado en este entorno.");
+  // La autorización primaria sigue siendo por UUID. Como respaldo operativo,
+  // permitimos identificar al fundador por email configurado en Vercel, sin exponer
+  // ese valor al cliente. Esto evita depender de recordar/copiar un UUID.
+  let fundadorId = ADMIN_USER_ID || null;
+
+  try {
+    if (!fundadorId && ADMIN_USER_EMAIL) {
+      const candidatos = await supabaseFetch(
+        `usuarios?email=ilike.${encodeURIComponent(ADMIN_USER_EMAIL)}&select=id&limit=2`
+      );
+      if (candidatos.length === 1) fundadorId = candidatos[0].id;
+      if (candidatos.length > 1) {
+        console.error("[premium] activar-fundador: ADMIN_USER_EMAIL coincide con más de una cuenta.");
+        return res.status(503).json({ error: "La identidad fundadora está configurada de forma ambigua en este entorno." });
+      }
+    }
+  } catch (err) {
+    console.error("[premium] activar-fundador: no se pudo resolver ADMIN_USER_EMAIL.", err);
+    return res.status(503).json({ error: "No se pudo validar la configuración del modo prueba fundador." });
+  }
+
+  if (!fundadorId) {
+    console.error("[premium] activar-fundador: falta ADMIN_USER_ID o ADMIN_USER_EMAIL en este entorno.");
     return res.status(503).json({ error: "El modo prueba fundador no está configurado en este entorno." });
   }
-  if (usuarioId !== ADMIN_USER_ID) {
+  if (usuarioId !== fundadorId) {
     return res.status(401).json({ error: "No autorizado." });
   }
 
