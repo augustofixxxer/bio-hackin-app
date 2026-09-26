@@ -230,20 +230,20 @@ async function rutaExperimento(req, res) {
   if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
   if (!UUID_REGEX.test(usuarioId)) return res.status(400).json({ error: "usuarioId inválido." });
   try {
-    const usuarios = await supabaseFetch(`usuarios?id=eq.\${usuarioId}&select=id,nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`);
+    const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`);
     if (!usuarios.length) return res.status(404).json({ error: "Usuario no encontrado." });
     const u = usuarios[0];
     const premiumVigente = u.cuenta_suspendida !== true && u.terminos_aceptados === true && u.nivel_acceso === "Premium" && (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
-      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.\${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,created_at,updated_at`);
+      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,created_at,updated_at`);
       return res.status(200).json({ ok: true, experimentos: filas });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
     const { accion, experimentoId, origen, titulo, variable, opcionA, opcionB, registroA, registroB } = req.body || {};
     if (accion === "crear") {
       if (!titulo || !variable || !opcionA || !opcionB) return res.status(400).json({ error: "Faltan título, variable y las dos opciones a comparar." });
-      const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.\${usuarioId}&estado=eq.abierto&select=id&limit=1`);
+      const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id&limit=1`);
       if (activos.length) return res.status(409).json({ error: "Ya tenés una prueba abierta. Cerrala antes de crear otra." });
       const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({usuario_id:usuarioId,origen:typeof origen==="string"?origen.slice(0,80):null,titulo:String(titulo).slice(0,160),variable:String(variable).slice(0,100),opcion_a:String(opcionA).slice(0,200),opcion_b:String(opcionB).slice(0,200),estado:"abierto"}) });
       return res.status(201).json({ ok:true, experimento:filas[0] });
@@ -253,19 +253,19 @@ async function rutaExperimento(req, res) {
       const lado = registroA !== undefined ? "a" : "b";
       const valor = lado === "a" ? String(registroA).slice(0,500) : String(registroB||"").slice(0,500);
       if (!valor.trim()) return res.status(400).json({error:"Falta registrar qué pasó."});
-      const filas = await supabaseFetch(`premium_experimentos?id=eq.\${experimentoId}&usuario_id=eq.\${usuarioId}&select=id,estado`);
+      const filas = await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,estado`);
       if (!filas.length) return res.status(404).json({error:"Experimento no encontrado."});
       if (filas[0].estado !== "abierto") return res.status(409).json({error:"Esta prueba ya está cerrada."});
       const patch = lado==="a"?{registro_a:valor,updated_at:new Date().toISOString()}:{registro_b:valor,updated_at:new Date().toISOString()};
-      const updated=await supabaseFetch(`premium_experimentos?id=eq.\${experimentoId}&usuario_id=eq.\${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(patch)});
+      const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(patch)});
       return res.status(200).json({ok:true,experimento:updated[0]});
     }
     if (accion === "cerrar") {
       if (!UUID_REGEX.test(String(experimentoId||""))) return res.status(400).json({error:"experimentoId inválido."});
-      const filas=await supabaseFetch(`premium_experimentos?id=eq.\${experimentoId}&usuario_id=eq.\${usuarioId}&select=id,estado,registro_a,registro_b`);
+      const filas=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,estado,registro_a,registro_b`);
       if (!filas.length) return res.status(404).json({error:"Experimento no encontrado."});
       if (!filas[0].registro_a || !filas[0].registro_b) return res.status(409).json({error:"Registrá las dos experiencias antes de cerrar la prueba."});
-      const updated=await supabaseFetch(`premium_experimentos?id=eq.\${experimentoId}&usuario_id=eq.\${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify({estado:"cerrado",updated_at:new Date().toISOString()})});
+      const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify({estado:"cerrado",updated_at:new Date().toISOString()})});
       return res.status(200).json({ok:true,experimento:updated[0]});
     }
     return res.status(400).json({error:"Acción inválida."});
