@@ -368,6 +368,7 @@ export default async function handler(req, res) {
     function armarSolucion(soluciones, reglaEsPremium) {
       if (!soluciones) return null;
       return {
+        id: soluciones.id || null,
         nombre: soluciones.nombre_hackeo || "",
         adaptacion: soluciones.adaptacion || "",
         accionUsuario: soluciones.accion_usuario || null,
@@ -377,6 +378,10 @@ export default async function handler(req, res) {
         cambioComposicional: soluciones.cambio_composicional || null,
         aprendizajeComparativo: soluciones.aprendizaje_comparativo || null,
         queSeMantiene: soluciones.que_se_mantiene || null,
+        porQueCambio: soluciones.por_que_cambio || null,
+        tipoComparacion: soluciones.tipo_comparacion || null,
+        estadoContenidoPremium: soluciones.estado_contenido_premium || null,
+        fuenteConocimiento: soluciones.fuente_conocimiento || null,
         premium: reglaEsPremium,
       };
     }
@@ -390,6 +395,7 @@ export default async function handler(req, res) {
       // El acceso sólo define si la solución completa se revela en la devolución.
       const tieneContinuidadPremium = Boolean(r.soluciones);
       return {
+        reglaId: r.id || null,
         combinacion: r.combinacion || "",
         resultado: r.resultado || "",
         nivelRiesgo: r.nivel_riesgo || "Bajo",
@@ -399,6 +405,8 @@ export default async function handler(req, res) {
               texto: construirInvitacionPremium(),
               variable: r.soluciones.variable_modificada || null,
               categoria: r.soluciones.categoria || null,
+              reglaId: r.id || null,
+              solucionId: r.soluciones.id || null,
             }
           : null,
         continuidadPremium: tieneContinuidadPremium && esPremiumComida
