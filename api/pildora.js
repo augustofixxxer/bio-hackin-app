@@ -8,6 +8,7 @@ const INTRO = {
   foco_concentracion: 'Cuando cuesta sostener la atención, una comida o una pausa de movimiento pueden ser un buen punto de partida. La idea es probar y observar, no adivinar una causa única.',
   hambre_saciedad: 'Llegar con hambre demasiado pronto puede estar relacionado con cómo fue la comida, el momento del día o lo que hacés después. Podemos probar una cosa concreta y comparar.',
   entrenamiento: 'Cómo llegás a entrenar puede cambiar según la comida y el movimiento previo. La app te propone una prueba de cada lado para que descubras qué te resulta más práctico.',
+  hinchazon: 'La sensación de hinchazón puede tener más de una explicación. En vez de asumir una causa, podemos cambiar una sola cosa en una comida habitual y observar qué pasa.',
   recuperacion: 'Después de entrenar, la experiencia puede cambiar según lo que comés y lo que hacés después. Probemos una opción de alimentación y otra de actividad para comparar.',
 };
 
