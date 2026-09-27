@@ -73,7 +73,7 @@ function App(){
 <div className="premium-head">
   <div>
     <h2 style={{margin:'4px 0 4px'}}>Tu espacio para probar y aprender.</h2>
-    <p style={{margin:0}}>Convertí una observación en una prueba y compará qué pasa en tu propia experiencia.</p>
+    <p style={{margin:0}}>Convertí una observación en una prueba: cambiá una cosa y compará.</p>
   </div>
   <div className="premium-status"><span className={'status-dot '+premiumEstadoVisual}></span><b>{premiumEstadoTexto}</b></div>
 </div>
@@ -84,7 +84,7 @@ function App(){
 </div>
 
 {premiumVista==='home'&&<div className="premium-home">
-  {premiumContexto?<div className="premium-context"><b>Venís de Descubrir</b><span>{premiumContexto.original||premiumContexto.titulo||'La comida que acabás de explorar'}</span></div>:<div className="premium-context"><b>Premium empieza con una comida concreta.</b><span>Entrá desde una comida que acabás de explorar para recibir su hallazgo, la sugerencia y la comparación correspondiente.</span></div>}
+  {premiumContexto?<div className="premium-context"><b>Venís de Descubrir</b><span>{premiumContexto.original||premiumContexto.titulo||'La comida que acabás de explorar'}</span></div>:<div className="premium-context"><b>Premium empieza con una comida concreta.</b><span>Entrá desde una comida que acabás de explorar para recibir el hallazgo, la sugerencia y qué vamos a comparar.</span></div>}
 
   <div className="premium-feature">
     <div className="feature-kicker">1 · TU COMIDA Y EL HALLAZGO</div>
@@ -94,32 +94,32 @@ function App(){
   </div>
 
   <div className="premium-feature">
-    <div className="feature-kicker">2 · LA SUGERENCIA · HACK</div>
+    <div className="feature-kicker">2 · LA SUGERENCIA</div>
     <h3>{premiumContexto?.hackNombre||'Una modificación concreta para esta comida.'}</h3>
-    <p>{premiumContexto?.accion||premiumContexto?.adaptacion||'La sugerencia aparece cuando la devolución tiene una alternativa concreta respaldada por el contenido disponible.'}</p>
+    <p>{premiumContexto?.accion||premiumContexto?.adaptacion||'Acá aparece una modificación concreta para probar. La idea es cambiar una sola variable y mantener el resto lo más parecido posible.'}</p>
     {premiumContexto?.variable&&<p className="legal-note">Cambia una sola variable: {premiumContexto.variable}.</p>}
   </div>
 
   <div className="premium-feature">
     <div className="feature-kicker">3 · LA COMPARACIÓN</div>
-    <h3>Qué cambia en tu comida con esta propuesta.</h3>
+    <h3>Qué vamos a comparar.</h3>
     {premiumContexto ? <>
       <div className="label">COMIDA DE PARTIDA</div>
       <p><b>{premiumContexto.original||premiumContexto.titulo}</b></p>
       <div className="label">CAMBIO QUE INTRODUCE EL HACK</div>
       <p>{premiumContexto.accion||premiumContexto.adaptacion||'La propuesta modifica una variable concreta de la preparación.'}</p>
       {premiumContexto.variable&&<><div className="label">VARIABLE QUE CAMBIA</div><p>{premiumContexto.variable}</p></>}
-      <div className="label">ASPECTO QUE BUSCAMOS MEJORAR</div>
-      <p>{premiumContexto.texto||'La comparación parte del hallazgo de Descubrir para mostrar qué aspecto de la comida busca mitigar o mejorar esta propuesta.'}</p>
-      {premiumContexto.observacion&&<><div className="label">QUÉ BENEFICIO CONCRETO VAMOS A OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
+      <div className="label">QUÉ CAMBIA</div>
+      <p>{premiumContexto.texto||'La comparación parte del hallazgo de Descubrir y muestra qué cambia entre la comida original y la propuesta.'}</p>
+      {premiumContexto.observacion&&<><div className="label">QUÉ VAS A OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
       <div className="bridge" style={{marginTop:10}}>
         <b>La idea no es dejar de comer esta comida.</b>
-        <p style={{margin:'6px 0 0'}}>Es mantenerla como punto de partida y mostrar qué cambia cuando aplicás una modificación concreta. El efecto se comunica solo cuando está respaldado por el contenido científico disponible.</p>
+        <p style={{margin:'6px 0 0'}}>Es mantenerla como punto de partida y mostrar qué cambia cuando aplicás una modificación concreta. Si existe un cambio nutricional respaldado por el contenido disponible, se muestra como diferencia de composición. Si no, la comparación queda en tu experiencia personal.</p>
       </div>
     </> : <><p>Entrá desde una comida de Descubrir para que esta tarjeta pueda mostrar la comparación correcta.</p><button className="secondary" onClick={()=>setTab('descubrir')}>← Volver a Descubrir</button></>}
   </div>
 
-  <details className="premium-how"><summary>¿Qué hace Premium con esto?</summary><p>Parte de la comida que exploraste, conserva el hallazgo Free, propone una modificación concreta y te muestra qué cambia con esa propuesta antes de pedirte que registres tu propia experiencia.</p></details>
+  <details className="premium-how"><summary>¿Qué hace Premium con esto?</summary><p>Parte de la comida que exploraste, conserva el hallazgo Free, propone una modificación concreta y te muestra qué vamos a comparar. Después podés registrar tu experiencia.</p></details>
   {premiumExpMsg&&<div className="saved">{premiumExpMsg}</div>}
   {premiumEstadoMsg&&<div className="saved">{premiumEstadoMsg}</div>}
   {!premiumEstado?.premium&&premiumEstado?.origen===null&&<button className="primary" onClick={async()=>{setPremiumEstadoMsg('');setBusy(true);try{const r=await fetch('/api/premium?ruta=activar-fundador',{method:'POST',headers:{Authorization:'Bearer '+pase()}});const d=await r.json();if(!r.ok)throw Error(d.error||'No se pudo activar el modo prueba.');const sr=await fetch('/api/premium?ruta=estado',{headers:{Authorization:'Bearer '+pase()}});const sd=await sr.json();if(!sr.ok)throw Error(sd.error||'No pudimos actualizar el estado Premium.');setPremiumEstado(sd)}catch(e){setPremiumEstadoMsg(e.message||'No pudimos activar el modo prueba.')}finally{setBusy(false)}}} disabled={busy}>✦ Activar modo prueba fundador</button>}
