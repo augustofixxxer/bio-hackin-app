@@ -391,7 +391,7 @@ export default async function handler(req, res) {
         resultado: r.resultado || "",
         nivelRiesgo: r.nivel_riesgo || "Bajo",
         solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
-        invitacionPremium: tieneContinuidadPremium
+        invitacionPremium: tieneContinuidadPremium && !esPremiumComida
           ? {
               texto: construirInvitacionPremium(),
               variable: r.soluciones.variable_modificada || null,
