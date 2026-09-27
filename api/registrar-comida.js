@@ -374,6 +374,9 @@ export default async function handler(req, res) {
         observacionUsuario: soluciones.observacion_usuario || null,
         contextoActivacion: soluciones.contexto_activacion || null,
         continuidad: soluciones.continuidad || null,
+        cambioComposicional: soluciones.cambio_composicional || null,
+        aprendizajeComparativo: soluciones.aprendizaje_comparativo || null,
+        queSeMantiene: soluciones.que_se_mantiene || null,
         premium: reglaEsPremium,
       };
     }
