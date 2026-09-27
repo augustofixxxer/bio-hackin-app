@@ -398,6 +398,13 @@ export default async function handler(req, res) {
               categoria: r.soluciones.categoria || null,
             }
           : null,
+        continuidadPremium: tieneContinuidadPremium && esPremiumComida
+          ? {
+              texto: "Esta consulta ya puede continuar dentro de Premium.",
+              variable: r.soluciones.variable_modificada || null,
+              categoria: r.soluciones.categoria || null,
+            }
+          : null,
         bloqueoId: bloqueosCreados[i]?.id,
       };
     });
