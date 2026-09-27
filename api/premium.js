@@ -236,16 +236,16 @@ async function rutaExperimento(req, res) {
     const premiumVigente = u.cuenta_suspendida !== true && u.terminos_aceptados === true && u.nivel_acceso === "Premium" && (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
-      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,created_at,updated_at`);
+      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
       return res.status(200).json({ ok: true, experimentos: filas });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
-    const { accion, experimentoId, origen, titulo, variable, opcionA, opcionB, registroA, registroB } = req.body || {};
+    const { accion, experimentoId, origen, titulo, variable, opcionA, opcionB, registroA, registroB, reglaId, solucionId, hallazgoFree, hackConcreto, cambioComposicional, aprendizajeComparativo, queSeMantiene } = req.body || {};
     if (accion === "crear") {
       if (!titulo || !variable || !opcionA || !opcionB) return res.status(400).json({ error: "Faltan título, variable y las dos opciones a comparar." });
       const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id&limit=1`);
       if (activos.length) return res.status(409).json({ error: "Ya tenés una prueba abierta. Cerrala antes de crear otra." });
-      const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({usuario_id:usuarioId,origen:typeof origen==="string"?origen.slice(0,80):null,titulo:String(titulo).slice(0,160),variable:String(variable).slice(0,100),opcion_a:String(opcionA).slice(0,200),opcion_b:String(opcionB).slice(0,200),estado:"abierto"}) });
+      const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({usuario_id:usuarioId,origen:typeof origen==="string"?origen.slice(0,80):null,titulo:String(titulo).slice(0,160),variable:String(variable).slice(0,100),opcion_a:String(opcionA).slice(0,200),opcion_b:String(opcionB).slice(0,200),regla_id:UUID_REGEX.test(String(reglaId||""))?reglaId:null,solucion_id:UUID_REGEX.test(String(solucionId||""))?solucionId:null,hallazgo_free:typeof hallazgoFree==="string"?hallazgoFree.slice(0,1000):null,hack_concreto:typeof hackConcreto==="string"?hackConcreto.slice(0,1000):null,cambio_composicional:typeof cambioComposicional==="string"?cambioComposicional.slice(0,1000):null,aprendizaje_comparativo:typeof aprendizajeComparativo==="string"?aprendizajeComparativo.slice(0,1000):null,que_se_mantiene:typeof queSeMantiene==="string"?queSeMantiene.slice(0,1000):null,estado:"abierto"}) });
       return res.status(201).json({ ok:true, experimento:filas[0] });
     }
     if (accion === "registrar") {
