@@ -97,26 +97,24 @@ function App(){
     <h3>{premiumContexto?.hackNombre||'Una modificación concreta para esta comida.'}</h3>
     <p>{premiumContexto?.accion||premiumContexto?.adaptacion||'La sugerencia aparece cuando la devolución tiene una alternativa concreta respaldada por el contenido disponible.'}</p>
     {premiumContexto?.variable&&<p className="legal-note">Cambia una sola variable: {premiumContexto.variable}.</p>}
-    <button className="primary" onClick={crearExperimento} disabled={!premiumEstado?.premium||premiumExpBusy||!premiumContexto?.original||!(premiumContexto?.accion||premiumContexto?.adaptacion)}>✦ Aplicar esta sugerencia y comparar</button>
   </div>
 
   <div className="premium-feature">
-    <div className="feature-kicker">3 · QUÉ CAMBIA CON EL HACK</div>
-    <h3>La comparación empieza acá.</h3>
+    <div className="feature-kicker">3 · LA COMPARACIÓN</div>
+    <h3>Qué cambia en tu comida con esta propuesta.</h3>
     {premiumContexto ? <>
-      <p><b>Comida de partida:</b> {premiumContexto.original||premiumContexto.titulo}</p>
-      <p><b>Con la sugerencia:</b> {premiumContexto.accion||premiumContexto.adaptacion}</p>
-      {premiumContexto.variable&&<p><b>Aspecto que se modifica:</b> {premiumContexto.variable}</p>}
-      {premiumContexto.adaptacion&&<><div className="label">Efecto que la propuesta busca explorar</div><p>{premiumContexto.adaptacion}</p></>}
-      {premiumContexto.observacion&&<><div className="label">Qué vamos a observar</div><p>{premiumContexto.observacion}</p></>}
-      {premiumAbiertas.length>0?<div className="compare-grid" style={{marginTop:10}}>
-        {premiumAbiertas.slice(0,1).map(x=><React.Fragment key={x.id}>
-          <div><small>ANTES</small><b>{x.opcion_a}</b>{x.registro_a?<span>✓ Ya registrado</span>:<button className="secondary" onClick={()=>registrarExperimento(x.id,'a')} disabled={premiumExpBusy}>Registrar qué notaste</button>}</div>
-          <div><small>DESPUÉS DEL HACK</small><b>{x.opcion_b}</b>{x.registro_b?<span>✓ Ya registrado</span>:<button className="secondary" onClick={()=>registrarExperimento(x.id,'b')} disabled={premiumExpBusy}>Registrar qué notaste</button>}</div>
-          <button className="primary" style={{gridColumn:'1/-1'}} onClick={()=>cerrarExperimento(x.id)} disabled={premiumExpBusy||!x.registro_a||!x.registro_b}>{x.registro_a&&x.registro_b?'Ver resultado de mi comparación':'Completá ambos registros para ver tu comparación'}</button>
-        </React.Fragment>)}
-      </div>:<p className="legal-note">Primero aplicá la sugerencia de la tarjeta 2. La comparación no afirma un beneficio individual: muestra el cambio propuesto y luego tu propia experiencia.</p>}
-      {premiumCerradas.length>0&&<div className="pattern-list" style={{marginTop:10}}>{premiumCerradas.slice(0,1).map(x=><div className="pattern-card" key={x.id}><div className="experiment-state"><span className="status-dot aprendizaje"></span><b>Tu comparación</b></div><h3>{x.titulo}</h3><p><b>Comida de partida:</b> {x.opcion_a||'Sin registro'}</p><p><b>Después del hack:</b> {x.opcion_b||'Sin registro'}</p><p><b>Lo que registraste antes:</b> {x.registro_a||'Sin registro'}</p><p><b>Lo que registraste después:</b> {x.registro_b||'Sin registro'}</p><p className="legal-note">Esto describe tu experiencia registrada; no constituye un diagnóstico ni una conclusión clínica.</p></div>)}</div>}
+      <div className="label">COMIDA DE PARTIDA</div>
+      <p><b>{premiumContexto.original||premiumContexto.titulo}</b></p>
+      <div className="label">CAMBIO QUE INTRODUCE EL HACK</div>
+      <p>{premiumContexto.accion||premiumContexto.adaptacion||'La propuesta modifica una variable concreta de la preparación.'}</p>
+      {premiumContexto.variable&&<><div className="label">VARIABLE QUE CAMBIA</div><p>{premiumContexto.variable}</p></>}
+      <div className="label">ASPECTO QUE BUSCAMOS MEJORAR</div>
+      <p>{premiumContexto.texto||'La comparación parte del hallazgo de Descubrir para mostrar qué aspecto de la comida busca mitigar o mejorar esta propuesta.'}</p>
+      {premiumContexto.observacion&&<><div className="label">QUÉ BENEFICIO CONCRETO VAMOS A OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
+      <div className="bridge" style={{marginTop:10}}>
+        <b>La idea no es dejar de comer esta comida.</b>
+        <p style={{margin:'6px 0 0'}}>Es mantenerla como punto de partida y mostrar qué cambia cuando aplicás una modificación concreta. El efecto se comunica solo cuando está respaldado por el contenido científico disponible.</p>
+      </div>
     </> : <><p>Entrá desde una comida de Descubrir para que esta tarjeta pueda mostrar la comparación correcta.</p><button className="secondary" onClick={()=>setTab('descubrir')}>← Volver a Descubrir</button></>}
   </div>
 
