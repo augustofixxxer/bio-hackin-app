@@ -247,7 +247,7 @@ export default async function handler(req, res) {
     // campos estructurados para la píldora en capas -- todos necesarios para la separación
     // Free/Premium y el modelo de píldora vigentes.
     const reglas = await supabaseFetch(
-      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,familia_key,prioridad_motor,soluciones(nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad)`
+      `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,familia_key,prioridad_motor,soluciones(id,nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,por_que_cambio,tipo_comparacion,estado_contenido_premium,fuente_conocimiento)`
     );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
