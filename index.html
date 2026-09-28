@@ -2930,6 +2930,13 @@ function OnboardingBotonFantasma({ children, onClick }) {
   );
 }
 
+function completarOnboarding() {
+  try {
+    lsSet("reseteo_onboarding_v1", "true");
+  } catch (e) {}
+  window.location.href = "/inicio.html";
+}
+
 function OnboardingFlow({ pase, onCompletar }) {
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState("");
@@ -2954,13 +2961,6 @@ function OnboardingFlow({ pase, onCompletar }) {
       }
     }
     setPaso(2);
-  }
-
-  function completarOnboarding() {
-    try {
-      lsSet("reseteo_onboarding_v1", "true");
-    } catch (e) {}
-    window.location.href = "/inicio.html";
   }
 
   const cardStyle = {
