@@ -3139,7 +3139,7 @@ function App() {
   }
 
   if (!onboardingCompletado) {
-    return <OnboardingFlow pase={usuario.pase} onCompletar={() => setOnboardingCompletado(true)} />;
+    return <OnboardingFlow pase={usuario.pase} onCompletar={completarOnboarding} />;
   }
 
   const grupos = groupByCategoria(data.entradas);
