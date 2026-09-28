@@ -475,7 +475,7 @@ function LoginScreen({ onLogin }) {
       if (data.error) throw new Error(data.error);
       lsSet("reseteo_usuario", JSON.stringify(data));
       if (lsGet("reseteo_terminos_v1") === "true" && lsGet("reseteo_onboarding_v1") === "true") {
-        window.location.href = "/inicio.html";
+        window.location.href = "/app.html";
         return;
       }
       onLogin(data);
