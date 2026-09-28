@@ -156,16 +156,17 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
       status('Cargando…');
       if(!window.React){
         try{await load('https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js')}
-        catch(e){await load('https://unpkg.com/react@18.3.1/umd/react.production.min.js')}
+        catch(e){try{await load('https://unpkg.com/react@18.3.1/umd/react.production.min.js')}catch(e2){await load('https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js')}}
       }
       if(!window.ReactDOM){
         try{await load('https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js')}
-        catch(e){await load('https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js')}
+        catch(e){try{await load('https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js')}catch(e2){await load('https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js')}}
       }
       if(!window.Babel){
         try{await load('https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js')}
-        catch(e){await load('https://unpkg.com/@babel/standalone@7.24.7/babel.min.js')}
+        catch(e){try{await load('https://unpkg.com/@babel/standalone@7.24.7/babel.min.js')}catch(e2){await load('https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js')}}
       }
+      if(!window.React||!window.ReactDOM||!window.Babel)throw new Error('Dependencias de interfaz incompletas');
       status('Iniciando…');
       var source=document.getElementById('app-source').textContent;
       var compiled=Babel.transform(source,{presets:['react']}).code;
