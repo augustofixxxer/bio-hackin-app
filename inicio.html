@@ -30,7 +30,7 @@ function App(){
  useEffect(()=>{if(!pase()){window.location.replace('/index.html');return}fetch('/api/data').then(r=>r.ok?r.json():Promise.reject()).then(d=>setEntradas(d.entradas||[])).catch(()=>setEntradas([]))},[]);
  useEffect(()=>{if(tab!=='premium')return;setPremiumEstadoMsg('');const headers={Authorization:'Bearer '+pase()};fetch('/api/premium?ruta=estado',{headers}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos consultar tu estado Premium.');setPremiumEstado(d);if(d.premium){return fetch('/api/premium?ruta=experimento',{headers})}}).then(async r=>{if(!r)return null;const d=await r.json();if(r.ok)setPremiumExperimentos(d.experimentos||[]);return d}).catch(e=>{setPremiumEstado(null);setPremiumEstadoMsg(e.message||'No pudimos consultar tu estado Premium.')})},[tab]);
 
- async function crearExperimento(){
+ async async function crearExperimento(){
   const original=(premiumContexto?.original||'').trim();
   const hack=(premiumContexto?.accion||premiumContexto?.adaptacion||'').trim();
   const variable=(premiumContexto?.variable||'').trim();
