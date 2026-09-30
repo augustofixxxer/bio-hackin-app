@@ -499,7 +499,7 @@ function LoginScreen({ onLogin }) {
     setCargando(true);
     setError(null);
     try {
-      const resp = await fetch("/api/login-password", {
+      const resp = await fetch("/api/login-google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
