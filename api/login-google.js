@@ -14,6 +14,7 @@ const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.goo
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_AUTH_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || SUPABASE_KEY;
 
 async function supabaseFetch(path, options = {}) {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -45,7 +46,72 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Falta configurar SESSION_SECRET." });
   }
 
-  const { credential } = req.body || {};
+  const { credential, email: testEmail, password: testPassword } = req.body || {};
+
+  // Acceso de prueba para Preview: reutiliza esta función existente para no
+  // superar el límite de Serverless Functions del plan Hobby.
+  // Producción mantiene el flujo Google; fuera de Preview este modo no está disponible.
+  if (testEmail || testPassword) {
+    if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "preview") {
+      return res.status(404).json({ error: "Acceso de prueba no disponible fuera de Preview." });
+    }
+    if (!testEmail || typeof testEmail !== "string" || !testPassword || typeof testPassword !== "string") {
+      return res.status(400).json({ error: "Ingresá correo y contraseña." });
+    }
+
+    try {
+      const authResp = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_AUTH_KEY,
+            Authorization: `Bearer ${SUPABASE_AUTH_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: testEmail.trim(), password: testPassword }),
+        }
+      );
+      const authText = await authResp.text();
+      const authData = authText ? JSON.parse(authText) : null;
+
+      if (!authResp.ok || !authData?.user?.id) {
+        return res.status(401).json({ error: "Correo o contraseña incorrectos." });
+      }
+
+      const email = String(authData.user.email || testEmail).trim().toLowerCase();
+      const nombre =
+        authData.user.user_metadata?.name ||
+        authData.user.user_metadata?.full_name ||
+        email;
+
+      const encontrados = await supabaseFetch(
+        `usuarios?email=eq.${encodeURIComponent(email)}&select=id,email,nombre_alias,nivel_acceso`
+      );
+
+      let usuarioId;
+      let nivelAcceso = "gratuito";
+
+      if (encontrados.length > 0) {
+        usuarioId = encontrados[0].id;
+        nivelAcceso = encontrados[0].nivel_acceso || "gratuito";
+      } else {
+        const creado = await supabaseFetch("usuarios", {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ email, nombre_alias: nombre }),
+        });
+        usuarioId = creado[0].id;
+      }
+
+      const pase = emitirPase(usuarioId);
+      return res.status(200).json({ usuarioId, email, nombre, pase, nivelAcceso });
+    } catch (err) {
+      console.error("Error en acceso de prueba:", err);
+      return res.status(500).json({ error: "Error procesando el acceso de prueba." });
+    }
+  }
+
   if (!credential || typeof credential !== "string") {
     return res.status(400).json({ error: "Falta el token de Google (credential)." });
   }
