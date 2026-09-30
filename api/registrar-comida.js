@@ -348,6 +348,16 @@ export default async function handler(req, res) {
       return [...lista].sort((a, b) => {
         const familiaDiff = Number(tieneFamilia(b)) - Number(tieneFamilia(a));
         if (familiaDiff !== 0) return familiaDiff;
+
+        // Fase 3 — continuidad Premium: cuando el usuario ya tiene Premium y
+        // dos reglas representan la misma comida, priorizamos la ficha Premium
+        // antes del desempate por prioridad editorial. Esto evita que una regla
+        // gratuita genérica oculte una solución Premium curada ya existente.
+        const accesoPremiumDiff = esPremiumComida
+          ? Number(b.nivel_acceso === "Premium") - Number(a.nivel_acceso === "Premium")
+          : 0;
+        if (accesoPremiumDiff !== 0) return accesoPremiumDiff;
+
         const prioridadDiff = prioridadMotor(b) - prioridadMotor(a);
         if (prioridadDiff !== 0) return prioridadDiff;
         const claveDiff = longitudClave(b) - longitudClave(a);
