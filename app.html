@@ -88,23 +88,21 @@ function App(){
     <div className="feature-kicker">1 · TU COMIDA Y EL HALLAZGO</div>
     <h3>{premiumContexto?.original||premiumContexto?.titulo||'Tu comida'}</h3>
     <p>{premiumContexto?.texto||'Esta tarjeta muestra el hallazgo que recibiste al explorar esta comida en Descubrir.'}</p>
-    {premiumContexto?.observacion&&<><div className="label">Qué observar</div><p>{premiumContexto.observacion}</p></>}
+    {premiumContexto?.observacion&&<><div className="label">QUÉ OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
+    {premiumContexto?.cuantitativo&&<div style={{marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,.08)'}}>
+      <div className="label">DATOS DE LA COMIDA · QA</div>
+      <h3>{premiumContexto.cuantitativo.porcionEstandarG} g estandarizados</h3>
+      <p>Composición disponible para esta comida. Los datos no publicados por la fuente permanecen sin dato.</p>
+      <div className="compare-grid">{['energy_kcal','protein_g','fat_g','carbohydrate_g'].map(k=>{const v=premiumContexto.cuantitativo.valores?.[k];return <div key={k}><small>{v?.nombre||k}</small><b>{v?.valor==null?'Sin dato publicado':String(Number(v.valor).toFixed(1)).replace('.',',')+' '+(v?.unidad||'')}</b><span>{v?.valor==null?'La fuente no publica este dato.':'Vector '+(v?.estado||'parcial')}</span></div>})}</div>
+      <p className="legal-note">Fuente: {premiumContexto.cuantitativo.fuenteBase||'fuente registrada'}. Estimación estandarizada para QA; no es una porción recomendada.</p>
+    </div>}
   </div>
 
   <div className="premium-feature">
-    <div className="feature-kicker">2 · LA SUGERENCIA</div>
+    <div className="feature-kicker">2 · EL HACK</div>
     <h3>{premiumContexto?.hackNombre||'Una modificación concreta para esta comida.'}</h3>
-    {premiumContexto?.accion?<><div className="label">QUÉ HACER</div><p className="action">{premiumContexto.accion}</p></>:<div className="saved">Esta comida todavía no tiene una acción Premium disponible.</div>}
-    {premiumContexto?.observacion&&<><div className="label">CÓMO OBSERVARLO</div><p>{premiumContexto.observacion}</p></>}
+    {premiumContexto?.accion?<><div className="label">CÓMO APLICARLO</div><p className="action">{premiumContexto.accion}</p></>:<div className="saved">Esta comida todavía no tiene una acción Premium disponible.</div>}
     {premiumContexto?.variable&&<p className="legal-note">Cambia una sola variable: {premiumContexto.variable}.</p>}
-  </div>
-
-  {premiumContexto?.cuantitativo&&<div className="premium-feature">
-    <div className="feature-kicker">DATOS DE LA COMIDA · QA</div>
-    <h3>{premiumContexto.cuantitativo.porcionEstandarG} g estandarizados</h3>
-    <p>Composición disponible para esta comida. Los datos no publicados por la fuente permanecen sin dato.</p>
-    <div className="compare-grid">{['energy_kcal','protein_g','fat_g','carbohydrate_g'].map(k=>{const v=premiumContexto.cuantitativo.valores?.[k];return <div key={k}><small>{v?.nombre||k}</small><b>{v?.valor==null?'Sin dato publicado':String(Number(v.valor).toFixed(1)).replace('.',',')+' '+(v?.unidad||'')}</b><span>{v?.valor==null?'La fuente no publica este dato.':'Vector '+(v?.estado||'parcial')}</span></div>})}</div>
-    <p className="legal-note">Fuente: {premiumContexto.cuantitativo.fuenteBase||'fuente registrada'}. Estimación estandarizada para QA; no es una porción recomendada.</p>
   </div>}
   <div className="premium-feature">
     <div className="feature-kicker">3 · LA COMPARACIÓN</div>
