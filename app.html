@@ -99,21 +99,21 @@ function App(){
   </div>
 
   <div className="premium-feature">
-    <div className="feature-kicker">2 · EL HACK</div>
-    <h3>{premiumContexto?.hackNombre||'Una modificación concreta para esta comida.'}</h3>
+    <div className="feature-kicker">2 · LA SUGERENCIA</div>
+    <h3>{premiumContexto?.hackNombre||'Probá un cambio concreto.'}</h3>
     {premiumContexto?.accion?<><div className="label">CÓMO APLICARLO</div><p className="action">{premiumContexto.accion}</p></>:<div className="saved">Esta comida todavía no tiene una acción Premium disponible.</div>}
-    {premiumContexto?.variable&&<p className="legal-note">Cambia una sola variable: {premiumContexto.variable}.</p>}
+    {premiumContexto?.variable&&<p className="legal-note">Una sola variable: {premiumContexto.variable}.</p>}
   </div>
   <div className="premium-feature">
     <div className="feature-kicker">3 · LA COMPARACIÓN</div>
-    <h3>Qué cambia cuando probás la sugerencia.</h3>
+    <h3>Antes y después: qué cambia.</h3>
     {premiumContexto ? <>
       {premiumContexto.cambioComposicional&&<><div className="label">QUÉ CAMBIA</div><p>{premiumContexto.cambioComposicional}</p></>}
       {premiumContexto.porQueCambio&&<><div className="label">POR QUÉ ESTE CAMBIO</div><p>{premiumContexto.porQueCambio}</p></>}
       {premiumContexto.queSeMantiene&&<><div className="label">QUÉ SE MANTIENE</div><p>{premiumContexto.queSeMantiene}</p></>}
-      {premiumContexto.aprendizajeComparativo&&<><div className="label">QUÉ PODÉS APRENDER</div><p>{premiumContexto.aprendizajeComparativo}</p></>}
-      {premiumContexto.variable&&<><div className="label">VARIABLE</div><p>{premiumContexto.variable}</p></>}
-      {premiumContexto.observacion&&<><div className="label">QUÉ VAS A OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
+      {premiumContexto.aprendizajeComparativo&&<><div className="label">QUÉ APRENDÉS</div><p>{premiumContexto.aprendizajeComparativo}</p></>}
+      {premiumContexto.variable&&<><div className="label">VARIABLE QUE CAMBIÁS</div><p>{premiumContexto.variable}</p></>}
+      {premiumContexto.observacion&&<><div className="label">QUÉ OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
       {!premiumContexto.cambioComposicional&&!premiumContexto.aprendizajeComparativo&&!premiumContexto.queSeMantiene&&<div className="saved">Este caso todavía no tiene comparación Premium curada.</div>}
       <button className="primary" onClick={crearExperimento} disabled={premiumExpBusy||premiumAbiertas.length>0}>{premiumAbiertas.length>0?'✓ Comparación en curso':'✦ Empezar esta comparación'}</button>
       <div className="bridge" style={{marginTop:10}}>
