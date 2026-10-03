@@ -551,7 +551,23 @@ export default async function handler(req, res) {
       });
     }
 
-    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) });
+    const continuidadPremium = esPremiumComida && bloqueos.length > 0 && bloqueos[0].solucion
+      ? {
+          texto: "Esta consulta ya puede continuar dentro de Premium.",
+          solucion: bloqueos[0].solucion,
+          variable: bloqueos[0].solucion.variableModificada || null,
+          reglaId: bloqueos[0].reglaId || null,
+        }
+      : null;
+
+    res.status(200).json({
+      registroId,
+      bloqueos,
+      resueltos: resueltosRespuesta,
+      sugerencias,
+      continuidadPremium,
+      soloVista: Boolean(soloVista),
+    });
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }
