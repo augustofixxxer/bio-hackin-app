@@ -420,6 +420,7 @@ export default async function handler(req, res) {
         id: soluciones.id || null,
         nombre: soluciones.nombre_hackeo || "",
         adaptacion: soluciones.adaptacion || "",
+        variableModificada: soluciones.variable_modificada || null,
         accionUsuario: soluciones.accion_usuario || null,
         observacionUsuario: soluciones.observacion_usuario || null,
         contextoActivacion: soluciones.contexto_activacion || null,
