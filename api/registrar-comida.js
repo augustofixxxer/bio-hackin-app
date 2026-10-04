@@ -192,7 +192,7 @@ async function cargarContratoCuantitativo(reglaId) {
     if (!comidas.length) return null;
 
     const vectores = await supabaseFetch(
-      `motor_nutricional_qa_vectores?comida_id=${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
+      `motor_nutricional_qa_vectores?comida_id=eq.${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
     );
     debugContratoCuantitativo("vectores", {
       reglaId,
