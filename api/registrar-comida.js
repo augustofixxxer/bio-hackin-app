@@ -150,6 +150,112 @@ function construirInvitacionPremium() {
   return "Esto se puede experimentar de distintas maneras. ¿Querés probar el cómo? Premium te guía con una opción concreta para esta comida.";
 }
 
+const DEBUG_CUANTITATIVO = process.env.DEBUG_CUANTITATIVO === "1";
+
+function debugContratoCuantitativo(etapa, datos = {}) {
+  if (!DEBUG_CUANTITATIVO) return;
+  console.error("[registrar-comida][DEBUG_CUANTITATIVO]", {
+    etapa,
+    ...datos,
+  });
+}
+
+async function cargarContratoCuantitativo(reglaId) {
+  if (!reglaId) {
+    debugContratoCuantitativo("sin-regla-id");
+    return null;
+  }
+  try {
+    debugContratoCuantitativo("inicio", { reglaId });
+
+    const estandares = await supabaseFetch(
+      `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&regla_id=eq.${reglaId}&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones&limit=1`
+    );
+    debugContratoCuantitativo("estandar", {
+      reglaId,
+      count: estandares.length,
+      clavePlato: estandares[0]?.clave_plato || null,
+      estadoQA: estandares[0]?.estado_qa || null,
+    });
+    if (!estandares.length || estandares[0].estado_qa !== "validada") return null;
+
+    const s = estandares[0];
+    const comidas = await supabaseFetch(
+      `motor_nutricional_qa_comidas?clave=eq.${encodeURIComponent(s.clave_plato)}&select=id&limit=1`
+    );
+    debugContratoCuantitativo("comida", {
+      reglaId,
+      clavePlato: s.clave_plato,
+      count: comidas.length,
+      comidaId: comidas[0]?.id || null,
+    });
+    if (!comidas.length) return null;
+
+    const vectores = await supabaseFetch(
+      `motor_nutricional_qa_vectores?comida_id=eq.${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
+    );
+    debugContratoCuantitativo("vectores", {
+      reglaId,
+      comidaId: comidas[0].id,
+      count: vectores.length,
+      nutrientesConVector: vectores.map(v => v.nutriente_id).filter(Boolean).length,
+    });
+
+    const ids = vectores.map(v => v.nutriente_id).filter(Boolean);
+    const nutrientes = ids.length
+      ? await supabaseFetch(`motor_nutricional_nutrientes?id=in.(${ids.join(",")})&select=id,codigo,nombre,unidad_canonica`)
+      : [];
+    debugContratoCuantitativo("nutrientes", {
+      reglaId,
+      idsSolicitados: ids.length,
+      count: nutrientes.length,
+      codigos: nutrientes.map(n => n.codigo).filter(Boolean),
+    });
+
+    const byId = Object.fromEntries(nutrientes.map(n => [n.id, n]));
+    const valores = {};
+    for (const v of vectores) {
+      const n = byId[v.nutriente_id];
+      if (!n) continue;
+      valores[n.codigo] = {
+        nombre: n.nombre,
+        unidad: n.unidad_canonica,
+        valor: v.valor_total,
+        estado: v.estado_vector,
+        componentesConDato: v.componentes_con_dato,
+        componentesTotales: v.componentes_totales,
+        componentesSinDato: v.componentes_sin_dato,
+      };
+    }
+
+    debugContratoCuantitativo("resultado", {
+      reglaId,
+      nombre: s.nombre_visible,
+      porcionEstandarG: Number(s.peso_estandar_g),
+      cantidadValores: Object.keys(valores).length,
+      codigosValores: Object.keys(valores),
+    });
+
+    return {
+      version: "v1.0",
+      porcionEstandarG: Number(s.peso_estandar_g),
+      nombre: s.nombre_visible,
+      estado: "validada",
+      fuenteBase: s.fuente_base || null,
+      limitaciones: s.limitaciones || null,
+      valores,
+    };
+  } catch (err) {
+    console.error("[registrar-comida] contrato cuantitativo no disponible:", err);
+    debugContratoCuantitativo("error", {
+      reglaId,
+      nombre: err?.name || null,
+      mensaje: err?.message || String(err),
+    });
+    return null;
+  }
+}
+
 // ---- Capa de datos: Supabase vía REST (PostgREST), sin SDK, mismo patrón que antes con Airtable ----
 // BT-02: supabaseFetch/SUPABASE_URL/SUPABASE_KEY ahora vienen de api/_supabase.js (import arriba).
 
@@ -371,6 +477,7 @@ export default async function handler(req, res) {
         id: soluciones.id || null,
         nombre: soluciones.nombre_hackeo || "",
         adaptacion: soluciones.adaptacion || "",
+        variableModificada: soluciones.variable_modificada || null,
         accionUsuario: soluciones.accion_usuario || null,
         observacionUsuario: soluciones.observacion_usuario || null,
         contextoActivacion: soluciones.contexto_activacion || null,
@@ -385,11 +492,19 @@ export default async function handler(req, res) {
         premium: reglaEsPremium,
       };
     }
+    const contratosCuantitativos = await Promise.all(
+      bloqueosReales.map((r) => cargarContratoCuantitativo(r.id || null))
+    );
+
     const bloqueos = bloqueosReales.map((r, i) => {
       const reglaEsPremium = r.nivel_acceso === "Premium";
       // Fase 3 — frontera Free/Premium: la tarjeta gratuita entrega solo el hallazgo/estado.
       // La acción, observación de prueba y continuidad quedan reservadas a Premium.
       const puedeVerAdaptacion = Boolean(r.soluciones) && esPremiumComida;
+      // En Premium, la misma solución curada que alimenta la continuidad también
+      // debe viajar completa al cliente para renderizar Card 2/3. No se duplica
+      // contenido en otra tabla ni se reconstruye editorialmente en frontend.
+      const solucionPremium = puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null;
       // La continuidad hacia Premium no depende del nivel de acceso:
       // si existe una solución contextual, el resultado debe ofrecer el puente.
       // El acceso sólo define si la solución completa se revela en la devolución.
@@ -399,7 +514,7 @@ export default async function handler(req, res) {
         combinacion: r.combinacion || "",
         resultado: r.resultado || "",
         nivelRiesgo: r.nivel_riesgo || "Bajo",
-        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
+        solucion: solucionPremium,
         invitacionPremium: tieneContinuidadPremium && !esPremiumComida
           ? {
               texto: construirInvitacionPremium(),
@@ -412,11 +527,13 @@ export default async function handler(req, res) {
         continuidadPremium: tieneContinuidadPremium && esPremiumComida
           ? {
               texto: "Esta consulta ya puede continuar dentro de Premium.",
+              solucion: solucionPremium,
               variable: r.soluciones.variable_modificada || null,
               categoria: r.soluciones.categoria || null,
             }
           : null,
         bloqueoId: bloqueosCreados[i]?.id,
+        cuantitativo: contratosCuantitativos[i],
       };
     });
 
@@ -492,7 +609,23 @@ export default async function handler(req, res) {
       });
     }
 
-    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) });
+    const continuidadPremium = esPremiumComida && bloqueos.length > 0 && bloqueos[0].solucion
+      ? {
+          texto: "Esta consulta ya puede continuar dentro de Premium.",
+          solucion: bloqueos[0].solucion,
+          variable: bloqueos[0].solucion.variableModificada || null,
+          reglaId: bloqueos[0].reglaId || null,
+        }
+      : null;
+
+    res.status(200).json({
+      registroId,
+      bloqueos,
+      resueltos: resueltosRespuesta,
+      sugerencias,
+      continuidadPremium,
+      soloVista: Boolean(soloVista),
+    });
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }

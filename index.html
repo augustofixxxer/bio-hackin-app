@@ -461,6 +461,14 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar, onV
 function LoginScreen({ onLogin }) {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Acceso de prueba aislado para validar Preview sin depender de Google OAuth.
+  // Se habilita solo con ?test-auth=1 y el backend rechaza este flujo fuera de Vercel Preview.
+  const habilitarAccesoPrueba =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("test-auth") === "1";
 
   async function handleCredentialResponse(response) {
     setCargando(true);
@@ -485,7 +493,33 @@ function LoginScreen({ onLogin }) {
     }
   }
 
+  async function handleEmailLogin(e) {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setCargando(true);
+    setError(null);
+    try {
+      const resp = await fetch("/api/login-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "No se pudo iniciar sesión.");
+      lsSet("reseteo_usuario", JSON.stringify(data));
+      if (lsGet("reseteo_terminos_v1") === "true" && lsGet("reseteo_onboarding_v1") === "true") {
+        window.location.href = "/app.html";
+        return;
+      }
+      onLogin(data);
+    } catch (e) {
+      setError(String(e.message || e));
+      setCargando(false);
+    }
+  }
+
   useEffect(() => {
+    if (habilitarAccesoPrueba) return;
     let cancelado = false;
     function intentarRenderizar() {
       if (cancelado) return;
@@ -504,25 +538,78 @@ function LoginScreen({ onLogin }) {
     }
     intentarRenderizar();
     return () => { cancelado = true; };
-  }, []);
+  }, [habilitarAccesoPrueba]);
 
   return (
     <div style={{ minHeight: "100vh", background: TOKENS.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ maxWidth: 340, textAlign: "center" }}>
+      <div style={{ maxWidth: 340, width: "100%", textAlign: "center" }}>
         <h1 style={{ fontFamily: "'Libre Franklin', sans-serif", fontWeight: 800, fontSize: 26, color: TOKENS.ink, marginBottom: 10, letterSpacing: "-0.02em" }}>
           Reseteo Propio
         </h1>
         <p style={{ color: TOKENS.inkDim, fontSize: 13.5, marginBottom: 28, lineHeight: 1.5 }}>
           Te mostramos el mapa. El camino, lo elegís vos.
         </p>
-        <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }}></div>
-        {cargando && <p style={{ color: TOKENS.inkDim, fontSize: 13, marginTop: 16 }}>Ingresando...</p>}
+
+        {!habilitarAccesoPrueba ? (
+          <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }}></div>
+        ) : (
+          <form onSubmit={handleEmailLogin} style={{ display: "grid", gap: 10, textAlign: "left" }}>
+            <div style={{
+              padding: "9px 11px", borderRadius: 10, background: TOKENS.primarySoft,
+              color: TOKENS.primary, fontSize: 11.5, lineHeight: 1.45,
+            }}>
+              Acceso de prueba de Preview · no modifica el acceso habitual con Google.
+            </div>
+            <label style={{ fontSize: 12, color: TOKENS.inkDim }}>
+              Correo
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  display: "block", width: "100%", marginTop: 5, padding: "11px 12px",
+                  border: "1px solid " + TOKENS.border, borderRadius: 10, background: "#fff",
+                  color: TOKENS.ink, fontSize: 14,
+                }}
+              />
+            </label>
+            <label style={{ fontSize: 12, color: TOKENS.inkDim }}>
+              Contraseña
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{
+                  display: "block", width: "100%", marginTop: 5, padding: "11px 12px",
+                  border: "1px solid " + TOKENS.border, borderRadius: 10, background: "#fff",
+                  color: TOKENS.ink, fontSize: 14,
+                }}
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={cargando}
+              style={{
+                width: "100%", marginTop: 2, padding: "11px 14px", border: "none",
+                borderRadius: 10, background: TOKENS.primary, color: "#fff",
+                fontSize: 13, fontWeight: 700, cursor: cargando ? "default" : "pointer",
+              }}
+            >
+              {cargando ? "Ingresando..." : "Ingresar con correo"}
+            </button>
+          </form>
+        )}
+
+        {cargando && !habilitarAccesoPrueba && <p style={{ color: TOKENS.inkDim, fontSize: 13, marginTop: 16 }}>Ingresando...</p>}
         {error && <p style={{ color: "#B3453D", fontSize: 13, marginTop: 16 }}>{error}</p>}
       </div>
     </div>
   );
 }
-
 // Portada de Home (30/07/2026, reemplaza a la vieja pestaña "QUIÉN SOY").
 // Portada — banner fijo tipo portada de Facebook (03/08/2026, versión final confirmada
 // por Augusto): full-bleed, arriba de TODO — antes del encabezado "Comida real...".
