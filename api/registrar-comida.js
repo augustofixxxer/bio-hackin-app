@@ -150,25 +150,68 @@ function construirInvitacionPremium() {
   return "Esto se puede experimentar de distintas maneras. ¿Querés probar el cómo? Premium te guía con una opción concreta para esta comida.";
 }
 
+const DEBUG_CUANTITATIVO = process.env.DEBUG_CUANTITATIVO === "1";
+
+function debugContratoCuantitativo(etapa, datos = {}) {
+  if (!DEBUG_CUANTITATIVO) return;
+  console.error("[registrar-comida][DEBUG_CUANTITATIVO]", {
+    etapa,
+    ...datos,
+  });
+}
+
 async function cargarContratoCuantitativo(reglaId) {
-  if (!reglaId) return null;
+  if (!reglaId) {
+    debugContratoCuantitativo("sin-regla-id");
+    return null;
+  }
   try {
+    debugContratoCuantitativo("inicio", { reglaId });
+
     const estandares = await supabaseFetch(
       `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&regla_id=eq.${reglaId}&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones&limit=1`
     );
+    debugContratoCuantitativo("estandar", {
+      reglaId,
+      count: estandares.length,
+      clavePlato: estandares[0]?.clave_plato || null,
+      estadoQA: estandares[0]?.estado_qa || null,
+    });
     if (!estandares.length || estandares[0].estado_qa !== "validada") return null;
+
     const s = estandares[0];
     const comidas = await supabaseFetch(
       `motor_nutricional_qa_comidas?clave=eq.${encodeURIComponent(s.clave_plato)}&select=id&limit=1`
     );
+    debugContratoCuantitativo("comida", {
+      reglaId,
+      clavePlato: s.clave_plato,
+      count: comidas.length,
+      comidaId: comidas[0]?.id || null,
+    });
     if (!comidas.length) return null;
+
     const vectores = await supabaseFetch(
-      `motor_nutricional_qa_vectores?comida_id=eq.${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
+      `motor_nutricional_qa_vectores?comida_id=${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
     );
+    debugContratoCuantitativo("vectores", {
+      reglaId,
+      comidaId: comidas[0].id,
+      count: vectores.length,
+      nutrientesConVector: vectores.map(v => v.nutriente_id).filter(Boolean).length,
+    });
+
     const ids = vectores.map(v => v.nutriente_id).filter(Boolean);
     const nutrientes = ids.length
       ? await supabaseFetch(`motor_nutricional_nutrientes?id=in.(${ids.join(",")})&select=id,codigo,nombre,unidad_canonica`)
       : [];
+    debugContratoCuantitativo("nutrientes", {
+      reglaId,
+      idsSolicitados: ids.length,
+      count: nutrientes.length,
+      codigos: nutrientes.map(n => n.codigo).filter(Boolean),
+    });
+
     const byId = Object.fromEntries(nutrientes.map(n => [n.id, n]));
     const valores = {};
     for (const v of vectores) {
@@ -184,6 +227,15 @@ async function cargarContratoCuantitativo(reglaId) {
         componentesSinDato: v.componentes_sin_dato,
       };
     }
+
+    debugContratoCuantitativo("resultado", {
+      reglaId,
+      nombre: s.nombre_visible,
+      porcionEstandarG: Number(s.peso_estandar_g),
+      cantidadValores: Object.keys(valores).length,
+      codigosValores: Object.keys(valores),
+    });
+
     return {
       version: "v1.0",
       porcionEstandarG: Number(s.peso_estandar_g),
@@ -195,6 +247,11 @@ async function cargarContratoCuantitativo(reglaId) {
     };
   } catch (err) {
     console.error("[registrar-comida] contrato cuantitativo no disponible:", err);
+    debugContratoCuantitativo("error", {
+      reglaId,
+      nombre: err?.name || null,
+      mensaje: err?.message || String(err),
+    });
     return null;
   }
 }
