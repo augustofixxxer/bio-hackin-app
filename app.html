@@ -30,7 +30,7 @@ function App(){
  async function retomarAprendizaje(aprendizaje){
   const exp=premiumExperimentos.find(x=>x.id===aprendizaje?.experimento_id);
   if(!exp)return;
-  setPremiumContexto({original:exp.opcion_a,accion:exp.opcion_b,adaptacion:exp.opcion_b,variable:exp.variable,reglaId:exp.regla_id||null,solucionId:exp.solucion_id||null,texto:exp.hallazgo_free||'',cambioComposicional:exp.cambio_composicional||null,aprendizajeComparativo:exp.aprendizaje_comparativo||aprendizaje.aprendizaje||null,queSeMantiene:exp.que_se_mantiene||aprendizaje.que_se_mantiene||null});
+  setPremiumContexto({original:exp.opcion_a,accion:exp.opcion_b,adaptacion:exp.opcion_b,variable:exp.variable,reglaId:exp.regla_id||null,solucionId:exp.solucion_id||null,texto:exp.hallazgo_free||'',cambioComposicional:exp.cambio_composicional||null,aprendizajeComparativo:exp.aprendizaje_comparativo||aprendizaje.aprendizaje||null,queSeMantiene:exp.que_se_mantiene||aprendizaje.que_se_mantiene||null,retomado:true});
   setPremiumOrigen(exp.origen||'basica');
   setPremiumVista('home');
  }
@@ -117,10 +117,10 @@ function App(){
       {premiumContexto.variable&&<><div className="label">VARIABLE</div><p>{premiumContexto.variable}</p></>}
       {premiumContexto.observacion&&<><div className="label">QUÉ VAS A OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
       {!premiumContexto.cambioComposicional&&!premiumContexto.aprendizajeComparativo&&!premiumContexto.queSeMantiene&&<div className="saved">Este caso todavía no tiene comparación Premium curada.</div>}
-      <button className="primary" onClick={crearExperimento} disabled={premiumExpBusy||premiumAbiertas.length>0}>{premiumAbiertas.length>0?'✓ Comparación en curso':'✦ Empezar esta comparación'}</button>
+      <button className="primary" onClick={crearExperimento} disabled={premiumExpBusy||premiumAbiertas.length>0}{premiumAbiertas.length>0?'✓ Comparación en curso':premiumContexto?.retomado?'✦ Crear una nueva comparación':'✦ Empezar esta comparación'}</button>
       <div className="bridge" style={{marginTop:10}}>
-        <b>La comida sigue siendo tu punto de partida.</b>
-        <p style={{margin:'6px 0 0'}}>Premium no reemplaza tu experiencia: define qué cambiar, qué mantener y qué mirar para que una ocasión pueda compararse con otra.</p>
+        <b>{premiumContexto?.retomado?'Podés volver a poner este aprendizaje a prueba.':'La comida sigue siendo tu punto de partida.'}</b>
+        <p style={{margin:'6px 0 0'}}>{premiumContexto?.retomado?'La comparación anterior quedó guardada. Esta nueva prueba conserva la misma idea para que puedas observarla otra vez.':'Premium no reemplaza tu experiencia: define qué cambiar, qué mantener y qué mirar para que una ocasión pueda compararse con otra.'}</p>
       </div>
     </> : <><p>Entrá desde una comida de Descubrir para que esta tarjeta pueda mostrar la comparación correcta.</p><button className="secondary" onClick={()=>setTab('descubrir')}>← Volver a Descubrir</button></>}
   </div>
