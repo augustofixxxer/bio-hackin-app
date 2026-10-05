@@ -237,7 +237,10 @@ async function rutaExperimento(req, res) {
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
       const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
-      return res.status(200).json({ ok: true, experimentos: filas });
+      const aprendizajes = await supabaseFetch(
+        `aprendizajes_experimentales?usuario_id=eq.${usuarioId}&estado=neq.descartado&order=created_at.desc&limit=20&select=id,experimento_id,variable,contexto,observacion_a,observacion_b,diferencia_observada,que_se_mantiene,aprendizaje,estado,created_at,updated_at`
+      );
+      return res.status(200).json({ ok: true, experimentos: filas, aprendizajesExperimentales: aprendizajes });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
     const { accion, experimentoId, origen, titulo, variable, opcionA, opcionB, registroA, registroB, reglaId, solucionId, hallazgoFree, hackConcreto, cambioComposicional, aprendizajeComparativo, queSeMantiene } = req.body || {};
