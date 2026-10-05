@@ -262,9 +262,13 @@ async function rutaExperimento(req, res) {
     }
     if (accion === "cerrar") {
       if (!UUID_REGEX.test(String(experimentoId||""))) return res.status(400).json({error:"experimentoId inválido."});
-      const filas=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,estado,registro_a,registro_b`);
+      const filas=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,usuario_id,estado,registro_a,registro_b,origen,variable,aprendizaje_comparativo,que_se_mantiene`);
       if (!filas.length) return res.status(404).json({error:"Experimento no encontrado."});
       if (!filas[0].registro_a || !filas[0].registro_b) return res.status(409).json({error:"Registrá las dos experiencias antes de cerrar la prueba."});
+      if (filas[0].estado === "cerrado") {
+        const derivado=await derivarAprendizajeExperimental(filas[0]);
+        return res.status(200).json({ok:true,experimento:filas[0],aprendizajeExperimental:derivado});
+      }
       const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify({estado:"cerrado",updated_at:new Date().toISOString()})});
       const derivado=await derivarAprendizajeExperimental(updated[0]);
       return res.status(200).json({ok:true,experimento:updated[0],aprendizajeExperimental:derivado});
