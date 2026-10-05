@@ -459,8 +459,41 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar, onV
 }
 
 function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
+
+  // Acceso de prueba aislado para validar Preview sin depender de Google OAuth.
+  // El backend rechaza este flujo fuera de Vercel Preview.
+  const habilitarAccesoPrueba =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("test-auth") === "1";
+
+  async function handleEmailLogin(e) {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setCargando(true);
+    setError(null);
+    try {
+      const resp = await fetch("/api/login-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "No se pudo iniciar sesión.");
+      lsSet("reseteo_usuario", JSON.stringify(data));
+      if (lsGet("reseteo_terminos_v1") === "true" && lsGet("reseteo_onboarding_v1") === "true") {
+        window.location.href = "/app.html";
+        return;
+      }
+      onLogin(data);
+    } catch (e) {
+      setError(String(e.message || e));
+      setCargando(false);
+    }
+  }
 
   async function handleCredentialResponse(response) {
     setCargando(true);
@@ -487,6 +520,7 @@ function LoginScreen({ onLogin }) {
 
   useEffect(() => {
     let cancelado = false;
+    if (habilitarAccesoPrueba) return () => { cancelado = true; };
     function intentarRenderizar() {
       if (cancelado) return;
       if (!window.google || !window.google.accounts || !window.google.accounts.id) {
@@ -515,7 +549,19 @@ function LoginScreen({ onLogin }) {
         <p style={{ color: TOKENS.inkDim, fontSize: 13.5, marginBottom: 28, lineHeight: 1.5 }}>
           Te mostramos el mapa. El camino, lo elegís vos.
         </p>
-        <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }}></div>
+        {!habilitarAccesoPrueba ? (
+          <div id="google-signin-button" style={{ display: "flex", justifyContent: "center" }}></div>
+        ) : (
+          <form onSubmit={handleEmailLogin} style={{ display: "grid", gap: 10, textAlign: "left" }}>
+            <label>Correo
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <label>Contraseña
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </label>
+            <button type="submit" disabled={cargando}>{cargando ? "Ingresando..." : "Ingresar con correo"}</button>
+          </form>
+        )}
         {cargando && <p style={{ color: TOKENS.inkDim, fontSize: 13, marginTop: 16 }}>Ingresando...</p>}
         {error && <p style={{ color: "#B3453D", fontSize: 13, marginTop: 16 }}>{error}</p>}
       </div>
