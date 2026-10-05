@@ -266,10 +266,47 @@ async function rutaExperimento(req, res) {
       if (!filas.length) return res.status(404).json({error:"Experimento no encontrado."});
       if (!filas[0].registro_a || !filas[0].registro_b) return res.status(409).json({error:"Registrá las dos experiencias antes de cerrar la prueba."});
       const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify({estado:"cerrado",updated_at:new Date().toISOString()})});
-      return res.status(200).json({ok:true,experimento:updated[0]});
+      const derivado=await derivarAprendizajeExperimental(updated[0]);
+      return res.status(200).json({ok:true,experimento:updated[0],aprendizajeExperimental:derivado});
     }
     return res.status(400).json({error:"Acción inválida."});
   } catch (err) { return res.status(500).json({error:"No pudimos procesar tu prueba ahora."}); }
+}
+
+// ===== derivación de aprendizaje experimental =====
+async function derivarAprendizajeExperimental(experimento) {
+  if (!experimento || experimento.estado !== "cerrado" || !experimento.registro_a || !experimento.registro_b) {
+    return { creado: false, motivo: "experimento_no_cerrado_o_sin_ab" };
+  }
+
+  const existentes = await supabaseFetch(
+    `aprendizajes_experimentales?experimento_id=eq.${experimento.id}&select=id,estado&limit=1`
+  );
+  if (existentes.length) return { creado: false, yaExistente: true, aprendizaje: existentes[0] };
+
+  const aprendizaje = typeof experimento.aprendizaje_comparativo === "string"
+    ? experimento.aprendizaje_comparativo.trim()
+    : "";
+
+  const filas = await supabaseFetch("aprendizajes_experimentales", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      experimento_id: experimento.id,
+      usuario_id: experimento.usuario_id,
+      variable: experimento.variable,
+      contexto: experimento.origen || null,
+      observacion_a: experimento.registro_a,
+      observacion_b: experimento.registro_b,
+      diferencia_observada: null,
+      que_se_mantiene: experimento.que_se_mantiene || null,
+      aprendizaje: aprendizaje || "Se registraron ambas observaciones para conservar la comparación y revisarla en una próxima experiencia.",
+      estado: "registrado",
+      updated_at: new Date().toISOString(),
+    }),
+  });
+
+  return { creado: true, aprendizaje: filas[0] || null };
 }
 
 // ===== ruta=admin (idéntico a premium-admin.js) =====
