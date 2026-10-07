@@ -367,90 +367,88 @@ function debugContratoCuantitativo(etapa, datos = {}) {
   });
 }
 
+async function cargarVectorContrato(estandar) {
+  if (!estandar || estandar.estado_qa !== "validada") return null;
+
+  const comidas = await supabaseFetch(
+    `motor_nutricional_qa_comidas?clave=eq.${encodeURIComponent(estandar.clave_plato)}&select=id&limit=1`
+  );
+  if (!comidas.length) return null;
+
+  const vectores = await supabaseFetch(
+    `motor_nutricional_qa_vectores?comida_id=eq.${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
+  );
+
+  const ids = vectores.map(v => v.nutriente_id).filter(Boolean);
+  const nutrientes = ids.length
+    ? await supabaseFetch(`motor_nutricional_nutrientes?id=in.(${ids.join(",")})&select=id,codigo,nombre,unidad_canonica`)
+    : [];
+
+  const byId = Object.fromEntries(nutrientes.map(n => [n.id, n]));
+  const valores = {};
+  for (const v of vectores) {
+    const n = byId[v.nutriente_id];
+    if (!n) continue;
+    valores[n.codigo] = {
+      nombre: n.nombre,
+      unidad: n.unidad_canonica,
+      valor: v.valor_total,
+      estado: v.estado_vector,
+      componentesConDato: v.componentes_con_dato,
+      componentesTotales: v.componentes_totales,
+      componentesSinDato: v.componentes_sin_dato,
+    };
+  }
+
+  return {
+    version: estandar.version || "v1.0",
+    clavePlato: estandar.clave_plato,
+    porcionEstandarG: Number(estandar.peso_estandar_g),
+    nombre: estandar.nombre_visible,
+    estado: "validada",
+    fuenteBase: estandar.fuente_base || null,
+    limitaciones: estandar.limitaciones || null,
+    valores,
+  };
+}
+
 async function cargarContratoCuantitativo(reglaId) {
   if (!reglaId) {
     debugContratoCuantitativo("sin-regla-id");
     return null;
   }
+
   try {
     debugContratoCuantitativo("inicio", { reglaId });
 
+    // Una regla puede tener dos contratos QA: Before y After.
+    // Ambos comparten regla_id; nunca usar limit=1 porque eso puede ocultar el After.
     const estandares = await supabaseFetch(
-      `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&regla_id=eq.${reglaId}&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones&limit=1`
+      `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&regla_id=eq.${reglaId}&estado_qa=eq.validada&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones,version&order=clave_plato.asc&limit=20`
     );
-    debugContratoCuantitativo("estandar", {
-      reglaId,
-      count: estandares.length,
-      clavePlato: estandares[0]?.clave_plato || null,
-      estadoQA: estandares[0]?.estado_qa || null,
-    });
-    if (!estandares.length || estandares[0].estado_qa !== "validada") return null;
 
-    const s = estandares[0];
-    const comidas = await supabaseFetch(
-      `motor_nutricional_qa_comidas?clave=eq.${encodeURIComponent(s.clave_plato)}&select=id&limit=1`
-    );
-    debugContratoCuantitativo("comida", {
-      reglaId,
-      clavePlato: s.clave_plato,
-      count: comidas.length,
-      comidaId: comidas[0]?.id || null,
-    });
-    if (!comidas.length) return null;
+    if (!estandares.length) return null;
 
-    const vectores = await supabaseFetch(
-      `motor_nutricional_qa_vectores?comida_id=eq.${comidas[0].id}&select=nutriente_id,estado_vector,valor_total,componentes_totales,componentes_con_dato,componentes_sin_dato&limit=50`
-    );
-    debugContratoCuantitativo("vectores", {
-      reglaId,
-      comidaId: comidas[0].id,
-      count: vectores.length,
-      nutrientesConVector: vectores.map(v => v.nutriente_id).filter(Boolean).length,
-    });
+    const contratos = await Promise.all(estandares.map(cargarVectorContrato));
+    const validos = contratos.filter(Boolean);
+    if (!validos.length) return null;
 
-    const ids = vectores.map(v => v.nutriente_id).filter(Boolean);
-    const nutrientes = ids.length
-      ? await supabaseFetch(`motor_nutricional_nutrientes?id=in.(${ids.join(",")})&select=id,codigo,nombre,unidad_canonica`)
-      : [];
-    debugContratoCuantitativo("nutrientes", {
-      reglaId,
-      idsSolicitados: ids.length,
-      count: nutrientes.length,
-      codigos: nutrientes.map(n => n.codigo).filter(Boolean),
-    });
-
-    const byId = Object.fromEntries(nutrientes.map(n => [n.id, n]));
-    const valores = {};
-    for (const v of vectores) {
-      const n = byId[v.nutriente_id];
-      if (!n) continue;
-      valores[n.codigo] = {
-        nombre: n.nombre,
-        unidad: n.unidad_canonica,
-        valor: v.valor_total,
-        estado: v.estado_vector,
-        componentesConDato: v.componentes_con_dato,
-        componentesTotales: v.componentes_totales,
-        componentesSinDato: v.componentes_sin_dato,
-      };
-    }
+    const after = validos.find(c => /(^|_)after(_|\.)/i.test(c.clavePlato));
+    const before = validos.find(c => !/(^|_)after(_|\.)/i.test(c.clavePlato));
 
     debugContratoCuantitativo("resultado", {
       reglaId,
-      nombre: s.nombre_visible,
-      porcionEstandarG: Number(s.peso_estandar_g),
-      cantidadValores: Object.keys(valores).length,
-      codigosValores: Object.keys(valores),
+      contratos: validos.length,
+      before: before?.clavePlato || null,
+      after: after?.clavePlato || null,
     });
 
+    // Compatibilidad: los campos históricos siguen apuntando al Before.
+    // Card 3 obtiene explícitamente before/after sin cambiar el contrato existente de Card 1.
     return {
-      version: "v1.0",
-      porcionEstandarG: Number(s.peso_estandar_g),
-      nombre: s.nombre_visible,
-      estado: "validada",
-      fuenteBase: s.fuente_base || null,
-      limitaciones: s.limitaciones || null,
-      valores,
+      ...(before || validos[0]),
+      before: before || null,
+      after: after || null,
     };
   } catch (err) {
     console.error("[registrar-comida] contrato cuantitativo no disponible:", err);
