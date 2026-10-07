@@ -33,6 +33,7 @@ function App(){
   setPremiumContexto({original:exp.opcion_a,accion:exp.opcion_b,adaptacion:exp.opcion_b,variable:exp.variable,reglaId:exp.regla_id||null,solucionId:exp.solucion_id||null,texto:exp.hallazgo_free||'',cambioComposicional:exp.cambio_composicional||null,aprendizajeComparativo:exp.aprendizaje_comparativo||aprendizaje.aprendizaje||null,queSeMantiene:exp.que_se_mantiene||aprendizaje.que_se_mantiene||null,retomado:true});
   setPremiumOrigen(exp.origen||'basica');
   setPremiumVista('home');
+  setTimeout(()=>document.getElementById('premium-comparacion')?.scrollIntoView({behavior:'smooth',block:'start'}),50);
  }
  async function crearExperimento(){
   const original=(premiumContexto?.original||'').trim();
@@ -106,7 +107,7 @@ function App(){
     {premiumContexto?.variable&&<p className="legal-note">Cambia una sola variable: {premiumContexto.variable}.</p>}
   </div>
 
-  <div className="premium-feature">
+  <div className="premium-feature" id="premium-comparacion">
     <div className="feature-kicker">3 · LA COMPARACIÓN</div>
     <h3>Qué cambia cuando probás la sugerencia.</h3>
     {premiumContexto ? <>
