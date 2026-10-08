@@ -412,6 +412,24 @@ async function cargarVectorContrato(estandar) {
   };
 }
 
+function identidadContratoCuantitativo(clavePlato) {
+  return String(clavePlato || "")
+    .toLowerCase()
+    .replace(/_after_.*/i, "")
+    .replace(/_before_.*/i, "")
+    .replace(/_operativa.*$/i, "")
+    .replace(/_antiliteral.*$/i, "")
+    .replace(/_descubrir.*$/i, "");
+}
+
+async function cargarEstandaresPorIdentidad(identidad) {
+  if (!identidad) return [];
+  const todos = await supabaseFetch(
+    `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&estado_qa=eq.validada&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones,version,regla_id&limit=100`
+  );
+  return todos.filter(c => identidadContratoCuantitativo(c.clave_plato) === identidad);
+}
+
 async function cargarContratoCuantitativo(reglaId) {
   if (!reglaId) {
     debugContratoCuantitativo("sin-regla-id");
@@ -421,30 +439,52 @@ async function cargarContratoCuantitativo(reglaId) {
   try {
     debugContratoCuantitativo("inicio", { reglaId });
 
-    // Una regla puede tener dos contratos QA: Before y After.
-    // Ambos comparten regla_id; nunca usar limit=1 porque eso puede ocultar el After.
-    const estandares = await supabaseFetch(
-      `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&regla_id=eq.${reglaId}&estado_qa=eq.validada&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones,version&order=clave_plato.asc&limit=20`
+    // La regla activa el caso; el pairing Before/After pertenece a la identidad
+    // cuantitativa canónica. Primero usamos la relación explícita regla_id.
+    let estandares = await supabaseFetch(
+      `motor_nutricional_qa_composicion_estandar?version=eq.v1.0&regla_id=eq.${reglaId}&estado_qa=eq.validada&select=clave_plato,nombre_visible,peso_estandar_g,estado_qa,fuente_base,limitaciones,version,regla_id&order=clave_plato.asc&limit=20`
     );
 
-    if (!estandares.length) return null;
+    let contratos = await Promise.all(estandares.map(cargarVectorContrato));
+    let validos = contratos.filter(Boolean);
+    let after = validos.find(c => /(^|_)after(_|\\.)/i.test(c.clavePlato));
+    let before = validos.find(c => !/(^|_)after(_|\\.)/i.test(c.clavePlato));
 
-    const contratos = await Promise.all(estandares.map(cargarVectorContrato));
-    const validos = contratos.filter(Boolean);
+    // Si la regla no contiene ambos lados, desacoplamos pairing de activación.
+    // Solo aceptamos fallback si la identidad canónica produce EXACTAMENTE un
+    // Before y un After; si hay ambigüedad, se conserva NULL y no se inventa.
+    if (!before || !after) {
+      const identidadFuente = (before || after) && identidadContratoCuantitativo((before || after).clavePlato);
+      if (identidadFuente) {
+        const candidatos = await cargarEstandaresPorIdentidad(identidadFuente);
+        const candidatosValidos = (await Promise.all(candidatos.map(cargarVectorContrato))).filter(Boolean);
+        const candidatosAfter = candidatosValidos.filter(c => /(^|_)after(_|\\.)/i.test(c.clavePlato));
+        const candidatosBefore = candidatosValidos.filter(c => !/(^|_)after(_|\\.)/i.test(c.clavePlato));
+        if (candidatosAfter.length === 1 && candidatosBefore.length === 1) {
+          after = candidatosAfter[0];
+          before = candidatosBefore[0];
+          validos = candidatosValidos;
+        } else {
+          debugContratoCuantitativo("pairing-ambiguo", {
+            reglaId,
+            identidad: identidadFuente,
+            beforeCandidatos: candidatosBefore.map(c => c.clavePlato),
+            afterCandidatos: candidatosAfter.map(c => c.clavePlato),
+          });
+        }
+      }
+    }
+
     if (!validos.length) return null;
-
-    const after = validos.find(c => /(^|_)after(_|\.)/i.test(c.clavePlato));
-    const before = validos.find(c => !/(^|_)after(_|\.)/i.test(c.clavePlato));
 
     debugContratoCuantitativo("resultado", {
       reglaId,
       contratos: validos.length,
+      identidad: identidadContratoCuantitativo((before || after)?.clavePlato),
       before: before?.clavePlato || null,
       after: after?.clavePlato || null,
     });
 
-    // Compatibilidad: los campos históricos siguen apuntando al Before.
-    // Card 3 obtiene explícitamente before/after sin cambiar el contrato existente de Card 1.
     return {
       ...(before || validos[0]),
       before: before || null,
