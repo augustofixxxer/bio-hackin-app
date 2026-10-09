@@ -31,8 +31,9 @@ jobs:
           URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
           BODY_FILE="$(mktemp)"
           HEADER_FILE="$(mktemp)"
-          trap 'rm -f "$BODY_FILE" "$HEADER_FILE"' EXIT
-          STATUS="$(curl --silent --show-error --max-time 30 -D "$HEADER_FILE" -o "$BODY_FILE" -w '%{http_code}' \
+          COOKIE_FILE="$(mktemp)"
+          trap 'rm -f "$BODY_FILE" "$HEADER_FILE" "$COOKIE_FILE"' EXIT
+          STATUS="$(curl --silent --show-error --max-time 30 --location --cookie "$COOKIE_FILE" --cookie-jar "$COOKIE_FILE" -D "$HEADER_FILE" -o "$BODY_FILE" -w '%{http_code}' \
             -X POST "$URL" \
             -H 'Content-Type: application/json' \
             -H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS" \
