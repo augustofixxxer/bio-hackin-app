@@ -69,10 +69,11 @@ jobs:
           set -euo pipefail
           URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
           BODY_FILE="$(mktemp)"
-          trap 'rm -f "$BODY_FILE"' EXIT
+          COOKIE_FILE="$(mktemp)"
+          trap 'rm -f "$BODY_FILE" "$COOKIE_FILE"' EXIT
           for comida in milanesa hamburguesa pastas humita locro paella ravioles; do
             echo "Testing $comida..."
-            STATUS="$(curl --silent --show-error --max-time 30 -o "$BODY_FILE" -w '%{http_code}' \
+            STATUS="$(curl --silent --show-error --max-time 30 --location --cookie "$COOKIE_FILE" --cookie-jar "$COOKIE_FILE" -o "$BODY_FILE" -w '%{http_code}' \
               -X POST "$URL" \
               -H 'Content-Type: application/json' \
               -H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS" \
