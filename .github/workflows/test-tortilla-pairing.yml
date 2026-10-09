@@ -12,16 +12,42 @@ jobs:
   test-pairing:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    env:
+      VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
     steps:
+      - name: Check Vercel Preview access
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_PROTECTION_BYPASS:-}" ]; then
+            echo "::error::Falta configurar el secreto VERCEL_PROTECTION_BYPASS en GitHub Actions. El Preview está protegido por Vercel SSO; el test no debe desactivar esa protección."
+            exit 1
+          fi
+
       - name: Test tortilla Before and After pairing
         shell: bash
         run: |
           set -euo pipefail
           URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
-          RESPONSE="$(curl --silent --show-error --max-time 30 -X POST "$URL" -H 'Content-Type: application/json' -d '{"texto":"tortilla de papa","soloVista":true}')"
-          printf '%s\n' "$RESPONSE" | jq .
-          printf '%s' "$RESPONSE" | jq -e '.soloVista == true' >/dev/null
-          printf '%s' "$RESPONSE" | jq -e '[.bloqueos[]? | select(.cuantitativo.before.clavePlato != null and .cuantitativo.after.clavePlato != null)] | length > 0' >/dev/null
+          BODY_FILE="$(mktemp)"
+          trap 'rm -f "$BODY_FILE"' EXIT
+          STATUS="$(curl --silent --show-error --max-time 30 -o "$BODY_FILE" -w '%{http_code}' \
+            -X POST "$URL" \
+            -H 'Content-Type: application/json' \
+            -H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS" \
+            -H 'x-vercel-set-bypass-cookie: samesitenone' \
+            -d '{"texto":"tortilla de papa","soloVista":true}')"
+          cat "$BODY_FILE" | jq .
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "::error::Vercel sigue bloqueando el Preview (HTTP $STATUS). Verificá que el secreto sea el Protection Bypass Secret del proyecto correcto."
+            exit 1
+          fi
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "::error::La API respondió HTTP $STATUS."
+            exit 1
+          fi
+          jq -e '.soloVista == true' "$BODY_FILE" >/dev/null
+          jq -e '[.bloqueos[]? | select(.cuantitativo.before.clavePlato != null and .cuantitativo.after.clavePlato != null)] | length > 0' "$BODY_FILE" >/dev/null
           echo "PASS: tortilla pairing Before+After OK con soloVista:true"
 
       - name: Regression of seven previous dishes
@@ -30,10 +56,25 @@ jobs:
         run: |
           set -euo pipefail
           URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
+          BODY_FILE="$(mktemp)"
+          trap 'rm -f "$BODY_FILE"' EXIT
           for comida in milanesa hamburguesa pastas humita locro paella ravioles; do
             echo "Testing $comida..."
-            RESPONSE="$(curl --silent --show-error --max-time 30 -X POST "$URL" -H 'Content-Type: application/json' -d "{\"texto\":\"$comida\",\"soloVista\":true}")"
-            printf '%s' "$RESPONSE" | jq -e '.soloVista == true and (.bloqueos | type == "array")' >/dev/null
-            printf '%s\n' "$RESPONSE" | jq '{soloVista, bloqueos: [.bloqueos[]? | {combinacion, cuantitativo: (.cuantitativo | if . == null then null else {clavePlato, before: .before.clavePlato, after: .after.clavePlato} end)}]}'
+            STATUS="$(curl --silent --show-error --max-time 30 -o "$BODY_FILE" -w '%{http_code}' \
+              -X POST "$URL" \
+              -H 'Content-Type: application/json' \
+              -H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS" \
+              -H 'x-vercel-set-bypass-cookie: samesitenone' \
+              -d "{\"texto\":\"$comida\",\"soloVista\":true}")"
+            cat "$BODY_FILE" | jq .
+            if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+              echo "::error::Vercel bloqueó $comida (HTTP $STATUS)."
+              exit 1
+            fi
+            if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+              echo "::error::$comida respondió HTTP $STATUS."
+              exit 1
+            fi
+            jq -e '.soloVista == true and (.bloqueos | type == "array")' "$BODY_FILE" >/dev/null
           done
           echo "PASS: las siete comidas respondieron sin persistencia."
