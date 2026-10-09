@@ -37,13 +37,21 @@ jobs:
             -H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS" \
             -H 'x-vercel-set-bypass-cookie: samesitenone' \
             -d '{"texto":"tortilla de papa","soloVista":true}')"
-          cat "$BODY_FILE" | jq .
+          echo "HTTP STATUS: $STATUS"
+          echo "--- RAW BODY START ---"
+          cat "$BODY_FILE" || echo "BODY_FILE vacío"
+          echo ""
+          echo "--- RAW BODY END ---"
+          echo "--- BODY HEXDUMP first 500 bytes ---"
+          head -c 500 "$BODY_FILE" | od -c | head -20
+          echo "--- Trying jq pretty ---"
+          cat "$BODY_FILE" | jq . || echo "jq pretty falló - body no es JSON válido"
           if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
             echo "::error::Vercel sigue bloqueando el Preview (HTTP $STATUS). Verificá que el secreto sea el Protection Bypass Secret del proyecto correcto."
             exit 1
           fi
           if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
-            echo "::error::La API respondió HTTP $STATUS."
+            echo "::error::La API respondió HTTP $STATUS. Ver logs RAW BODY arriba."
             exit 1
           fi
           jq -e '.soloVista == true' "$BODY_FILE" >/dev/null
