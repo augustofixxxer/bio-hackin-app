@@ -1,0 +1,39 @@
+name: Test Tortilla Pairing Before After
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - continuidad-pairing-before-after-v02
+    paths:
+      - ".github/workflows/test-tortilla-pairing.yml"
+
+jobs:
+  test-pairing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Test tortilla Before and After pairing
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
+          RESPONSE="$(curl --silent --show-error --max-time 30 -X POST "$URL" -H 'Content-Type: application/json' -d '{"texto":"tortilla de papa","soloVista":true}')"
+          printf '%s\n' "$RESPONSE" | jq .
+          printf '%s' "$RESPONSE" | jq -e '.soloVista == true' >/dev/null
+          printf '%s' "$RESPONSE" | jq -e '[.bloqueos[]? | select(.cuantitativo.before.clavePlato != null and .cuantitativo.after.clavePlato != null)] | length > 0' >/dev/null
+          echo "PASS: tortilla pairing Before+After OK con soloVista:true"
+
+      - name: Regression of seven previous dishes
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
+          for comida in milanesa hamburguesa pastas humita locro paella ravioles; do
+            echo "Testing $comida..."
+            RESPONSE="$(curl --silent --show-error --max-time 30 -X POST "$URL" -H 'Content-Type: application/json' -d "{\"texto\":\"$comida\",\"soloVista\":true}")"
+            printf '%s' "$RESPONSE" | jq -e '.soloVista == true and (.bloqueos | type == "array")' >/dev/null
+            printf '%s\n' "$RESPONSE" | jq '{soloVista, bloqueos: [.bloqueos[]? | {combinacion, cuantitativo: (.cuantitativo | if . == null then null else {clavePlato, before: .before.clavePlato, after: .after.clavePlato} end)}]}'
+          done
+          echo "PASS: las siete comidas respondieron sin persistencia."
