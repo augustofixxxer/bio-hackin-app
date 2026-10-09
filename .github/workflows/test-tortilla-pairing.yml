@@ -30,14 +30,17 @@ jobs:
           set -euo pipefail
           URL="https://bio-hackin-app-git-continuidad-pairin-312d44-bio-hackin-augusto.vercel.app/api/registrar-comida"
           BODY_FILE="$(mktemp)"
-          trap 'rm -f "$BODY_FILE"' EXIT
-          STATUS="$(curl --silent --show-error --max-time 30 -o "$BODY_FILE" -w '%{http_code}' \
+          HEADER_FILE="$(mktemp)"
+          trap 'rm -f "$BODY_FILE" "$HEADER_FILE"' EXIT
+          STATUS="$(curl --silent --show-error --max-time 30 -D "$HEADER_FILE" -o "$BODY_FILE" -w '%{http_code}' \
             -X POST "$URL" \
             -H 'Content-Type: application/json' \
             -H "x-vercel-protection-bypass: $VERCEL_PROTECTION_BYPASS" \
             -H 'x-vercel-set-bypass-cookie: samesitenone' \
             -d '{"texto":"tortilla de papa","soloVista":true}')"
           echo "HTTP STATUS: $STATUS"
+          echo "--- REDIRECT / RESPONSE DIAGNOSTICS ---"
+          grep -iE '^(HTTP/|location:|server:|x-vercel-id:|x-vercel-error:|x-matched-path:)' "$HEADER_FILE" || true
           echo "--- RAW BODY START ---"
           cat "$BODY_FILE" || echo "BODY_FILE vacío"
           echo ""
