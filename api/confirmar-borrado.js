@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const token = req.query?.token;
     if (typeof token !== "string" || !/^[A-Za-z0-9_-]{40,60}$/.test(token)) return res.status(400).send("Enlace inválido o vencido.");
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "no-store");\n    res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(200).send(paginaConfirmacion(token));
   }
