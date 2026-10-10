@@ -27,7 +27,8 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const token = req.query?.token;
     if (typeof token !== "string" || !/^[A-Za-z0-9_-]{40,60}$/.test(token)) return res.status(400).send("Enlace inválido o vencido.");
-    res.setHeader("Cache-Control", "no-store");\n    res.setHeader("Referrer-Policy", "no-referrer");
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     return res.status(200).send(paginaConfirmacion(token));
   }
@@ -45,7 +46,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "El enlace venció. Volvé a solicitar la eliminación." });
     }
 
-    // Registrar trazabilidad antes del borrado: el vínculo de sujeto se elimina durante la transacción.\n    await emitirEvento({ usuarioId: solicitudes[0].usuario_id, eventType: "borrado_datos_confirmado", sourceComponent: "confirmar-borrado", requestingComponent: "confirmar-borrado", payload: { metodo: "email" } });\n\n    // RPC bloquea la fila y consume el token de forma atómica antes del borrado.
+    // Registrar trazabilidad antes del borrado: el vínculo de sujeto se elimina durante la transacción.
+    await emitirEvento({ usuarioId: solicitudes[0].usuario_id, eventType: "borrado_datos_confirmado", sourceComponent: "confirmar-borrado", requestingComponent: "confirmar-borrado", payload: { metodo: "email" } });
+
+    // RPC bloquea la fila y consume el token de forma atómica antes del borrado.
     const result = await supabaseFetch("rpc/confirmar_solicitud_borrado", {
       method: "POST", body: JSON.stringify({ p_token_hash: tokenHash }),
     });
@@ -54,7 +58,6 @@ export default async function handler(req, res) {
     if (estado === "expirada") return res.status(400).json({ error: "El enlace venció. Volvé a solicitar la eliminación." });
     if (estado !== "completada") return res.status(400).json({ error: "El enlace es inválido o venció." });
 
-    await emitirEvento({ usuarioId: solicitudes[0].usuario_id, eventType: "borrado_datos_confirmado", sourceComponent: "confirmar-borrado", requestingComponent: "confirmar-borrado", payload: { metodo: "email" } });
     return res.status(200).json({ ok: true, mensaje: "La eliminación fue confirmada y la cuenta se borró permanentemente." });
   } catch (error) {
     console.error("Error confirmando el borrado:", error);
