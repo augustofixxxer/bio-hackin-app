@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: "El email no coincide con la cuenta autenticada. No se borró ningún dato." });
       }
       await emitirEvento({ usuarioId, eventType: "borrado_datos_solicitado", sourceComponent: "borrar-datos", requestingComponent: "borrar-datos", payload: { metodo: "sesion" } });
-      // Esta FK es NO ACTION, no CASCADE: quitar el mapa después de registrar el evento y antes del usuario.\n      await supabaseFetch(`usuario_subject_map?usuario_id=eq.${encodeURIComponent(usuarioId)}`, { method: "DELETE" });\n      await supabaseFetch(`usuarios?id=eq.${encodeURIComponent(usuarioId)}`, { method: "DELETE" });
+      const borrado = await supabaseFetch("rpc/borrar_usuario_autenticado", {\n        method: "POST",\n        body: JSON.stringify({ p_usuario_id: usuarioId }),\n      });\n      if (borrado !== true) return res.status(404).json({ error: "La cuenta ya no existe o no pudo eliminarse." });
       return res.status(200).json({ ok: true, mensaje: "La cuenta autenticada y sus datos asociados fueron eliminados de forma permanente." });
     }
 
