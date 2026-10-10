@@ -1,85 +1,94 @@
 // api/borrar-datos.js
-// Derecho al olvido: recibe un email por POST y elimina de forma permanente
-// al usuario en Supabase. Gracias a las relaciones ON DELETE CASCADE del esquema,
-// borrar la fila de "usuarios" arrastra automáticamente:
-// - Todos sus registros en "registro_diario_real"
-// - Todos los "bloqueos" vinculados a esos registros
-// - Todos sus registros en "bienestar_diario_real"
-// - Todos sus registros en "insights_generados"
-// - Todos sus registros en "reacciones_alternativas" (Fase 2, 10/08/2026 — tabla creada
-//   ya con FK ON DELETE CASCADE hacia usuarios, no requirió tocar este archivo)
-//
-// A PROPÓSITO NO se borran "log_aceptacion_terminos" ni "log_consentimiento_riesgo":
-// son la prueba de que la app cumplió con el blindaje legal (Compliance by Design).
-// No tienen ninguna relación (foreign key) hacia el usuario, así que el CASCADE
-// nunca los toca. No contienen datos de comida/bienestar, solo evidencia de que
-// se aceptaron términos o se confirmó un riesgo, con fecha e IP. Decisión
-// confirmada explícitamente por el dueño del producto.
-//
-// SIEMPRE responde con el mismo mensaje genérico, exista o no el email,
-// para no revelar si un email está registrado (buena práctica de privacidad).
-
-// MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
-// un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
-// Se emite ANTES del DELETE a propósito: el usuario_id todavía tiene que existir
-// en la tabla "usuarios" en ese instante, porque usuario_subject_map tiene FK hacia
-// usuarios.id. El registro histórico (Sujeto/Acción/REA/Evento) no depende de esa FK
-// y sobrevive al borrado en cascada, quedando como evidencia de que la solicitud
-// de borrado se ejecutó.
+// Derecho al olvido: sesión firmada o verificación de titularidad por email.
+import { randomBytes, createHash } from "crypto";
 import { emitirEvento } from "./_instrumentacion.js";
-// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
+
+const emailValido = (v) => typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const respuestaGenerica = { ok: true, modo: "verificacion_pendiente", mensaje: "Si existe una cuenta con ese email, te enviaremos instrucciones para confirmar la solicitud de eliminación." };
+
+async function enviarEmailBorrado(email, link) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.BORRADO_EMAIL_FROM;
+  if (!apiKey || !from || !process.env.APP_BASE_URL) throw new Error("Falta configurar el proveedor de email o APP_BASE_URL.");
+  const resp = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: "Confirmá la solicitud de eliminación de Reseteo Propio",
+      text: `Recibimos una solicitud para eliminar tu cuenta de Reseteo Propio. Para confirmar, abrí este enlace y presioná el botón de confirmación: ${link}\n\nEl enlace vence en 48 horas. Si no hiciste esta solicitud, ignorá este correo; no se eliminará tu cuenta.`,
+    }),
+  });
+  if (!resp.ok) throw new Error(`El proveedor de email respondió ${resp.status}`);
+}
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.' });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: "Falta configurar Supabase." });
 
   const { email } = req.body || {};
-  if (!email || typeof email !== 'string' || !email.includes('@')) {
-    return res.status(400).json({ error: 'Falta un email válido' });
-  }
+  if (!emailValido(email)) return res.status(400).json({ error: "Ingresá un email válido." });
 
-  const respuestaGenerica = {
-    ok: true,
-    mensaje: 'Si el email está registrado, tus datos fueron eliminados de forma permanente.',
-  };
+  const usuarioId = usuarioIdDesdeRequest(req);
+  const emailNormalizado = email.trim().toLowerCase();
 
   try {
-    // 1. Buscar el usuario por email
-    const encontrados = await supabaseFetch(
-      `usuarios?email=eq.${encodeURIComponent(email)}&select=id`
-    );
-
-    if (!encontrados || encontrados.length === 0) {
-      return res.status(200).json(respuestaGenerica);
+    if (usuarioId) {
+      const usuarios = await supabaseFetch(`usuarios?id=eq.${encodeURIComponent(usuarioId)}&select=id,email`);
+      if (!usuarios.length) return res.status(401).json({ error: "La sesión ya no corresponde a una cuenta activa." });
+      if (emailNormalizado !== String(usuarios[0].email || "").trim().toLowerCase()) {
+        return res.status(403).json({ error: "El email no coincide con la cuenta autenticada. No se borró ningún dato." });
+      }
+      await emitirEvento({ usuarioId, eventType: "borrado_datos_solicitado", sourceComponent: "borrar-datos", requestingComponent: "borrar-datos", payload: { metodo: "sesion" } });
+      const borrado = await supabaseFetch("rpc/borrar_usuario_autenticado", {
+        method: "POST",
+        body: JSON.stringify({ p_usuario_id: usuarioId }),
+      });
+      if (borrado !== true) return res.status(404).json({ error: "La cuenta ya no existe o no pudo eliminarse." });
+      return res.status(200).json({ ok: true, mensaje: "La cuenta autenticada y sus datos asociados fueron eliminados de forma permanente." });
     }
 
-    const usuarioId = encontrados[0].id;
+    // Sin sesión: respuesta genérica para no revelar si el email está registrado.
+    // Si no hay email operativo configurado, no se crea una solicitud inutilizable.
+    if (!process.env.RESEND_API_KEY || !process.env.BORRADO_EMAIL_FROM || !process.env.APP_BASE_URL) {
+      console.error("[borrar-datos] Falta configurar RESEND_API_KEY, BORRADO_EMAIL_FROM o APP_BASE_URL.");
+      return res.status(503).json({ error: "El servicio de verificación por email no está disponible temporalmente. Intentá más tarde." });
+    }
 
-    // 2. Emitir evidencia de la solicitud de borrado ANTES de ejecutar el DELETE
-    // (ver nota arriba sobre el orden, obligatorio por la FK de usuario_subject_map).
-    await emitirEvento({
-      usuarioId,
-      eventType: "borrado_datos_solicitado",
-      sourceComponent: "borrar-datos",
-      requestingComponent: "borrar-datos",
-      payload: {},
+    const usuarios = await supabaseFetch(`usuarios?email=eq.${encodeURIComponent(emailNormalizado)}&select=id,email&limit=1`);
+    if (!usuarios.length) return res.status(200).json(respuestaGenerica);
+
+    const titular = usuarios[0];
+    const recientes = await supabaseFetch(`solicitudes_borrado?usuario_id=eq.${encodeURIComponent(titular.id)}&estado=eq.pendiente&creada_en=gte.${encodeURIComponent(new Date(Date.now() - 15 * 60 * 1000).toISOString())}&select=id&limit=1`);
+    if (recientes.length) return res.status(200).json(respuestaGenerica);
+
+    const token = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const expiraEn = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    await supabaseFetch("solicitudes_borrado", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ usuario_id: titular.id, token_hash: tokenHash, estado: "pendiente", expira_en: expiraEn }),
     });
 
-    // 3. Un solo DELETE: el ON DELETE CASCADE del esquema se encarga de arrastrar
-    // registro_diario_real, bloqueos, bienestar_diario_real e insights_generados.
-    // Los dos logs de cumplimiento no tienen FK hacia usuarios, así que quedan intactos.
-    await supabaseFetch(`usuarios?id=eq.${usuarioId}`, { method: 'DELETE' });
-
+    const base = process.env.APP_BASE_URL.replace(/\/$/, "");
+    const link = `${base}/api/confirmar-borrado?token=${encodeURIComponent(token)}`;
+    try {
+      await enviarEmailBorrado(emailNormalizado, link);
+    } catch (mailError) {
+      await supabaseFetch(`solicitudes_borrado?token_hash=eq.${tokenHash}&estado=eq.pendiente`, {
+        method: "PATCH", body: JSON.stringify({ estado: "cancelada" }),
+      }).catch(() => {});
+      console.error("[borrar-datos] No se pudo enviar email de verificación:", mailError);
+      return res.status(503).json({ error: "El servicio de verificación por email no está disponible temporalmente. Intentá más tarde." });
+    }
+    await emitirEvento({ usuarioId: titular.id, eventType: "borrado_datos_solicitado", sourceComponent: "borrar-datos", requestingComponent: "borrar-datos", payload: { metodo: "email" } });
     return res.status(200).json(respuestaGenerica);
   } catch (error) {
-    console.error('Error al borrar datos:', error);
-    return res.status(500).json({ error: 'Error interno al procesar la solicitud' });
+    console.error("Error al solicitar el borrado:", error);
+    return res.status(500).json({ error: "Error interno al procesar la solicitud." });
   }
 }
-// END: /api/borrar-datos.js

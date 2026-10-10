@@ -1,0 +1,62 @@
+name: Test email-verified account deletion
+
+on:
+  push:
+    branches:
+      - fix/borrar-datos-requiere-sesion
+    paths:
+      - "api/borrar-datos.js"
+      - "api/confirmar-borrado.js"
+      - "privacidad.html"
+      - ".github/workflows/test-delete-verification.yml"
+  pull_request:
+    branches:
+      - continuidad-pairing-before-after-v02
+    paths:
+      - "api/borrar-datos.js"
+      - "api/confirmar-borrado.js"
+      - "privacidad.html"
+      - ".github/workflows/test-delete-verification.yml"
+  workflow_dispatch:
+
+jobs:
+  validate-delete-flow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate API JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module --check < api/borrar-datos.js
+          node --input-type=module --check < api/confirmar-borrado.js
+      - name: Validate privacy page script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("privacidad.html").read_text()
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S|re.I)
+          if not scripts:
+              raise SystemExit("No se encontró el script de privacidad")
+          Path("/tmp/privacidad-script.js").write_text("\n".join(scripts))
+          PY
+          node --check /tmp/privacidad-script.js
+      - name: Assert deletion security contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'randomBytes(32)' api/borrar-datos.js
+          grep -q 'createHash("sha256")' api/borrar-datos.js
+          grep -q 'modo: "verificacion_pendiente"' api/borrar-datos.js
+          grep -q 'rpc/confirmar_solicitud_borrado' api/confirmar-borrado.js
+          grep -q 'method: "POST"' api/confirmar-borrado.js
+          grep -q 'Confirmar eliminación definitiva' api/confirmar-borrado.js
+          grep -q 'RESEND_API_KEY' api/borrar-datos.js
+          echo "PASS: syntax and minimum deletion security contract"
