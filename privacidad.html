@@ -100,7 +100,7 @@
   <p>Tenés derecho a acceder, rectificar, actualizar o solicitar la eliminación total de tus datos en cualquier momento. Podés hacerlo con el formulario de abajo.</p>
 
   <h2>5. Solicitar el borrado de tus datos</h2>
-  <p>Para evitar que otra persona borre tu cuenta usando solo tu email, primero iniciá sesión en Reseteo Propio en este mismo navegador. Después ingresá el email de esa cuenta para confirmar el borrado permanente de tu cuenta y sus datos asociados.</p>
+  <p>Podés solicitar la eliminación con tu sesión iniciada o, si no podés acceder a tu cuenta, pedir un enlace de verificación por email. Sin sesión, la cuenta solo se elimina después de abrir el enlace y confirmar explícitamente la acción.</p>
   <p><strong>Excepción legal:</strong> por una obligación de cumplimiento, conservamos el registro de que aceptaste los Términos y de que confirmaste haber leído una advertencia de riesgo — sin vincularlo a tu identidad una vez borrada la cuenta. La lista de espera de Premium tampoco se borra automáticamente con tu cuenta, al ser un registro de interés comercial independiente; si querés que también se elimine, pedilo explícitamente por email.</p>
 
   <div class="borrado-box">
@@ -130,9 +130,27 @@
         usuario = null;
       }
 
+      // Sin sesión se solicita verificación; no se elimina nada en este paso.
       if (!usuario || !usuario.pase) {
-        mensaje.textContent = 'Por seguridad, iniciá sesión en Reseteo Propio en este navegador y volvé a esta página. No se borró ningún dato.';
-        mensaje.style.color = '#b00';
+        boton.disabled = true;
+        boton.textContent = 'Enviando solicitud...';
+        mensaje.textContent = '';
+        try {
+          const respuesta = await fetch('/api/borrar-datos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const data = await respuesta.json();
+          mensaje.textContent = data.mensaje || data.error || 'Si existe una cuenta con ese email, te enviaremos instrucciones.';
+          mensaje.style.color = respuesta.ok ? '#0a7d2c' : '#b00';
+        } catch (e) {
+          mensaje.textContent = 'No se pudo conectar. Intentá de nuevo.';
+          mensaje.style.color = '#b00';
+        } finally {
+          boton.disabled = false;
+          boton.textContent = 'Solicitar borrado de mis datos';
+        }
         return;
       }
 
