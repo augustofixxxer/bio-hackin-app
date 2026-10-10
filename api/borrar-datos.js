@@ -1,9 +1,12 @@
 // api/borrar-datos.js
 // Derecho al olvido: sesión firmada o verificación de titularidad por email.
+// Además actúa como dispatcher de /api/confirmar-borrado (rewrite en vercel.json) para
+// no superar el límite de 12 funciones serverless de Vercel Hobby.
 import { randomBytes, createHash } from "crypto";
 import { emitirEvento } from "./_instrumentacion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
+import confirmarBorrado from "./_confirmar-borrado.js";
 
 const emailValido = (v) => typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 const respuestaGenerica = { ok: true, modo: "verificacion_pendiente", mensaje: "Si existe una cuenta con ese email, te enviaremos instrucciones para confirmar la solicitud de eliminación." };
@@ -26,6 +29,10 @@ async function enviarEmailBorrado(email, link) {
 }
 
 export default async function handler(req, res) {
+  // Dispatcher: /api/confirmar-borrado se reescribe a /api/borrar-datos?accion=confirmar.
+  // Debe ir ANTES del chequeo de método: el módulo maneja GET (pantalla) y POST (confirmación).
+  if (req.query?.accion === "confirmar") return confirmarBorrado(req, res);
+
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: "Falta configurar Supabase." });
 
