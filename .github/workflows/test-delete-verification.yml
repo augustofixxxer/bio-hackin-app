@@ -1,6 +1,14 @@
 name: Test email-verified account deletion
 
 on:
+  push:
+    branches:
+      - fix/borrar-datos-requiere-sesion
+    paths:
+      - "api/borrar-datos.js"
+      - "api/confirmar-borrado.js"
+      - "privacidad.html"
+      - ".github/workflows/test-delete-verification.yml"
   pull_request:
     branches:
       - continuidad-pairing-before-after-v02
