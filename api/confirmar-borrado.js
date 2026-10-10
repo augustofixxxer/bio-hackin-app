@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "El enlace venció. Volvé a solicitar la eliminación." });
     }
 
-    // RPC bloquea la fila y consume el token de forma atómica antes del borrado.
+    // Registrar trazabilidad antes del borrado: el vínculo de sujeto se elimina durante la transacción.\n    await emitirEvento({ usuarioId: solicitudes[0].usuario_id, eventType: "borrado_datos_confirmado", sourceComponent: "confirmar-borrado", requestingComponent: "confirmar-borrado", payload: { metodo: "email" } });\n\n    // RPC bloquea la fila y consume el token de forma atómica antes del borrado.
     const result = await supabaseFetch("rpc/confirmar_solicitud_borrado", {
       method: "POST", body: JSON.stringify({ p_token_hash: tokenHash }),
     });
