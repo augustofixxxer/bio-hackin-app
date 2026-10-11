@@ -37,6 +37,11 @@
     border: 1px solid #ddd;
     border-radius: 10px;
   }
+  .borrado-box label {
+    display: block;
+    font-weight: 600;
+    margin: 8px 0;
+  }
   .borrado-box input {
     width: 100%;
     box-sizing: border-box;
@@ -105,6 +110,10 @@
 
   <div class="borrado-box">
     <input type="email" id="email-borrado" placeholder="tu-email@ejemplo.com" autocomplete="email">
+    <div id="confirmacion-borrado-box" hidden>
+      <label for="confirmacion-borrado">Para confirmar la eliminación de tu cuenta, escribí exactamente ELIMINAR:</label>
+      <input type="text" id="confirmacion-borrado" placeholder="Escribí ELIMINAR" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
     <button id="btn-borrar" onclick="solicitarBorrado()">Solicitar borrado de mis datos</button>
     <div id="mensaje-borrado"></div>
   </div>
@@ -154,6 +163,14 @@
         return;
       }
 
+      const confirmacion = document.getElementById('confirmacion-borrado').value.trim();
+      if (confirmacion !== 'ELIMINAR') {
+        mensaje.textContent = 'Para continuar, escribí exactamente ELIMINAR en el campo de confirmación.';
+        mensaje.style.color = '#b00';
+        document.getElementById('confirmacion-borrado').focus();
+        return;
+      }
+
       const confirmar = window.confirm('Esta acción elimina permanentemente tu cuenta y los datos asociados. ¿Querés continuar?');
       if (!confirmar) return;
 
@@ -168,7 +185,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${usuario.pase}`
           },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email, confirmacion })
         });
         const data = await respuesta.json();
 
@@ -188,6 +205,16 @@
         boton.disabled = false;
         boton.textContent = 'Solicitar borrado de mis datos';
       }
+    }
+
+    // Mostrar la confirmación escrita solo cuando hay una sesión guardada.
+    try {
+      const usuarioActual = JSON.parse(localStorage.getItem('reseteo_usuario') || 'null');
+      if (usuarioActual && usuarioActual.pase) {
+        document.getElementById('confirmacion-borrado-box').hidden = false;
+      }
+    } catch (e) {
+      // Si no se puede leer la sesión, se mantiene el flujo de verificación por email.
     }
   </script>
 
