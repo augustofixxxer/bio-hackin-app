@@ -36,10 +36,14 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: "Falta configurar Supabase." });
 
-  const { email } = req.body || {};
+  const { email, confirmacion } = req.body || {};
   if (!emailValido(email)) return res.status(400).json({ error: "Ingresá un email válido." });
 
   const usuarioId = usuarioIdDesdeRequest(req);
+  // Con sesión el borrado es inmediato: el servidor exige una confirmación explícita (no solo la interfaz).
+  if (usuarioId && confirmacion !== "ELIMINAR") {
+    return res.status(400).json({ error: "Falta la confirmación explícita del borrado. No se borró ningún dato.", requiere_confirmacion: true });
+  }
   const emailNormalizado = email.trim().toLowerCase();
 
   try {
