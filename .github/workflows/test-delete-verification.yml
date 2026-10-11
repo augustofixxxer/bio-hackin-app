@@ -7,6 +7,7 @@ on:
     paths:
       - "api/borrar-datos.js"
       - "api/_confirmar-borrado.js"
+      - "api/_test-borrado.mjs"
       - "privacidad.html"
       - "vercel.json"
       - ".github/workflows/test-delete-verification.yml"
@@ -16,6 +17,7 @@ on:
     paths:
       - "api/borrar-datos.js"
       - "api/_confirmar-borrado.js"
+      - "api/_test-borrado.mjs"
       - "privacidad.html"
       - "vercel.json"
       - ".github/workflows/test-delete-verification.yml"
@@ -36,6 +38,12 @@ jobs:
           set -euo pipefail
           node --input-type=module --check < api/borrar-datos.js
           node --input-type=module --check < api/_confirmar-borrado.js
+          node --check api/_test-borrado.mjs
+      - name: Run mocked account-deletion behavior tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node api/_test-borrado.mjs
       - name: Validate privacy page script syntax
         shell: bash
         run: |
@@ -47,7 +55,7 @@ jobs:
           scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S|re.I)
           if not scripts:
               raise SystemExit("No se encontró el script de privacidad")
-          Path("/tmp/privacidad-script.js").write_text("\n".join(scripts))
+          Path("/tmp/privacidad-script.js").write_text("\\n".join(scripts))
           PY
           node --check /tmp/privacidad-script.js
       - name: Assert deletion security contract
