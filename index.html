@@ -483,7 +483,7 @@ function LoginScreen({ onLogin }) {
       if (data.error) throw new Error(data.error);
       lsSet("reseteo_usuario", JSON.stringify(data));
       if (lsGet("reseteo_terminos_v1") === "true" && lsGet("reseteo_onboarding_v1") === "true") {
-        window.location.href = "/app.html";
+        window.location.href = "/index.html";
         return;
       }
       onLogin(data);
@@ -508,7 +508,7 @@ function LoginScreen({ onLogin }) {
       if (!resp.ok || data.error) throw new Error(data.error || "No se pudo iniciar sesión.");
       lsSet("reseteo_usuario", JSON.stringify(data));
       if (lsGet("reseteo_terminos_v1") === "true" && lsGet("reseteo_onboarding_v1") === "true") {
-        window.location.href = "/app.html";
+        window.location.href = "/index.html";
         return;
       }
       onLogin(data);
@@ -3021,7 +3021,7 @@ function completarOnboarding() {
   try {
     lsSet("reseteo_onboarding_v1", "true");
   } catch (e) {}
-  window.location.href = "/app.html";
+  window.location.href = "/index.html";
 }
 
 function OnboardingFlow({ pase, onCompletar }) {
