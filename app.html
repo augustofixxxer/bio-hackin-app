@@ -96,6 +96,10 @@ function App(){
       <div className="compare-grid">{['energy_kcal','protein_g','fat_g','carbohydrate_g'].map(k=>{const v=premiumContexto.cuantitativo.valores?.[k];return <div key={k}><small>{v?.nombre||k}</small><b>{v?.valor==null?'Sin dato publicado':String(Number(v.valor).toFixed(1)).replace('.',',')+' '+(v?.unidad||'')}</b><span>{v?.valor==null?'La fuente no publica este dato.':'Vector '+(v?.estado||'parcial')}</span></div>})}</div>
       <p className="legal-note">Fuente: {premiumContexto.cuantitativo.fuenteBase||'fuente registrada'}. Estimación estandarizada para QA; no es una porción recomendada.</p>
     </div>}
+    {premiumContexto&&!premiumContexto.cuantitativo&&<div style={{marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,.08)'}}>
+      <div className="label">DATOS DE LA COMIDA · QA</div>
+      <p className="legal-note">Todavía no hay un estándar QA validado para esta variante. Para evitar datos engañosos, no mostramos valores nutricionales estimados.</p>
+    </div>}
   </div>
 
   <div className="premium-feature">
