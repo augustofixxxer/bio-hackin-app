@@ -98,6 +98,30 @@ async function rutaActivarAlias(req, res) {
   }
 }
 
+
+function humanizarTexto(valor) {
+  if (typeof valor !== "string") return valor;
+  return valor
+    .replace(/peso técnico permanece en\s*(\d+(?:[.,]\d+)?)\s*g/gi, "el peso total se mantiene en $1 g")
+    .replace(/peso técnico(?: de)?\s*(\d+(?:[.,]\d+)?)\s*g/gi, "porción de $1 g")
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*g técnicos\b/gi, "$1 g en total")
+    .replace(/composición\s+After\s+validada/gi, "composición de la versión posterior registrada")
+    .replace(/\bBefore\/After\b/gi, "antes y después")
+    .replace(/\bBefore\b/gi, "antes")
+    .replace(/\bAfter\b/gi, "después")
+    .replace(/única variable experimental/gi, "único aspecto que cambiamos")
+    .replace(/variable experimental/gi, "aspecto que cambiamos")
+    .replace(/peso técnico/gi, "porción de referencia");
+}
+function humanizarExperimento(exp) {
+  if (!exp) return exp;
+  const salida = { ...exp };
+  for (const campo of ["titulo","variable","opcion_a","opcion_b","hallazgo_free","hack_concreto","cambio_composicional","aprendizaje_comparativo","que_se_mantiene"]) {
+    if (typeof salida[campo] === "string") salida[campo] = humanizarTexto(salida[campo]);
+  }
+  return salida;
+}
+
 // ===== ruta=estado (lectura del contrato Premium) =====
 async function rutaEstado(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Método no permitido, usar GET." });
@@ -237,7 +261,7 @@ async function rutaExperimento(req, res) {
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
       const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
-      return res.status(200).json({ ok: true, experimentos: filas });
+      return res.status(200).json({ ok: true, experimentos: filas.map(humanizarExperimento) });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
     const { accion, experimentoId, origen, titulo, variable, opcionA, opcionB, registroA, registroB, reglaId, solucionId, hallazgoFree, hackConcreto, cambioComposicional, aprendizajeComparativo, queSeMantiene } = req.body || {};
@@ -246,7 +270,7 @@ async function rutaExperimento(req, res) {
       const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id&limit=1`);
       if (activos.length) return res.status(409).json({ error: "Ya tenés una prueba abierta. Cerrala antes de crear otra." });
       const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({usuario_id:usuarioId,origen:typeof origen==="string"?origen.slice(0,80):null,titulo:String(titulo).slice(0,160),variable:String(variable).slice(0,100),opcion_a:String(opcionA).slice(0,200),opcion_b:String(opcionB).slice(0,200),regla_id:UUID_REGEX.test(String(reglaId||""))?reglaId:null,solucion_id:UUID_REGEX.test(String(solucionId||""))?solucionId:null,hallazgo_free:typeof hallazgoFree==="string"?hallazgoFree.slice(0,1000):null,hack_concreto:typeof hackConcreto==="string"?hackConcreto.slice(0,1000):null,cambio_composicional:typeof cambioComposicional==="string"?cambioComposicional.slice(0,1000):null,aprendizaje_comparativo:typeof aprendizajeComparativo==="string"?aprendizajeComparativo.slice(0,1000):null,que_se_mantiene:typeof queSeMantiene==="string"?queSeMantiene.slice(0,1000):null,estado:"abierto"}) });
-      return res.status(201).json({ ok:true, experimento:filas[0] });
+      return res.status(201).json({ ok:true, experimento:humanizarExperimento(filas[0]) });
     }
     if (accion === "registrar") {
       if (!UUID_REGEX.test(String(experimentoId||""))) return res.status(400).json({error:"experimentoId inválido."});
@@ -258,7 +282,7 @@ async function rutaExperimento(req, res) {
       if (filas[0].estado !== "abierto") return res.status(409).json({error:"Esta prueba ya está cerrada."});
       const patch = lado==="a"?{registro_a:valor,updated_at:new Date().toISOString()}:{registro_b:valor,updated_at:new Date().toISOString()};
       const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(patch)});
-      return res.status(200).json({ok:true,experimento:updated[0]});
+      return res.status(200).json({ok:true,experimento:humanizarExperimento(updated[0])});
     }
     if (accion === "cerrar") {
       if (!UUID_REGEX.test(String(experimentoId||""))) return res.status(400).json({error:"experimentoId inválido."});
