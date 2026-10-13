@@ -17,13 +17,13 @@ function pase(){try{return JSON.parse(lsGet('reseteo_usuario')||'null')?.pase||'
 function copyClaro(valor){
  if(typeof valor!=='string')return valor;
  return valor
-  .replace(/peso técnico permanece en\\s*(\\d+(?:[.,]\\d+)?)\\s*g/gi,'el peso total se mantiene en $1 g')
-  .replace(/peso técnico(?: de)?\\s*(\\d+(?:[.,]\\d+)?)\\s*g/gi,'porción de $1 g')
-  .replace(/\\b(\\d+(?:[.,]\\d+)?)\\s*g técnicos\\b/gi,'$1 g en total')
-  .replace(/composición\\s+After\\s+validada/gi,'composición de la versión posterior registrada')
-  .replace(/\\bBefore\\/After\\b/gi,'antes y después')
-  .replace(/\\bBefore\\b/gi,'antes')
-  .replace(/\\bAfter\\b/gi,'después')
+  .replace(/peso técnico permanece en\s*(\d+(?:[.,]\d+)?)\s*g/gi,'el peso total se mantiene en $1 g')
+  .replace(/peso técnico(?: de)?\s*(\d+(?:[.,]\d+)?)\s*g/gi,'porción de $1 g')
+  .replace(/\b(\d+(?:[.,]\d+)?)\s*g técnicos\b/gi,'$1 g en total')
+  .replace(/composición\s+After\s+validada/gi,'composición de la versión posterior registrada')
+  .replace(/\bBefore\/After\b/gi,'antes y después')
+  .replace(/\bBefore\b/gi,'antes')
+  .replace(/\bAfter\b/gi,'después')
   .replace(/única variable experimental/gi,'único aspecto que cambiamos')
   .replace(/variable experimental/gi,'aspecto que cambiamos')
   .replace(/peso técnico/gi,'porción de referencia');
