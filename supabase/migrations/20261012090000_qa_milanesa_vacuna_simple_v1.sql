@@ -55,7 +55,7 @@ values
    'Fuente oficial por 100 g de porción comestible. No se especifica método de cocción; no se infiere.',
    'SARA 2 / ENNyS 2: Milanesa de carne vacuna rebozada (carnicería), tabla 7.A. https://iah.salud.gob.ar/doc/720.pdf',
    'Solo se muestran los nutrientes publicados en la fuente. No representa una milanesa frita u horneada identificada, ni incluye guarnición. Porción de referencia QA de 100 g, no recomendación de porción.',
-   '2ad990b9-da32-4c87-bfcd-5124e58e5257',
+   'ec985b58-bf9e-4845-873e-16584ea402a9',
    100,
    null,
    null,
