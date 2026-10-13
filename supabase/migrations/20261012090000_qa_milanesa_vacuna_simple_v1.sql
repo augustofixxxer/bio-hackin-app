@@ -44,6 +44,18 @@ begin
     raise exception 'QA milanesa: el id fijo del estándar ya pertenece a otro contrato';
   end if;
 
+  -- El esquema real impone unicidad parcial en (version, regla_id).
+  -- Evitar que el UPSERT por clave/version choque con otro contrato de esa regla.
+  if exists (
+    select 1 from public.motor_nutricional_qa_composicion_estandar
+    where version = 'v1.0'
+      and regla_id = 'ec985b58-bf9e-4845-873e-16584ea402a9'
+      and not (id = '0c1a5326-2e75-4898-a10d-ce38dea9454d'
+        and clave_plato = 'milanesa_vacuna_simple_sara2_v1')
+  ) then
+    raise exception 'QA milanesa: la regla Premium ya tiene otro contrato v1.0';
+  end if;
+
   if exists (
     select 1 from public.motor_nutricional_composicion
     where id in (
