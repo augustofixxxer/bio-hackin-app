@@ -150,6 +150,25 @@ function construirInvitacionPremium() {
   return "Esto se puede experimentar de distintas maneras. ¿Querés probar el cómo? Premium te guía con una opción concreta para esta comida.";
 }
 
+/**
+ * Traduce vocabulario interno de QA a lenguaje claro sin alterar el significado
+ * de la recomendación ni convertir referencias aproximadas en promesas clínicas.
+ */
+function humanizarTexto(valor) {
+  if (typeof valor !== "string") return valor;
+  return valor
+    .replace(/peso técnico permanece en\s*(\d+(?:[.,]\d+)?)\s*g/gi, "el peso total se mantiene en $1 g")
+    .replace(/peso técnico(?: de)?\s*(\d+(?:[.,]\d+)?)\s*g/gi, "porción de $1 g")
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*g técnicos\b/gi, "$1 g en total")
+    .replace(/composición\s+After\s+validada/gi, "composición de la versión posterior registrada")
+    .replace(/\bBefore\/After\b/gi, "antes y después")
+    .replace(/\bBefore\b/gi, "antes")
+    .replace(/\bAfter\b/gi, "después")
+    .replace(/única variable experimental/gi, "único aspecto que cambiamos")
+    .replace(/variable experimental/gi, "aspecto que cambiamos")
+    .replace(/peso técnico/gi, "porción de referencia");
+}
+
 const DEBUG_CUANTITATIVO = process.env.DEBUG_CUANTITATIVO === "1";
 
 function debugContratoCuantitativo(etapa, datos = {}) {
@@ -177,7 +196,9 @@ async function cargarContratoCuantitativo(reglaId) {
       clavePlato: estandares[0]?.clave_plato || null,
       estadoQA: estandares[0]?.estado_qa || null,
     });
-    if (!estandares.length || estandares[0].estado_qa !== "validada") return null;
+    // La existencia de la referencia es suficiente para mostrar lo disponible.
+    // El estado describe la calidad del dato; no debe bloquear una tarjeta aproximada.
+    if (!estandares.length) return null;
 
     const s = estandares[0];
     const comidas = await supabaseFetch(
@@ -240,7 +261,7 @@ async function cargarContratoCuantitativo(reglaId) {
       version: "v1.0",
       porcionEstandarG: Number(s.peso_estandar_g),
       nombre: s.nombre_visible,
-      estado: "validada",
+      estado: s.estado_qa || "sin_estado",
       fuenteBase: s.fuente_base || null,
       limitaciones: s.limitaciones || null,
       valores,
@@ -475,17 +496,17 @@ export default async function handler(req, res) {
       if (!soluciones) return null;
       return {
         id: soluciones.id || null,
-        nombre: soluciones.nombre_hackeo || "",
-        adaptacion: soluciones.adaptacion || "",
+        nombre: humanizarTexto(soluciones.nombre_hackeo || ""),
+        adaptacion: humanizarTexto(soluciones.adaptacion || ""),
         variableModificada: soluciones.variable_modificada || null,
-        accionUsuario: soluciones.accion_usuario || null,
-        observacionUsuario: soluciones.observacion_usuario || null,
-        contextoActivacion: soluciones.contexto_activacion || null,
-        continuidad: soluciones.continuidad || null,
-        cambioComposicional: soluciones.cambio_composicional || null,
-        aprendizajeComparativo: soluciones.aprendizaje_comparativo || null,
-        queSeMantiene: soluciones.que_se_mantiene || null,
-        porQueCambio: soluciones.por_que_cambio || null,
+        accionUsuario: humanizarTexto(soluciones.accion_usuario || "") || null,
+        observacionUsuario: humanizarTexto(soluciones.observacion_usuario || "") || null,
+        contextoActivacion: humanizarTexto(soluciones.contexto_activacion || "") || null,
+        continuidad: humanizarTexto(soluciones.continuidad || "") || null,
+        cambioComposicional: humanizarTexto(soluciones.cambio_composicional || "") || null,
+        aprendizajeComparativo: humanizarTexto(soluciones.aprendizaje_comparativo || "") || null,
+        queSeMantiene: humanizarTexto(soluciones.que_se_mantiene || "") || null,
+        porQueCambio: humanizarTexto(soluciones.por_que_cambio || "") || null,
         tipoComparacion: soluciones.tipo_comparacion || null,
         estadoContenidoPremium: soluciones.estado_contenido_premium || null,
         fuenteConocimiento: soluciones.fuente_conocimiento || null,
@@ -512,7 +533,11 @@ export default async function handler(req, res) {
       return {
         reglaId: r.id || null,
         combinacion: r.combinacion || "",
-        resultado: r.resultado || "",
+        resultado: humanizarTexto(r.resultado || ""),
+        // Campos de presentación simples; se conservan los nombres históricos para compatibilidad.
+        resumen: humanizarTexto(r.resultado || ""),
+        hack_mitigador: humanizarTexto(r.soluciones?.accion_usuario || r.soluciones?.adaptacion || ""),
+        nota_bienestar: humanizarTexto(r.soluciones?.observacion_usuario || ""),
         nivelRiesgo: r.nivel_riesgo || "Bajo",
         solucion: solucionPremium,
         invitacionPremium: tieneContinuidadPremium && !esPremiumComida
@@ -553,7 +578,7 @@ export default async function handler(req, res) {
     // 7. Tips positivos de Reglas (siempre se muestran, marcadas con "TIP:" en Supabase)
     let sugerencias = coincidenciasTip.map((r) => ({
       nombre: r.combinacion || "",
-      mecanismo: r.resultado || "",
+      mecanismo: humanizarTexto(r.resultado || ""),
       opcion: "",
       evidencia: "",
     }));
