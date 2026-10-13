@@ -83,7 +83,7 @@ values
    'milanesa_vacuna_rebozada',
    1,
    100,
-   'validada',
+   'validado',
    'Componente único conforme a SARA 2 / ENNyS 2; cocción no especificada.')
 on conflict (id) do update set
   composicion_id = excluded.composicion_id,
@@ -100,10 +100,10 @@ insert into public.motor_nutricional_qa_vectores
    componentes_totales, componentes_con_dato, componentes_sin_dato,
    componentes_inciertos, motivo, elegible_interaccion, contrato_version)
 values
-  ('7c1a5326-2e75-4898-a10d-ce38dea94541', '50000000-0000-4000-8000-000000000006', 'f8e1f7c9-19e4-4b77-a016-bf0845884a76', 'completo', 160, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 160 kcal por 100 g.', false, 'v1.0'),
-  ('7c1a5326-2e75-4898-a10d-ce38dea94542', '50000000-0000-4000-8000-000000000006', '5cb4586d-0b36-4614-8b9a-0dd10af8d621', 'completo', 18.9, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 18,9 g de proteína por 100 g.', false, 'v1.0'),
-  ('7c1a5326-2e75-4898-a10d-ce38dea94543', '50000000-0000-4000-8000-000000000006', 'b44b30f6-c2a6-4aeb-bac2-856bef2dd13d', 'completo', 3.0, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 3,0 g de grasa total por 100 g.', false, 'v1.0'),
-  ('7c1a5326-2e75-4898-a10d-ce38dea94544', '50000000-0000-4000-8000-000000000006', '3bc844e4-4a12-44e6-ac7e-d32d5cc2b5d0', 'completo', 14.5, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 14,5 g de carbohidratos disponibles por 100 g.', false, 'v1.0')
+  ('7c1a5326-2e75-4898-a10d-ce38dea94541', '50000000-0000-4000-8000-000000000006', 'f8e1f7c9-19e4-4b77-a016-bf0845884a76', 'completo', 160, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 160 kcal por 100 g.', true, 'v1.0'),
+  ('7c1a5326-2e75-4898-a10d-ce38dea94542', '50000000-0000-4000-8000-000000000006', '5cb4586d-0b36-4614-8b9a-0dd10af8d621', 'completo', 18.9, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 18,9 g de proteína por 100 g.', true, 'v1.0'),
+  ('7c1a5326-2e75-4898-a10d-ce38dea94543', '50000000-0000-4000-8000-000000000006', 'b44b30f6-c2a6-4aeb-bac2-856bef2dd13d', 'completo', 3.0, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 3,0 g de grasa total por 100 g.', true, 'v1.0'),
+  ('7c1a5326-2e75-4898-a10d-ce38dea94544', '50000000-0000-4000-8000-000000000006', '3bc844e4-4a12-44e6-ac7e-d32d5cc2b5d0', 'completo', 14.5, 1, 1, 0, 0, 'SARA 2 / ENNyS 2 publica 14,5 g de carbohidratos disponibles por 100 g.', true, 'v1.0')
 on conflict (comida_id, nutriente_id) do update set
   estado_vector = excluded.estado_vector,
   valor_total = excluded.valor_total,
