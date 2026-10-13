@@ -15,7 +15,7 @@ begin
   if exists (
     select 1 from public.motor_nutricional_qa_comidas
     where clave = 'milanesa_vacuna_simple_sara2_v1'
-      and id <> '50000000-0000-4000-8000-000000000006'
+      and id is distinct from '50000000-0000-4000-8000-000000000006'
   ) then
     raise exception 'QA milanesa: la clave ya existe con otro id; revisar antes de migrar';
   end if;
@@ -23,7 +23,7 @@ begin
   if exists (
     select 1 from public.motor_nutricional_qa_comidas
     where id = '50000000-0000-4000-8000-000000000006'
-      and clave <> 'milanesa_vacuna_simple_sara2_v1'
+      and clave is distinct from 'milanesa_vacuna_simple_sara2_v1'
   ) then
     raise exception 'QA milanesa: el id fijo del fixture ya pertenece a otra clave';
   end if;
@@ -31,7 +31,7 @@ begin
   if exists (
     select 1 from public.motor_nutricional_qa_composicion_estandar
     where version = 'v1.0' and clave_plato = 'milanesa_vacuna_simple_sara2_v1'
-      and id <> '0c1a5326-2e75-4898-a10d-ce38dea9454d'
+      and id is distinct from '0c1a5326-2e75-4898-a10d-ce38dea9454d'
   ) then
     raise exception 'QA milanesa: la clave/version del estándar ya tiene otro id';
   end if;
@@ -39,7 +39,7 @@ begin
   if exists (
     select 1 from public.motor_nutricional_qa_composicion_estandar
     where id = '0c1a5326-2e75-4898-a10d-ce38dea9454d'
-      and not (version = 'v1.0' and clave_plato = 'milanesa_vacuna_simple_sara2_v1')
+      and not (version is not distinct from 'v1.0' and clave_plato is not distinct from 'milanesa_vacuna_simple_sara2_v1')
   ) then
     raise exception 'QA milanesa: el id fijo del estándar ya pertenece a otro contrato';
   end if;
@@ -54,11 +54,11 @@ begin
     )
     and not (
       alimento_id = '32000000-0000-4000-8000-000000000006'
-      and nutriente_id in (
-        'f8e1f7c9-19e4-4b77-a016-bf0845884a76',
-        '5cb4586d-0b36-4614-8b9a-0dd10af8d621',
-        'b44b30f6-c2a6-4aeb-bac2-856bef2dd13d',
-        '3bc844e4-4a12-44e6-ac7e-d32d5cc2b5d0'
+      and (
+        (id = '32000000-0000-4000-8000-000000000061' and nutriente_id = 'f8e1f7c9-19e4-4b77-a016-bf0845884a76')
+        or (id = '32000000-0000-4000-8000-000000000062' and nutriente_id = '5cb4586d-0b36-4614-8b9a-0dd10af8d621')
+        or (id = '32000000-0000-4000-8000-000000000063' and nutriente_id = 'b44b30f6-c2a6-4aeb-bac2-856bef2dd13d')
+        or (id = '32000000-0000-4000-8000-000000000064' and nutriente_id = '3bc844e4-4a12-44e6-ac7e-d32d5cc2b5d0')
       )
     )
   ) then
@@ -84,7 +84,15 @@ begin
       '7c1a5326-2e75-4898-a10d-ce38dea94543',
       '7c1a5326-2e75-4898-a10d-ce38dea94544'
     )
-    and comida_id <> '50000000-0000-4000-8000-000000000006'
+    and not (
+      comida_id = '50000000-0000-4000-8000-000000000006'
+      and (
+        (id = '7c1a5326-2e75-4898-a10d-ce38dea94541' and nutriente_id = 'f8e1f7c9-19e4-4b77-a016-bf0845884a76')
+        or (id = '7c1a5326-2e75-4898-a10d-ce38dea94542' and nutriente_id = '5cb4586d-0b36-4614-8b9a-0dd10af8d621')
+        or (id = '7c1a5326-2e75-4898-a10d-ce38dea94543' and nutriente_id = 'b44b30f6-c2a6-4aeb-bac2-856bef2dd13d')
+        or (id = '7c1a5326-2e75-4898-a10d-ce38dea94544' and nutriente_id = '3bc844e4-4a12-44e6-ac7e-d32d5cc2b5d0')
+      )
+    )
   ) then
     raise exception 'QA milanesa: uno de los ids de vector está ocupado por otra comida';
   end if;
