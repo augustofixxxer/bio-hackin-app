@@ -14,6 +14,21 @@ const {useState,useEffect}=React;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function cerrarSesion(){try{localStorage.removeItem('reseteo_usuario');localStorage.removeItem('reseteo_terminos_v1')}catch(e){}window.location.href='/'}
 function pase(){try{return JSON.parse(lsGet('reseteo_usuario')||'null')?.pase||''}catch(e){return ''}}
+function copyClaro(valor){
+ if(typeof valor!=='string')return valor;
+ return valor
+  .replace(/peso técnico permanece en\\s*(\\d+(?:[.,]\\d+)?)\\s*g/gi,'el peso total se mantiene en $1 g')
+  .replace(/peso técnico(?: de)?\\s*(\\d+(?:[.,]\\d+)?)\\s*g/gi,'porción de $1 g')
+  .replace(/\\b(\\d+(?:[.,]\\d+)?)\\s*g técnicos\\b/gi,'$1 g en total')
+  .replace(/composición\\s+After\\s+validada/gi,'composición de la versión posterior registrada')
+  .replace(/\\bBefore\\/After\\b/gi,'antes y después')
+  .replace(/\\bBefore\\b/gi,'antes')
+  .replace(/\\bAfter\\b/gi,'después')
+  .replace(/única variable experimental/gi,'único aspecto que cambiamos')
+  .replace(/variable experimental/gi,'aspecto que cambiamos')
+  .replace(/peso técnico/gi,'porción de referencia');
+}
+
 const INTENTOS={energia:['energia','cansancio','cansado','cansada','sin energia','agotado','agotada'],descanso_sueno:['sueno','dormir','descanso','descansar','insomnio'],digestion:['digestion','pesadez','hinchazon','hinchado','hinchada'],entrenamiento:['entrenamiento','entrenar','ejercicio','actividad fisica','actividad'],foco_concentracion:['foco','concentracion','concentración','atencion','atención'],hambre_saciedad:['hambre','saciedad','antojo','antojos'],recuperacion:['recuperacion','recuperación','recuperar','despues de entrenar','después de entrenar']};
 const PILLS=[['⚡','Te quedás sin energía','cansancio','energia'],['🌙','Dormís mal','sueño','descanso_sueno'],['🌿','Pesadez después de comer','pesadez','digestion'],['🫧','Te sentís hinchado','hinchazón','hinchazon'],['🎯','Te cuesta el foco','foco','foco_concentracion'],['🍽️','Llegás con hambre','hambre','hambre_saciedad'],['🏋️','Antes de entrenar','entrenamiento','entrenamiento'],['🔄','Recuperación','recuperación','recuperacion']];
 function escalaValor(valor){return ({baja:'1',media:'3',alta:'5',mal:'1',regular:'3',bien:'5'})[valor]||''}
@@ -28,8 +43,8 @@ function App(){
  useEffect(()=>{if(tab!=='premium')return;setPremiumEstadoMsg('');const headers={Authorization:'Bearer '+pase()};fetch('/api/premium?ruta=estado',{headers}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos consultar tu estado Premium.');setPremiumEstado(d);if(d.premium){return fetch('/api/premium?ruta=experimento',{headers})}}).then(async r=>{if(!r)return null;const d=await r.json();if(r.ok)setPremiumExperimentos(d.experimentos||[]);return d}).catch(e=>{setPremiumEstado(null);setPremiumEstadoMsg(e.message||'No pudimos consultar tu estado Premium.')})},[tab]);
 
  async function crearExperimento(){
-  const original=(premiumContexto?.original||'').trim();
-  const hack=(premiumContexto?.accion||premiumContexto?.adaptacion||'').trim();
+  const original=copyClaro((premiumContexto?.original||'').trim());
+  const hack=copyClaro((premiumContexto?.hack_mitigador||premiumContexto?.accion||premiumContexto?.adaptacion||'').trim());
   const variable=(premiumContexto?.variable||'').trim();
   const reglaId=premiumContexto?.reglaId||null;
   const solucionId=premiumContexto?.solucionId||null;
@@ -85,34 +100,34 @@ function App(){
   {premiumContexto?<div className="premium-context"><b>Venís de Descubrir</b><span>{premiumContexto.original||premiumContexto.titulo||'La comida que acabás de explorar'}</span></div>:<div className="premium-context"><b>Premium empieza con una comida concreta.</b><span>Entrá desde una comida que acabás de explorar para recibir el hallazgo, la sugerencia y qué vamos a comparar.</span></div>}
 
   <div className="premium-feature">
-    <div className="feature-kicker">1 · TU COMIDA Y EL HALLAZGO</div>
-    <h3>{premiumContexto?.original||premiumContexto?.titulo||'Tu comida'}</h3>
-    <p>{premiumContexto?.texto||'Esta tarjeta muestra el hallazgo que recibiste al explorar esta comida en Descubrir.'}</p>
-    {premiumContexto?.observacion&&<><div className="label">QUÉ OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
+    <div className="feature-kicker">1 · VERSIÓN ORIGINAL</div>
+    <h3>{copyClaro(premiumContexto?.original||premiumContexto?.titulo||'Tu comida')}</h3>
+    <p>{copyClaro(premiumContexto?.resumen||premiumContexto?.texto||'Este es el hallazgo que apareció al explorar esta comida en Descubrir.')}</p>
+    {premiumContexto?.observacion&&<><div className="label">QUÉ OBSERVAR</div><p>{copyClaro(premiumContexto.nota_bienestar||premiumContexto.observacion)}</p></>}
     {premiumContexto?.cuantitativo&&<div style={{marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,.08)'}}>
-      <div className="label">DATOS DE LA COMIDA · QA</div>
-      <h3>{premiumContexto.cuantitativo.porcionEstandarG} g estandarizados</h3>
-      <p>Composición disponible para esta comida. Los datos no publicados por la fuente permanecen sin dato.</p>
-      <div className="compare-grid">{['energy_kcal','protein_g','fat_g','carbohydrate_g'].map(k=>{const v=premiumContexto.cuantitativo.valores?.[k];return <div key={k}><small>{v?.nombre||k}</small><b>{v?.valor==null?'Sin dato publicado':String(Number(v.valor).toFixed(1)).replace('.',',')+' '+(v?.unidad||'')}</b><span>{v?.valor==null?'La fuente no publica este dato.':'Vector '+(v?.estado||'parcial')}</span></div>})}</div>
-      <p className="legal-note">Fuente: {premiumContexto.cuantitativo.fuenteBase||'fuente registrada'}. Estimación estandarizada para QA; no es una porción recomendada.</p>
+      <div className="label">REFERENCIA NUTRICIONAL</div>
+      <h3>Referencia para {premiumContexto.cuantitativo.porcionEstandarG} g</h3>
+      <p>Valores orientativos disponibles para esta comida. Los nutrientes sin información de origen se indican como no publicados.</p>
+      <div className="compare-grid">{['energy_kcal','protein_g','fat_g','carbohydrate_g'].map(k=>{const v=premiumContexto.cuantitativo.valores?.[k];return <div key={k}><small>{v?.nombre||k}</small><b>{v?.valor==null?'Sin dato publicado':String(Number(v.valor).toFixed(1)).replace('.',',')+' '+(v?.unidad||'')}</b><span>{v?.valor==null?'La fuente no publica este dato.':'Dato de referencia ('+(v?.estado||'parcial')+').'}</span></div>})}</div>
+      <p className="legal-note">Fuente: {premiumContexto.cuantitativo.fuenteBase||'fuente registrada'}. Referencia aproximada para comparar; no es una porción recomendada.</p>
     </div>}
   </div>
 
   <div className="premium-feature">
-    <div className="feature-kicker">2 · LA SUGERENCIA</div>
-    <h3>{premiumContexto?.hackNombre||'Probá un cambio concreto.'}</h3>
-    {premiumContexto?.accion?<><div className="label">CÓMO APLICARLO</div><p className="action">{premiumContexto.accion}</p></>:<div className="saved">Esta comida todavía no tiene una acción Premium disponible.</div>}
-    {premiumContexto?.variable&&<p className="legal-note">Una sola variable: {premiumContexto.variable}.</p>}
+    <div className="feature-kicker">2 · VERSIÓN OPTIMIZADA</div>
+    <h3>{copyClaro(premiumContexto?.hackNombre||'Probá un cambio concreto.')}</h3>
+    {premiumContexto?.accion?<><div className="label">CÓMO APLICARLO</div><p className="action">{copyClaro(premiumContexto.hack_mitigador||premiumContexto.accion)}</p></>:<div className="saved">Esta comida todavía no tiene una acción Premium disponible.</div>}
+    {premiumContexto?.variable&&<p className="legal-note">Para comparar mejor, cambiá solo este aspecto: {copyClaro(premiumContexto.variable)}.</p>}
   </div>
   <div className="premium-feature">
-    <div className="feature-kicker">3 · LA COMPARACIÓN</div>
-    <h3>Antes y después: qué cambia.</h3>
+    <div className="feature-kicker">3 · QUÉ OBSERVAR</div>
+    <h3>Qué cambia y qué conviene observar.</h3>
     {premiumContexto ? <>
-      {premiumContexto.cambioComposicional&&<><div className="label">QUÉ CAMBIA</div><p>{premiumContexto.cambioComposicional}</p></>}
-      {premiumContexto.porQueCambio&&<><div className="label">POR QUÉ ESTE CAMBIO</div><p>{premiumContexto.porQueCambio}</p></>}
-      {premiumContexto.queSeMantiene&&<><div className="label">QUÉ SE MANTIENE</div><p>{premiumContexto.queSeMantiene}</p></>}
-      {premiumContexto.aprendizajeComparativo&&<><div className="label">QUÉ APRENDÉS</div><p>{premiumContexto.aprendizajeComparativo}</p></>}
-      {premiumContexto.variable&&<><div className="label">VARIABLE QUE CAMBIÁS</div><p>{premiumContexto.variable}</p></>}
+      {premiumContexto.cambioComposicional&&<><div className="label">QUÉ CAMBIA</div><p>{copyClaro(premiumContexto.cambioComposicional)}</p></>}
+      {premiumContexto.porQueCambio&&<><div className="label">POR QUÉ ESTE CAMBIO</div><p>{copyClaro(premiumContexto.porQueCambio)}</p></>}
+      {premiumContexto.queSeMantiene&&<><div className="label">QUÉ SE MANTIENE</div><p>{copyClaro(premiumContexto.queSeMantiene)}</p></>}
+      {premiumContexto.aprendizajeComparativo&&<><div className="label">QUÉ APRENDÉS</div><p>{copyClaro(premiumContexto.aprendizajeComparativo)}</p></>}
+      {premiumContexto.variable&&<><div className="label">VARIABLE QUE CAMBIÁS</div><p>{copyClaro(premiumContexto.variable)}</p></>}
       {premiumContexto.observacion&&<><div className="label">QUÉ OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
       {!premiumContexto.cambioComposicional&&!premiumContexto.aprendizajeComparativo&&!premiumContexto.queSeMantiene&&<div className="saved">Este caso todavía no tiene comparación Premium curada.</div>}
       <button className="primary" onClick={crearExperimento} disabled={premiumExpBusy||premiumAbiertas.length>0}>{premiumAbiertas.length>0?'✓ Comparación en curso':'✦ Empezar esta comparación'}</button>
