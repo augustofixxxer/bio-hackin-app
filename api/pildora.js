@@ -12,6 +12,30 @@ const INTRO = {
   recuperacion: 'Después de entrenar, la experiencia puede cambiar según lo que comés y lo que hacés después. Probemos una opción de alimentación y otra de actividad para comparar.',
 };
 
+
+function humanizarTexto(valor) {
+  if (typeof valor !== "string") return valor;
+  return valor
+    .replace(/peso técnico permanece en\s*(\d+(?:[.,]\d+)?)\s*g/gi, "el peso total se mantiene en $1 g")
+    .replace(/peso técnico(?: de)?\s*(\d+(?:[.,]\d+)?)\s*g/gi, "porción de $1 g")
+    .replace(/\b(\d+(?:[.,]\d+)?)\s*g técnicos\b/gi, "$1 g en total")
+    .replace(/composición\s+After\s+validada/gi, "composición de la versión posterior registrada")
+    .replace(/\bBefore\/After\b/gi, "antes y después")
+    .replace(/\bBefore\b/gi, "antes")
+    .replace(/\bAfter\b/gi, "después")
+    .replace(/única variable experimental/gi, "único aspecto que cambiamos")
+    .replace(/variable experimental/gi, "aspecto que cambiamos")
+    .replace(/peso técnico/gi, "porción de referencia");
+}
+function humanizarAlternativa(a) {
+  if (!a) return null;
+  const salida = { ...a };
+  for (const campo of ["mecanismo","descripcion_mecanismo","recomendacion","badge_principal","objetivo","accion_texto","observacion_texto","continuidad_texto"]) {
+    if (typeof salida[campo] === "string") salida[campo] = humanizarTexto(salida[campo]);
+  }
+  return salida;
+}
+
 export default async function handler(req,res){
   if(req.method!=='GET'){res.status(405).json({error:'Método no permitido.'});return;}
   if(!SUPABASE_URL||!SUPABASE_KEY){res.status(500).json({error:'Servicio no configurado.'});return;}
@@ -36,10 +60,10 @@ export default async function handler(req,res){
     const activity=all.filter(a=>a.tipo==='Protocolo').sort((a,b)=>score(b)-score(a))[0]||null;
     const preparar = (a) => {
       if (!a) return null;
-      if (esPremium) return a;
+      if (esPremium) return humanizarAlternativa(a);
       // Free: hallazgo/estado útil, sin revelar hack, observación ni continuidad.
       return {
-        id:a.id, mecanismo:a.mecanismo, descripcion_mecanismo:a.descripcion_mecanismo,
+        id:a.id, mecanismo:humanizarTexto(a.mecanismo), descripcion_mecanismo:humanizarTexto(a.descripcion_mecanismo),
         tipo:a.tipo, tipo_card:a.tipo_card, badge_principal:a.badge_principal,
         objetivo:a.objetivo, estado_curado:a.estado_curado, premium:true
       };
