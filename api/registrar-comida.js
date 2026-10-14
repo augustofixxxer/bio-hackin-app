@@ -249,6 +249,12 @@ export default async function handler(req, res) {
     const reglas = await supabaseFetch(
       `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,familia_key,prioridad_motor,soluciones(id,nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,por_que_cambio,tipo_comparacion,estado_contenido_premium,fuente_conocimiento)`
     );
+    // Las reglas de supermercado viven en su propio flujo y jamás participan del motor diario.
+    const reglasAplicables = reglas.filter((r) =>
+      r.momento_requerido !== "Durante la compra en supermercado" &&
+      !String(r.familia_key || "").startsWith("supermercado_") &&
+      !String(r.combinacion || "").startsWith("Supermercado: ")
+    );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
     // Se evalúa contra textoParaMatching (texto original + sinónimos), nunca contra el texto
@@ -256,7 +262,7 @@ export default async function handler(req, res) {
     // Además del match de palabras, dos condiciones adicionales (auditoría 25/07/2026):
     // exclusión por palabra ("sin activar" mal detectado) y momento del día real (no adivinado
     // por texto) — ver excluidoPorPalabra()/cumpleMomento() más arriba.
-    const evaluaciones = reglas.map((r) => {
+    const evaluaciones = reglasAplicables.map((r) => {
       const evalPalabras = evaluarRegla(textoParaMatching, r.palabras_clave);
       const pasaExclusion = !excluidoPorPalabra(textoParaMatching, r.palabras_excluyentes);
       const pasaMomento = cumpleMomento(momento, r.momento_requerido);
