@@ -21,12 +21,13 @@ function normalizarBusqueda(texto) {
 async function validarUsuario(req) {
   const usuarioId = usuarioIdDesdeRequest(req);
   if (!usuarioId) return { ok:false,status:401,error:"Sesión inválida o vencida. Volvé a iniciar sesión." };
-  const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=nivel_acceso,cuenta_suspendida,terminos_aceptados`);
+  const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`);
   if (!usuarios.length) return { ok:false,status:404,error:"Usuario no encontrado." };
   const u = usuarios[0];
   if (u.cuenta_suspendida === true) return { ok:false,status:403,error:"La cuenta está suspendida." };
   if (u.terminos_aceptados !== true) return { ok:false,status:403,error:"Debés aceptar los Términos y Condiciones para continuar." };
-  return { ok:true,usuarioId,nivelAcceso:u.nivel_acceso||"gratuito" };
+  const premiumVigente = u.nivel_acceso === "Premium" && (!u.premium_until || Date.parse(u.premium_until) > Date.now());
+  return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito" };
 }
 function parsearBloqueSupermercado(regla) {
   const lineas = String(regla.resultado || "").split(/\r?\n/);
