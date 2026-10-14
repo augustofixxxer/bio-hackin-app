@@ -115,9 +115,13 @@ function App(){
  {supermercadoMsg&&<div className="saved">{supermercadoMsg}</div>}
  {supermercadoSeleccionada&&<div className="supermarket-detail"><h3>{supermercadoSeleccionada.titulo}</h3>
   {supermercadoPremium?<><p>Las siete categorías están disponibles como acceso rápido. El detalle de las trampas y los veredictos forma parte de Premium.</p><button className="primary" onClick={()=>irPremium('basica')}>✦ Explorar Premium</button></>:<>
-   {supermercadoSeleccionada.trampa&&<><div className="label">TRAMPA DE MARKETING</div><p>{supermercadoSeleccionada.trampa}</p></>}
-   {supermercadoSeleccionada.criterio&&<><div className="label">CRITERIO DE ELECCIÓN</div><p>{supermercadoSeleccionada.criterio}</p></>}
-   <div className="decision"><div><b>EVITAR</b><span>{supermercadoSeleccionada.evitar||'Sin detalle curado disponible.'}</span></div><div><b>ELEGIR</b><span>{supermercadoSeleccionada.elegir||'Sin detalle curado disponible.'}</span></div></div>
+   <div className="decision">
+    <div className="warning"><b>⚠ La trampa</b><span>{supermercadoSeleccionada.trampa||'Revisá la composición real y no decidas solo por el frente del envase.'}</span></div>
+    <div className="choice"><b>✓ Qué elegir</b><span>{supermercadoSeleccionada.elegir||'Compará ingredientes y nivel de procesamiento antes de decidir.'}</span>
+     {supermercadoSeleccionada.criterio&&<small><b>{/fideos|arroz|legumbres/i.test(supermercadoSeleccionada.titulo)?'Por qué conviene':'En qué fijarte'}</b> {supermercadoSeleccionada.criterio}</small>}
+    </div>
+   </div>
+   <p style={{margin:'10px 2px 0',fontSize:11,color:'#aab5af'}}><b style={{color:'#f19aa1'}}>Mejor evitar:</b> {supermercadoSeleccionada.evitar||'Productos cuya composición no esté clara.'}</p>
   </>}
  </div>}
 </section>
