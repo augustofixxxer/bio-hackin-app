@@ -118,5 +118,49 @@ async function elegirTipRelevanteIA(texto, fichas) {
 // null directo acá arriba (return null; como primera línea de elegirTipRelevanteIA).
 // El resto de la app (bloqueos, clasificador de comida, todo lo demás) sigue intacto.
 
-export { elegirTipRelevanteIA };
+
+const HELADERA_SYSTEM_PROMPT = `Sos un selector de fichas existentes para una consulta de cocina.
+Recibís ingredientes disponibles y fichas ya curadas en la base.
+Elegí una ficha SOLO si coincide de forma clara con los ingredientes y aporta una preparación útil.
+No inventes recetas, ingredientes, cantidades, condimentos, métodos de cocción ni secuencias.
+No escribas explicaciones. Devolvé únicamente el JSON pedido.
+Si no hay una ficha suficientemente pertinente, devolvé "ninguna".`;
+
+async function elegirFichaHeladeraIA(ingredientes, fichas) {
+  if (!GROQ_API_KEY || !Array.isArray(fichas) || fichas.length === 0) return null;
+  const idsValidos = fichas.map((f) => f.id);
+  const lista = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
+  const schema = { type:"object", properties:{ id_elegido:{type:"string",enum:[...idsValidos,"ninguna"]} }, required:["id_elegido"], additionalProperties:false };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+  try {
+    const resp = await fetch(GROQ_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json",Authorization:`Bearer ${GROQ_API_KEY}`},
+      body:JSON.stringify({
+        model:"openai/gpt-oss-20b",
+        messages:[
+          {role:"system",content:HELADERA_SYSTEM_PROMPT},
+          {role:"user",content:`Ingredientes disponibles: "${ingredientes}"\n\nFichas reales disponibles:\n${lista}`}
+        ],
+        response_format:{type:"json_schema",json_schema:{name:"seleccion_heladera",strict:true,schema}},
+        reasoning_effort:"low",max_completion_tokens:300,temperature:0
+      }),
+      signal:controller.signal
+    });
+    clearTimeout(timeoutId);
+    if(!resp.ok){console.error("[selector-heladera-ia] Groq respondió",resp.status);return null}
+    const data=await resp.json();
+    const contenido=data.choices?.[0]?.message?.content;
+    if(!contenido)return null;
+    const parsed=JSON.parse(contenido);
+    return idsValidos.includes(parsed.id_elegido)?parsed.id_elegido:null;
+  } catch(err) {
+    clearTimeout(timeoutId);
+    console.error("[selector-heladera-ia] fallo no bloqueante:",err);
+    return null;
+  }
+}
+
+export { elegirTipRelevanteIA, elegirFichaHeladeraIA };
 // END: /api/_selector-tips-ia.js
