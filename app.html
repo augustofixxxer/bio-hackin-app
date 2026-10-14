@@ -10,17 +10,31 @@
 .supermarket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}
 .supermarket-chip{min-width:0;text-align:left;background:#111a17;color:#f2efe9;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;font-size:11px;font-weight:700;line-height:1.35}
 .supermarket-chip.active{border-color:#c5a059;background:rgba(197,160,89,.12)}
-.supermarket-detail{margin-top:12px;padding:13px;border-radius:13px;background:#111a17;border:1px solid rgba(197,160,89,.28)}
-.supermarket-detail .decision{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.supermarket-detail .decision>div{padding:10px;border-radius:10px;background:rgba(255,255,255,.035)}
-.supermarket-detail .decision b{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#c5a059;margin-bottom:5px}
-.supermarket-detail .decision span{font-size:11px;line-height:1.5}
-.heladera-box textarea{width:100%;min-height:88px;resize:vertical;background:#111a17;color:#f2efe9;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px;margin-top:8px}
-.method-grid{display:grid;gap:7px;margin-top:10px}
-.method-grid>div{padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.025)}
-.method-grid b{display:block;color:#c5a059;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.method-grid span{font-size:11px;color:#aab5af;line-height:1.5}
-@media(max-width:420px){.supermarket-grid{grid-template-columns:1fr}.supermarket-detail .decision{grid-template-columns:1fr}}
+.supermarket-detail{margin-top:12px;padding:14px;border-radius:16px;background:#111a17;border:1px solid rgba(255,255,255,.09);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+.supermarket-detail>h3{font-size:17px;line-height:1.25;margin:0 0 12px}
+.supermarket-detail .decision{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}
+.supermarket-detail .decision>div{padding:12px;border-radius:12px}
+.supermarket-detail .decision .warning{background:rgba(153,55,65,.14);border:1px solid rgba(219,105,115,.42)}
+.supermarket-detail .decision .choice{background:rgba(68,139,99,.14);border:1px solid rgba(111,190,139,.4)}
+.supermarket-detail .decision b{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+.supermarket-detail .decision .warning b{color:#f19aa1}
+.supermarket-detail .decision .choice b{color:#8fd3a5}
+.supermarket-detail .decision span{display:block;font-size:12px;line-height:1.5;color:#f2efe9}
+.supermarket-detail .decision small{display:block;margin-top:7px;font-size:11px;line-height:1.45;color:#b8c9bf}
+.heladera-box textarea{width:100%;min-height:76px;resize:vertical;background:#111a17;color:#f2efe9;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px;margin-top:8px}
+.heladera-result{margin-top:12px;padding:16px;border-radius:17px;background:linear-gradient(160deg,#1b2923,#121b18);border:1px solid rgba(143,168,155,.28);box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.heladera-result h3{font-size:20px;line-height:1.2;margin:0}
+.heladera-result .adjustment{margin-top:13px;padding:11px 12px;border-radius:11px;background:rgba(197,160,89,.08);border-left:3px solid #c5a059}
+.heladera-result .adjustment b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#d8b66f;margin-bottom:5px}
+.heladera-result .adjustment p{margin:0;color:#e5e9e4;font-size:12px;line-height:1.55}
+.method-grid{display:grid;gap:7px;margin-top:13px}
+.method-grid>div{display:grid;grid-template-columns:26px 1fr;gap:9px;align-items:start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.method-grid>div:last-child{border-bottom:0;padding-bottom:0}
+.method-grid .method-number{width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:rgba(143,168,155,.14);color:#a8d5b7;font-size:11px;font-weight:800}
+.method-grid b{display:block;color:#e0c17c;font-size:11px;margin:1px 0 4px}
+.method-grid span{font-size:11px;color:#bdc9c1;line-height:1.5}
+@media(min-width:520px){.supermarket-detail .decision{grid-template-columns:1fr 1fr}.heladera-result{padding:20px}}
+
 
 </style>
 </head>
