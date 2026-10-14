@@ -1,7 +1,7 @@
 // Alimenta el Explorador con alternativas reutilizables.
 import { emitirEventoProducto } from "./_eventos-producto.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
-import { elegirFichaHeladeraIA } from "./_selector-tips-ia.js";
+import { elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO } from "./_selector-tips-ia.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -89,16 +89,17 @@ async function consultarHeladera(req,res) {
     if(!elegido)return res.status(200).json({ok:true,encontrada:false,origen:"degradacion_segura",mensaje:"El asistente de IA no está disponible o no encontró una ficha suficientemente clara. Podés probar otra descripción; no se inventó una receta."});
     const ficha=shortlist.find((f)=>f.clave===elegido);
     if(!ficha)return res.status(200).json({ok:true,encontrada:false,origen:"degradacion_segura",mensaje:"No pudimos validar la ficha seleccionada."});
-    const curado=textoCuradoDeFicha(ficha);
-    const coccion=extraerDatoCurado(curado,/\b(essen|plancha|horno|hervid|saltead|guisad|vapor|coccion|cocción)\b/i);
-    const condimentos=extraerDatoCurado(curado,/\b(condiment|jengibre|curcuma|cúrcuma|comino|ajo|oregano|orégano|pimenton|pimentón|canela)\b/i);
-    const fibra=extraerDatoCurado(curado,/\b(fibra|vegetales|verduras|legumbres|chia|chía|lino|avena)\b/i);
-    const ordenFibra=extraerDatoCurado(curado,/(?:primero|antes de|después de|despues de|al final|orden|secuencia).{0,70}(?:fibra|vegetales|verduras|legumbres)|(?:fibra|vegetales|verduras|legumbres).{0,70}(?:primero|antes de|después de|despues de|al final|orden|secuencia)/i);
     return res.status(200).json({ok:true,encontrada:true,propuesta:{
       id:ficha.id,origen:ficha.origen,titulo:ficha.titulo,recomendacion:ficha.recomendacion||ficha.resultado||"",
       accion:ficha.accion_texto||"",observacion:ficha.observacion_texto||"",continuidad:ficha.continuidad_texto||"",
-      estructuraMetodo:{coccion:coccion||null,condimentos:condimentos||null,fibra:fibra||null,ordenFibra:ordenFibra||null,
-        nota:"Solo se muestran instrucciones que existen en la ficha curada. Si falta un dato del método canónico, no se completa por inferencia."}
+      estructuraMetodo:{
+        coccion:PROTOCOLO_CULINARIO_CANONICO.coccion,
+        condimentos:PROTOCOLO_CULINARIO_CANONICO.condimentos,
+        fibra:PROTOCOLO_CULINARIO_CANONICO.fibra,
+        ordenFibra:PROTOCOLO_CULINARIO_CANONICO.fibra,
+        almidonResistente:PROTOCOLO_CULINARIO_CANONICO.almidonResistente,
+        nota:"Protocolo culinario canónico de Reseteo Propio. Las condiciones se aplican según los ingredientes; la ficha seleccionada sigue siendo contenido curado y Groq no redacta ni inventa recetas."
+      }
     }});
   } catch(err) {
     console.error("[heladera] consulta no bloqueante:",err);
