@@ -35,9 +35,26 @@ function parsearBloqueSupermercado(regla) {
     const linea = lineas.find((x) => x.toLowerCase().startsWith(prefijo.toLowerCase()));
     return linea ? linea.slice(linea.indexOf(":") + 1).trim() : "";
   };
-  return {id:regla.id,titulo:String(regla.combinacion||"").replace(/^Supermercado:\s*/,""),
+  const titulo=String(regla.combinacion||"").replace(/^Supermercado:\s*/,"");
+  const bloque={
+    id:regla.id,titulo,
     trampa:campo("TRAMPA DE MARKETING"),criterio:campo("CRITERIO"),evitar:campo("EVITAR"),elegir:campo("ELEGIR"),
-    nivelAcceso:regla.nivel_acceso,momento:regla.momento_requerido};
+    nivelAcceso:regla.nivel_acceso,momento:regla.momento_requerido
+  };
+  const nombre=normalizarBusqueda(titulo);
+  if(/fiambres|embutidos/.test(nombre)){
+    bloque.trampa="Algunos fiambres se venden como si fueran un corte de carne, pero son una pasta de recortes procesados con agua, almidón o harina y aditivos.";
+    bloque.criterio="Buscá fibras o vetas visibles de carne curada. Si el interior es liso, uniforme y gomoso, probablemente sea un producto más reconstituido.";
+    bloque.evitar="Salchichas, paleta sanguchera económica y fiambres picados de textura gomosa.";
+    bloque.elegir="Jamón cocido de primera marca elaborado con pata real, jamón crudo o bondiola.";
+  }
+  if(/fideos|arroz|legumbres secas/.test(nombre)){
+    bloque.trampa="El envase puede destacar palabras como “integral” o “natural” sin explicar cómo está procesado el producto.";
+    bloque.criterio="Por qué importa: el trigo candeal suele conservar mejor la estructura del almidón durante la cocción; el arroz parboiled recibe un tratamiento previo que modifica el almidón. Ambos pueden reducir la respuesta glucémica frente a algunas alternativas, según variedad, cocción y porción.";
+    bloque.evitar="No elijas solo por el frente del paquete ni te guíes únicamente por el color.";
+    bloque.elegir="Para fideos, priorizá sémola de trigo candeal; para arroz, considerá parboiled. Ajustá la porción y acompañá con verduras, legumbres o proteína.";
+  }
+  return bloque;
 }
 function puntuacionCoincidencia(ingredientes, textoFicha) {
   const stop = new Set(["con","para","sin","que","esto","esta","tengo","cocinar","hacer","algo","comida","ingredientes","hoy","una","uno","unos","unas","los","las","del","por","pero","como","desde","quiero","podria","podemos","tiene","tienen"]);
