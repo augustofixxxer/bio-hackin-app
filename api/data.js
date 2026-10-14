@@ -62,7 +62,7 @@ async function consultarHeladera(req,res) {
   try {
     const [alternativas,reglas]=await Promise.all([
       supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,tipo,estado_curado"),
-      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)")
+      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,nivel_acceso,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)")
     ]);
     const candidatas=[
       ...alternativas.filter((a)=>!["rehacer","hueco"].includes(a.estado_curado)).map((a)=>({
@@ -71,7 +71,8 @@ async function consultarHeladera(req,res) {
         observacion_texto:a.observacion_texto||"",continuidad_texto:a.continuidad_texto||"",familia_key:a.familia_key||null,
         resumen:[a.mecanismo,a.descripcion_mecanismo,a.recomendacion,a.accion_texto].filter(Boolean).join(" — ")
       })),
-      ...reglas.filter((r)=>!String(r.combinacion||"").startsWith("Supermercado: ")&&
+      ...reglas.filter((r)=>(auth.nivelAcceso==="Premium"||r.nivel_acceso!=="Premium")&&
+        !String(r.combinacion||"").startsWith("Supermercado: ")&&
         !String(r.familia_key||"").startsWith("supermercado_")&&
         r.momento_requerido!=="Durante la compra en supermercado"&&r.soluciones?.id).map((r)=>({
         clave:`regla:${r.id}`,origen:"reglas",id:r.id,titulo:r.combinacion||r.soluciones?.nombre_hackeo||"Regla de cocina",
