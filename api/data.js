@@ -1,6 +1,7 @@
 // Alimenta el Explorador con alternativas reutilizables.
 import { emitirEventoProducto } from "./_eventos-producto.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
+import { elegirFichaHeladeraIA } from "./_selector-tips-ia.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,6 +12,96 @@ async function supabaseFetch(path) {
   const data = text ? JSON.parse(text) : null;
   if (!resp.ok) throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
   return data;
+}
+
+
+function normalizarBusqueda(texto) {
+  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+async function validarUsuario(req) {
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) return { ok:false,status:401,error:"Sesión inválida o vencida. Volvé a iniciar sesión." };
+  const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=nivel_acceso,cuenta_suspendida,terminos_aceptados`);
+  if (!usuarios.length) return { ok:false,status:404,error:"Usuario no encontrado." };
+  const u = usuarios[0];
+  if (u.cuenta_suspendida === true) return { ok:false,status:403,error:"La cuenta está suspendida." };
+  if (u.terminos_aceptados !== true) return { ok:false,status:403,error:"Debés aceptar los Términos y Condiciones para continuar." };
+  return { ok:true,usuarioId,nivelAcceso:u.nivel_acceso||"gratuito" };
+}
+function parsearBloqueSupermercado(regla) {
+  const lineas = String(regla.resultado || "").split(/\r?\n/);
+  const campo = (prefijo) => {
+    const linea = lineas.find((x) => x.toLowerCase().startsWith(prefijo.toLowerCase()));
+    return linea ? linea.slice(linea.indexOf(":") + 1).trim() : "";
+  };
+  return {id:regla.id,titulo:String(regla.combinacion||"").replace(/^Supermercado:\s*/,""),
+    trampa:campo("TRAMPA DE MARKETING"),criterio:campo("CRITERIO"),evitar:campo("EVITAR"),elegir:campo("ELEGIR"),
+    nivelAcceso:regla.nivel_acceso,momento:regla.momento_requerido};
+}
+function puntuacionCoincidencia(ingredientes, textoFicha) {
+  const stop = new Set(["con","para","sin","que","esto","esta","tengo","cocinar","hacer","algo","comida","ingredientes","hoy","una","uno","unos","unas","los","las","del","por","pero","como","desde","quiero","podria","podemos","tiene","tienen"]);
+  const tokens = [...new Set(normalizarBusqueda(ingredientes).split(/[^a-z0-9]+/).filter((x)=>x.length>=3&&!stop.has(x)))];
+  const ficha = normalizarBusqueda(textoFicha);
+  return tokens.reduce((n,token)=>n+(ficha.split(token).length>1?1:0),0);
+}
+function textoCuradoDeFicha(ficha) {
+  return [ficha.recomendacion,ficha.accion_texto,ficha.observacion_texto,ficha.continuidad_texto,
+    ficha.descripcion_mecanismo,ficha.resultado,ficha.solucion?.adaptacion,ficha.solucion?.accion_usuario,
+    ficha.solucion?.observacion_usuario,ficha.solucion?.continuidad]
+    .filter((x)=>typeof x==="string"&&x.trim()).join("\n");
+}
+function extraerDatoCurado(texto, patron) {
+  return String(texto||"").split(/\r?\n/).filter(Boolean).find((linea)=>patron.test(linea))||null;
+}
+async function consultarHeladera(req,res) {
+  const auth = await validarUsuario(req);
+  if(!auth.ok)return res.status(auth.status).json({error:auth.error});
+  const ingredientes = typeof req.body?.ingredientes==="string"?req.body.ingredientes.trim():"";
+  if(!ingredientes||ingredientes.length>600)return res.status(400).json({error:"Escribí los ingredientes (hasta 600 caracteres)."});
+  try {
+    const [alternativas,reglas]=await Promise.all([
+      supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,tipo,estado_curado"),
+      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)")
+    ]);
+    const candidatas=[
+      ...alternativas.filter((a)=>!["rehacer","hueco"].includes(a.estado_curado)).map((a)=>({
+        clave:`alternativa:${a.id}`,origen:"alternativas_locales",id:a.id,titulo:a.mecanismo||"Ficha de cocina",
+        recomendacion:a.recomendacion||"",descripcion_mecanismo:a.descripcion_mecanismo||"",accion_texto:a.accion_texto||"",
+        observacion_texto:a.observacion_texto||"",continuidad_texto:a.continuidad_texto||"",familia_key:a.familia_key||null,
+        resumen:[a.mecanismo,a.descripcion_mecanismo,a.recomendacion,a.accion_texto].filter(Boolean).join(" — ")
+      })),
+      ...reglas.filter((r)=>!String(r.combinacion||"").startsWith("Supermercado: ")&&
+        !String(r.familia_key||"").startsWith("supermercado_")&&
+        r.momento_requerido!=="Durante la compra en supermercado"&&r.soluciones?.id).map((r)=>({
+        clave:`regla:${r.id}`,origen:"reglas",id:r.id,titulo:r.combinacion||r.soluciones?.nombre_hackeo||"Regla de cocina",
+        resultado:r.resultado||"",recomendacion:r.soluciones?.adaptacion||"",accion_texto:r.soluciones?.accion_usuario||"",
+        observacion_texto:r.soluciones?.observacion_usuario||"",continuidad_texto:r.soluciones?.continuidad||"",
+        familia_key:r.familia_key||null,solucion:r.soluciones||null,
+        resumen:[r.combinacion,r.resultado,r.soluciones?.adaptacion,r.soluciones?.accion_usuario].filter(Boolean).join(" — ")
+      }))
+    ];
+    const shortlist=candidatas.map((f)=>({...f,puntuacion:puntuacionCoincidencia(ingredientes,[f.titulo,f.resumen,f.familia_key].filter(Boolean).join(" "))}))
+      .filter((f)=>f.puntuacion>0).sort((a,b)=>b.puntuacion-a.puntuacion).slice(0,40);
+    if(!shortlist.length)return res.status(200).json({ok:true,encontrada:false,origen:"sin_coincidencia",mensaje:"No encontramos una ficha curada con coincidencia suficiente. Probá describiendo los ingredientes con otros nombres; no vamos a inventar una receta."});
+    const elegido=await elegirFichaHeladeraIA(ingredientes,shortlist.map((f)=>({id:f.clave,mecanismo:`${f.titulo}: ${f.resumen}`})));
+    if(!elegido)return res.status(200).json({ok:true,encontrada:false,origen:"degradacion_segura",mensaje:"El asistente de IA no está disponible o no encontró una ficha suficientemente clara. Podés probar otra descripción; no se inventó una receta."});
+    const ficha=shortlist.find((f)=>f.clave===elegido);
+    if(!ficha)return res.status(200).json({ok:true,encontrada:false,origen:"degradacion_segura",mensaje:"No pudimos validar la ficha seleccionada."});
+    const curado=textoCuradoDeFicha(ficha);
+    const coccion=extraerDatoCurado(curado,/\b(essen|plancha|horno|hervid|saltead|guisad|vapor|coccion|cocción)\b/i);
+    const condimentos=extraerDatoCurado(curado,/\b(condiment|jengibre|curcuma|cúrcuma|comino|ajo|oregano|orégano|pimenton|pimentón|canela)\b/i);
+    const fibra=extraerDatoCurado(curado,/\b(fibra|vegetales|verduras|legumbres|chia|chía|lino|avena)\b/i);
+    const ordenFibra=extraerDatoCurado(curado,/(?:primero|antes de|después de|despues de|al final|orden|secuencia).{0,70}(?:fibra|vegetales|verduras|legumbres)|(?:fibra|vegetales|verduras|legumbres).{0,70}(?:primero|antes de|después de|despues de|al final|orden|secuencia)/i);
+    return res.status(200).json({ok:true,encontrada:true,propuesta:{
+      id:ficha.id,origen:ficha.origen,titulo:ficha.titulo,recomendacion:ficha.recomendacion||ficha.resultado||"",
+      accion:ficha.accion_texto||"",observacion:ficha.observacion_texto||"",continuidad:ficha.continuidad_texto||"",
+      estructuraMetodo:{coccion:coccion||null,condimentos:condimentos||null,fibra:fibra||null,ordenFibra:ordenFibra||null,
+        nota:"Solo se muestran instrucciones que existen en la ficha curada. Si falta un dato del método canónico, no se completa por inferencia."}
+    }});
+  } catch(err) {
+    console.error("[heladera] consulta no bloqueante:",err);
+    return res.status(200).json({ok:true,encontrada:false,origen:"degradacion_segura",mensaje:"No pudimos consultar las fichas ahora. Probá de nuevo más tarde; el asistente no inventó una receta."});
+  }
 }
 
 const INTENT_BRIDGE = {
@@ -24,6 +115,10 @@ const INTENT_BRIDGE = {
 };
 
 export default async function handler(req, res) {
+  if (req.method === "POST" && req.body?.accion === "heladera") {
+    await consultarHeladera(req, res);
+    return;
+  }
   if (req.method === "POST") {
     const { evento, contexto, metadata } = req.body || {};
     await emitirEventoProducto({ usuarioId: usuarioIdDesdeRequest(req), evento, contexto, metadata });
@@ -32,6 +127,14 @@ export default async function handler(req, res) {
   }
   if (!SUPABASE_URL || !SUPABASE_KEY) { res.status(500).json({ error: "Falta configurar Supabase." }); return; }
   try {
+    if (req.query?.vista === "supermercado") {
+      const auth = await validarUsuario(req);
+      if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+      const reglasSuper = await supabaseFetch(`reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key&combinacion=like.Supermercado%3A%20*&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado&order=combinacion.asc`);
+      const bloques = reglasSuper.map(parsearBloqueSupermercado);
+      if (auth.nivelAcceso !== "Premium") return res.status(200).json({ ok:true, requierePremium:true, bloques:bloques.map((b)=>({id:b.id,titulo:b.titulo,nivelAcceso:b.nivelAcceso})) });
+      return res.status(200).json({ ok:true, requierePremium:false, bloques });
+    }
     const alternativas = await supabaseFetch(`alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia,tipo_card,badge_principal,tag_frio_calor,orden_prioridad,intencion_principal_id,intenciones_secundarias,familia_key,prioridad_busqueda,estado_curado,accion_texto,observacion_texto,continuidad_texto`);
     const intenciones = await supabaseFetch(`intenciones?select=id,clave`);
     const claveDeIntencion = Object.fromEntries(intenciones.map(i => [i.id, i.clave]));
