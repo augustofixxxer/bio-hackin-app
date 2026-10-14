@@ -119,11 +119,20 @@ async function elegirTipRelevanteIA(texto, fichas) {
 // El resto de la app (bloqueos, clasificador de comida, todo lo demás) sigue intacto.
 
 
+const PROTOCOLO_CULINARIO_CANONICO = {
+  coccion: "Priorizar cocción a fuego lento en cacerola/sartén tipo Essen con tapa, reteniendo humedad, o sellado en plancha/sartén de hierro. Como materia grasa para cocinar a temperatura media/baja: manteca real, grasa vacuna (cebo) o aceite de oliva virgen extra. Evitar aceites de semilla refinados.",
+  condimentos: "Si el plato incluye cúrcuma, combinarla con una pizca de pimienta negra recién molida y una base grasa. Incorporar jengibre fresco o en polvo, comino, orégano, tomillo o laurel según el ingrediente base.",
+  fibra: "Si la preparación contiene almidones (arroz, papas, fideos) u otros carbohidratos, iniciar la ingesta con una porción de fibra o vegetales verdes/crujientes.",
+  almidonResistente: "Para arroces, papas o legumbres, promover el enfriado previo durante 12–24 horas como mínimo en heladera y luego un recalentado suave."
+};
+
 const HELADERA_SYSTEM_PROMPT = `Sos un selector de fichas existentes para una consulta de cocina.
 Recibís ingredientes disponibles y fichas ya curadas en la base.
 Elegí una ficha SOLO si coincide de forma clara con los ingredientes y aporta una preparación útil.
-No inventes recetas, ingredientes, cantidades, condimentos, métodos de cocción ni secuencias.
-No escribas explicaciones. Devolvé únicamente el JSON pedido.
+No inventes recetas, ingredientes, cantidades ni atribuciones a una ficha.
+El siguiente protocolo es contexto canónico del producto para reconocer pertinencia culinaria; no lo redactes ni lo devuelvas como si proviniera de una ficha seleccionada:
+${JSON.stringify(PROTOCOLO_CULINARIO_CANONICO)}
+Tu única tarea es elegir un ID real de la lista o "ninguna". No escribas explicaciones. Devolvé únicamente el JSON pedido.
 Si no hay una ficha suficientemente pertinente, devolvé "ninguna".`;
 
 async function elegirFichaHeladeraIA(ingredientes, fichas) {
@@ -162,5 +171,5 @@ async function elegirFichaHeladeraIA(ingredientes, fichas) {
   }
 }
 
-export { elegirTipRelevanteIA, elegirFichaHeladeraIA };
+export { elegirTipRelevanteIA, elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO };
 // END: /api/_selector-tips-ia.js
