@@ -143,73 +143,82 @@ function normalizarProtocolo(texto) {
 // Construye solo los apartados que justifican los ingredientes descritos.
 // No genera una receta ni altera la ficha curada que ya devuelve el motor.
 function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas = []) {
-  const t = normalizarProtocolo(textoComida);
-  if (!t.trim()) return null;
+  const t = normalizarProtocolo(textoComida).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
+  if (!t) return null;
 
-  const reglasBase = [
+  // Reglas locales específicas: se usan solo como degradación si la matriz remota
+  // no reconoce la entrada; nunca sustituyen una regla de Supabase que sí coincide.
+  const reglasFallback = [
     {
-      clave: "legumbres_maiz_granos",
-      terminos: ["lenteja","lentejas","garbanzo","garbanzos","poroto","porotos","frijol","frijoles","arveja","arvejas","haba","habas","legumbre","legumbres","maiz","choclo","quinoa","avena","cebada","centeno","mijo","trigo burgol","bulgur","grano","granos","arroz","polenta"],
+      clave: "legumbres",
+      terminos: ["lenteja","lentejas","garbanzo","garbanzos","poroto","porotos","frijol","frijoles","arveja","arvejas","haba","habas","legumbre","legumbres"],
+      prioridad: 10,
       reglas: {
-        sinergia: "Usá comino, laurel y pimienta negra como sinergia de condimentos; ajustá la intensidad al plato y a tu tolerancia.",
-        coccion: "Cociná a fuego lento en olla tapada hasta que los ingredientes queden tiernos; mantené un hervor suave.",
-        almidonResistente: "Prepará la porción con antelación, enfriá rápidamente y conservá en heladera durante 12–24 horas antes de recalentarla bien. No dejes la comida horas a temperatura ambiente."
+        sinergia: "SINERGIA DE CONDIMENTOS: comino + laurel + pimienta negra. Incorporá el laurel durante la cocción y ajustá comino y pimienta al gusto.",
+        coccion: "Cociná las legumbres a hervor suave, en olla tapada, hasta que queden tiernas.",
+        almidonResistente: "Si preparás una porción para después, enfriá pronto y guardala en heladera; recalentá bien antes de consumir."
       }
     },
     {
       clave: "almidones_pesados",
-      terminos: ["arroz","papa","papas","patata","patatas","batata","boniato","pasta","fideo","fideos","ñoqui","ñoquis","noqui","noquis","mandioca","yuca"],
+      terminos: ["arroz","papa","papas","patata","patatas","batata","boniato","pasta","fideo","fideos","ñoqui","ñoquis","noqui","noquis","mandioca","yuca","polenta"],
+      prioridad: 20,
       reglas: {
-        timingOrden: "Empezá la ingesta con una porción de vegetales verdes o fibra y después seguí con el alimento con almidón.",
-        almidonResistente: "Priorizá enfriar previamente una porción cocida durante 12–24 horas en heladera y después recalentala bien. Enfriá pronto y conservá de forma segura."
+        sinergia: "Para arroz, pastas o papas, usá una combinación breve de orégano + pimienta negra; si la salsa es de tomate, podés sumar albahaca.",
+        timingOrden: "Si el plato se acompaña con vegetales, podés empezar por ellos y después seguir con el alimento con almidón.",
+        almidonResistente: "Para arroz o papas cocidos con antelación, enfriá pronto y conservá en heladera; recalentá bien antes de consumir."
       }
     },
     {
-      clave: "carnes_grasas_densas",
-      terminos: ["carne","vacuno","ternera","cerdo","pollo","pavo","pescado","atun","salmon","merluza","cordero","chorizo","panceta","tocino","manteca","grasa vacuna","sebo","crema","crema de leche"],
+      clave: "proteinas",
+      terminos: ["carne","bife","churrasco","vacio","matambre","costilla","cuadril","lomo","asado","pollo","pavo","pescado","atun","salmon","merluza","cerdo","ternera","vacuno","cordero","huevo","huevos"],
+      prioridad: 30,
       reglas: {
-        coccion: "Sellá la carne en plancha de hierro o Essen usando una cantidad moderada de grasa vacuna (sebo), manteca real u oliva virgen extra; controlá el fuego y evitá quemar la superficie.",
-        sinergia: "Combiná la proteína con ajo, cebolla, orégano, tomillo o jengibre; elegí una combinación breve que encaje con el plato."
+        coccion: "Para la proteína, buscá una cocción pareja y evitá quemar la superficie; ajustá el tiempo al corte y al grosor.",
+        sinergia: "SINERGIA DE CONDIMENTOS: ajo + orégano + pimienta negra. Para pollo también combina tomillo; incorporá sal al gusto."
+      }
+    },
+    {
+      clave: "vegetales_fibra",
+      terminos: ["ensalada","verde","lechuga","rucula","rúcula","espinaca","acelga","brocoli","brócoli","repollo","tomate","zanahoria","cebolla","morrón","pimiento","pepino","verdura","verduras","vegetales","vegetal"],
+      prioridad: 40,
+      reglas: {
+        coccion: "Si es una ensalada verde, no requiere cocción: lavá y secá bien las hojas y cortá los vegetales justo antes de servir.",
+        sinergia: "SINERGIA DE CONDIMENTOS: limón + pimienta negra + orégano. Agregá el limón al servir y ajustá la intensidad al gusto.",
+        timingOrden: "Podés comenzar la comida con la ensalada y después continuar con el resto del plato, si lo hay."
       }
     }
   ];
 
-  const reglasActivas = Array.isArray(reglasConfiguradas) && reglasConfiguradas.length
-    ? reglasConfiguradas.filter((r) => r && r.activo !== false && Array.isArray(r.terminos) && r.reglas && typeof r.reglas === "object")
-    : reglasBase;
-
-  const gruposDetectados = reglasActivas
-    .map((grupo) => {
-      const coincide = (grupo.terminos || []).some((termino) => {
-        const normalizado = normalizarProtocolo(termino).trim();
-        if (!normalizado) return false;
-        const patron = normalizado.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\\s+");
-        return new RegExp("\\b" + patron + "\\b", "i").test(t);
-      });
-      return coincide ? grupo : null;
-    })
-    .filter(Boolean)
+  const coincideGrupo = (grupo) => (grupo.terminos || []).some((termino) => {
+    const clave = normalizarProtocolo(termino).trim();
+    if (!clave) return false;
+    const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\\s+");
+    return new RegExp("\\b" + patron + "\\b", "i").test(t);
+  });
+  const validarGrupo = (grupo) => grupo && grupo.activo !== false &&
+    Array.isArray(grupo.terminos) && grupo.reglas && typeof grupo.reglas === "object";
+  const configuradas = Array.isArray(reglasConfiguradas) ? reglasConfiguradas.filter(validarGrupo) : [];
+  const gruposConfigurados = configuradas.filter(coincideGrupo);
+  // Primero manda Supabase. Solo si la matriz remota no identifica esta entrada,
+  // se activa una regla local específica por familia, nunca un texto neutro plantilla.
+  const gruposDetectados = (gruposConfigurados.length ? gruposConfigurados : reglasFallback.filter(coincideGrupo))
     .sort((a, b) => Number(a.prioridad || 100) - Number(b.prioridad || 100));
 
-  const protocolo = {
-    coccion: "Elegí una cocción controlada y adecuada al plato; mantené temperaturas moderadas y evitá quemar los ingredientes.",
-    condimentos: "Elegí una combinación breve de hierbas y especias que encaje con el ingrediente principal, sin acumular condimentos innecesarios."
-  };
-
-  const clavesAplicadas = new Set();
+  const protocolo = {};
   for (const grupo of gruposDetectados) {
     for (const [clave, texto] of Object.entries(grupo.reglas)) {
       if (typeof texto !== "string" || !texto.trim()) continue;
-      if (!clavesAplicadas.has(clave)) {
-        protocolo[clave] = texto;
-        clavesAplicadas.add(clave);
-      } else if (protocolo[clave] !== texto) {
-        protocolo[clave] += " " + texto;
-      }
+      if (!protocolo[clave]) protocolo[clave] = texto;
+      else if (protocolo[clave] !== texto && !protocolo[clave].includes(texto)) protocolo[clave] += " " + texto;
     }
   }
 
-  // Toda comida no vacía obtiene un protocolo accionable, sin comodines evasivos.
+  // Salvaguarda: toda entrada no vacía obtiene instrucciones útiles y concretas.
+  if (!protocolo.coccion) protocolo.coccion = "Elegí una técnica adecuada al alimento identificado y evitá quemar los ingredientes.";
+  if (!protocolo.sinergia) protocolo.sinergia = "SINERGIA DE CONDIMENTOS: ajo + orégano + pimienta negra; ajustá la combinación al ingrediente principal.";
+  protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
+  protocolo.familiaDetectada = gruposDetectados[0]?.clave || "familia_general";
   return protocolo;
 }
 async function elegirFichaHeladeraIA(ingredientes, fichas) {
