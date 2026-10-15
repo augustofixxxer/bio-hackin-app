@@ -42,6 +42,13 @@ async function resolverTextoComidaParaProtocolo(texto) {
   const t = normalizar(original);
   if (!t.trim()) return original;
 
+  // No inferir "guiso" por compartir arroz y proteína: si el usuario no lo nombra,
+  // conservar la entrada libre para que el protocolo trate el arroz como guarnición.
+  const mencionaGuiso = /\\bguiso\\b/.test(t);
+  const mencionaArroz = /\\barroz\\b/.test(t);
+  const mencionaProteina = /\\b(pollo|pechuga|carne|bife|bifes|churrasco|pescado|atun|salmon|cerdo|ternera|vacuno|pavo)\\b/.test(t);
+  if (!mencionaGuiso && mencionaArroz && mencionaProteina) return original;
+
   const ignorados = new Set([
     "a", "al", "con", "de", "del", "en", "la", "las", "lo", "los", "un", "una",
     "unos", "unas", "plato", "comida", "casero", "casera", "caseros", "caseras",
@@ -574,7 +581,19 @@ export default async function handler(req, res) {
     // El protocolo culinario es contenido Premium: no incluir la propiedad en respuestas Free.
     if (esPremiumComida) {
       const textoEnriquecido = await resolverTextoComidaParaProtocolo(texto);
-      const protocoloCulinario = construirProtocoloCulinarioAdaptativo(textoEnriquecido);
+      let reglasGruposCulinarios = [];
+      try {
+        reglasGruposCulinarios = await supabaseFetch(
+          "config_reglas_grupos_culinarios?select=clave,terminos,reglas,prioridad,activo&activo=eq.true&order=prioridad.asc"
+        );
+      } catch (err) {
+        // Degradación segura: el motor usa su matriz local si la configuración no está disponible.
+        console.error("[protocolo-culinario] No se pudo cargar la matriz de grupos:", err);
+      }
+      const protocoloCulinario = construirProtocoloCulinarioAdaptativo(
+        textoEnriquecido,
+        reglasGruposCulinarios
+      );
       if (protocoloCulinario) respuesta.protocoloCulinario = protocoloCulinario;
     }
     res.status(200).json(respuesta);
