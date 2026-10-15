@@ -196,11 +196,16 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
     condimentos: "Elegí una combinación breve de hierbas y especias que encaje con el ingrediente principal, sin acumular condimentos innecesarios."
   };
 
+  const clavesAplicadas = new Set();
   for (const grupo of gruposDetectados) {
     for (const [clave, texto] of Object.entries(grupo.reglas)) {
       if (typeof texto !== "string" || !texto.trim()) continue;
-      if (!protocolo[clave]) protocolo[clave] = texto;
-      else if (protocolo[clave] !== texto) protocolo[clave] += " " + texto;
+      if (!clavesAplicadas.has(clave)) {
+        protocolo[clave] = texto;
+        clavesAplicadas.add(clave);
+      } else if (protocolo[clave] !== texto) {
+        protocolo[clave] += " " + texto;
+      }
     }
   }
 
