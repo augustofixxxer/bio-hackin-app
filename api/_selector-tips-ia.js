@@ -150,6 +150,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida) {
   const hayVegetales = contiene(/\b(verdura|verduras|vegetal|vegetales|ensalada|lechuga|rucula|espinaca|acelga|brocoli|coliflor|repollo|tomate|zanahoria|cebolla|morr[oó]n|pimiento|zapallito|zucchini|berenjena|pepino|esparrago|chaucha|calabaza)\b/);
   const hayProteinaAnimal = contiene(/\b(carne|vacuno|ternera|cerdo|pollo|pavo|pescado|atun|salmon|merluza|huevo|huevos|marisco|langostino|camaron)\b/);
   const hayLegumbres = contiene(/\b(lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|arveja|arvejas|haba|habas)\b/);
+  const hayMaiz = contiene(/\b(maiz|choclo)\b/);
   const hayCucurma = contiene(/\b(curcuma|turmeric)\b/);
   const hayJengibre = contiene(/\b(jengibre)\b/);
   const hayComino = contiene(/\b(comino)\b/);
@@ -177,7 +178,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida) {
   else if (hayJengibre) condimentos = "Como aparece jengibre, usalo en cantidad moderada y combiná el resto con el ingrediente principal; no hace falta añadir cúrcuma si no forma parte de tu receta.";
   else if (hayComino) condimentos = "El comino ya está contemplado en la preparación; podés equilibrarlo con ajo/cebolla si están presentes, sin acumular especias innecesarias.";
   else if (hayAjoCebolla) condimentos = "Como la preparación incluye ajo o cebolla, usalos como base aromática y agregá orégano, tomillo o laurel solo si encajan con el plato.";
-  else if (hayLegumbres) condimentos = "Para las legumbres nombradas, comino, laurel u orégano son opciones compatibles; elegí uno o dos según el sabor buscado, sin añadirlos todos.";
+  else if (hayLegumbres || hayMaiz) condimentos = "Para preparaciones con legumbres o maíz, incluí comino junto con laurel y/o orégano según el perfil del plato. Se usan tradicionalmente como condimentos carminativos para ayudar a reducir gases; ajustá las cantidades al gusto y la tolerancia.";
   else if (hayProteinaAnimal) condimentos = "Para la proteína nombrada, elegí una combinación simple de pimienta y orégano o tomillo; reservá cúrcuma, jengibre o comino para cuando encajen con el plato.";
   else condimentos = "No hay un condimento concreto identificado en el texto: elegí hierbas o especias según el ingrediente principal, en lugar de añadir una mezcla fija.";
 
