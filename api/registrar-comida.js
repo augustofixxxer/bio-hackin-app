@@ -42,6 +42,13 @@ async function resolverTextoComidaParaProtocolo(texto) {
   const t = normalizar(original);
   if (!t.trim()) return original;
 
+  // No inferir "guiso" por compartir arroz y proteína: si el usuario no lo nombra,
+  // conservar la entrada libre para que el protocolo trate el arroz como guarnición.
+  const mencionaGuiso = /\\bguiso\\b/.test(t);
+  const mencionaArroz = /\\barroz\\b/.test(t);
+  const mencionaProteina = /\\b(pollo|pechuga|carne|bife|bifes|churrasco|pescado|atun|salmon|cerdo|ternera|vacuno|pavo)\\b/.test(t);
+  if (!mencionaGuiso && mencionaArroz && mencionaProteina) return original;
+
   const ignorados = new Set([
     "a", "al", "con", "de", "del", "en", "la", "las", "lo", "los", "un", "una",
     "unos", "unas", "plato", "comida", "casero", "casera", "caseros", "caseras",
