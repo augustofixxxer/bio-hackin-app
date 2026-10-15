@@ -29,32 +29,62 @@ async function validarUsuario(req) {
   const premiumVigente = u.nivel_acceso === "Premium" && (!u.premium_until || Date.parse(u.premium_until) > Date.now());
   return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito" };
 }
-function parsearBloqueSupermercado(regla) {
-  const lineas = String(regla.resultado || "").split(/\r?\n/);
-  const campo = (prefijo) => {
-    const linea = lineas.find((x) => x.toLowerCase().startsWith(prefijo.toLowerCase()));
-    return linea ? linea.slice(linea.indexOf(":") + 1).trim() : "";
+const SUPERMERCADO_PASILLOS = [
+  { key:"supermercado_lacteos_yogures_leches", titulo:"Lácteos", icono:"🥛", alternativas:["yogur","queso","leche","ricota"] },
+  { key:"supermercado_panificados_harinas", titulo:"Panes y harinas", icono:"🍞", alternativas:["pan","harina","bollos","tortilla"] },
+  { key:"supermercado_fideos_arroces_legumbres", titulo:"Pastas, arroz y legumbres", icono:"🌾", alternativas:["fideo","arroz","legumbre","lenteja","arveja"] },
+  { key:"supermercado_embutidos_fiambres", titulo:"Carnes y fiambres", icono:"🥩", alternativas:["fiambre","embutido","jamón","carne","asado"] },
+  { key:"supermercado_grasas_aceites", titulo:"Aceites y grasas", icono:"🫒", alternativas:["aceite","manteca","margarina","oliva"] },
+  { key:"supermercado_enlatados_salsas", titulo:"Enlatados y salsas", icono:"🥫", alternativas:["tomate","salsa","conserva","lata"] },
+  { key:"supermercado_untables_mermeladas", titulo:"Untables y mermeladas", icono:"🍯", alternativas:["untable","mermelada","dulce","manteca"] },
+  { key:"snacks_bebidas", titulo:"Snacks y bebidas", icono:"🥤", familiasAlternativas:["snacks","bebidas"], alternativas:["snack","bebida","apio","avellana","almendra"] }
+];
+function seccionCurada(texto, encabezado) {
+  const parrafos = String(texto || "").split(/\n\s*\n/);
+  const p = parrafos.find(x => normalizarBusqueda(x).startsWith(normalizarBusqueda(encabezado) + ":"));
+  return p ? p.slice(p.indexOf(":") + 1).trim() : "";
+}
+function rotacionDelDia(clave, cantidad) {
+  if (!cantidad) return 0;
+  const fecha = new Date().toLocaleDateString("en-CA", { timeZone:"America/Argentina/Tucuman" });
+  const hash = [...String(clave) + fecha].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return hash % cantidad;
+}
+function alternativasParaPasillo(pasillo, alternativas) {
+  const familias = new Set(pasillo.familiasAlternativas || []);
+  const terminos = (pasillo.alternativas || []).map(normalizarBusqueda);
+  return alternativas.filter(a => {
+    if (["rehacer","hueco"].includes(a.estado_curado)) return false;
+    const familia = String(a.familia_key || "");
+    const texto = normalizarBusqueda([a.mecanismo,a.descripcion_mecanismo,a.recomendacion,a.accion_texto].filter(Boolean).join(" "));
+    return (familias.size && familias.has(familia)) || terminos.some(t => t.length >= 3 && texto.includes(t));
+  }).sort((a,b) => (a.estado_curado === "conservar" ? 1 : 0) - (b.estado_curado === "conservar" ? 1 : 0) || (Number(b.prioridad_busqueda)||0) - (Number(a.prioridad_busqueda)||0));
+}
+function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
+  const adaptacion = regla?.soluciones?.adaptacion || "";
+  const trampa = seccionCurada(adaptacion, "TRAMPA DE MARKETING");
+  const criterio = seccionCurada(adaptacion, "CRITERIO DE ELECCIÓN");
+  const evitar = seccionCurada(adaptacion, "OPCIÓN A EVITAR");
+  const elegir = seccionCurada(adaptacion, "OPCIÓN A ELEGIR");
+  const candidatas = alternativasParaPasillo(pasillo, alternativas);
+  const indice = rotacionDelDia(pasillo.key, candidatas.length);
+  const seleccionada = candidatas.length ? candidatas[indice] : null;
+  const tipGratis = criterio || (seleccionada ? `Para esta categoría, compará ingredientes y porción. Alternativa curada de la matriz: ${seleccionada.mecanismo || seleccionada.recomendacion}.` : "");
+  const bloque = { id:pasillo.key, familiaKey:pasillo.key, titulo:pasillo.titulo, icono:pasillo.icono, nivelAcceso:"Premium", filtroGratis:tipGratis, requiereCriterioCurado:!tipGratis };
+  if (!esPremium) return bloque;
+  return {
+    ...bloque,
+    traduccionMarketing:trampa,
+    criterio,
+    evitar,
+    opcionGanadora:seleccionada ? { titulo:seleccionada.mecanismo || seleccionada.recomendacion, recomendacion:seleccionada.recomendacion || seleccionada.accion_texto || "", accion:seleccionada.accion_texto || "", fuente:"alternativas_locales", familiaKey:seleccionada.familia_key || null, estadoCurado:seleccionada.estado_curado || null } : (elegir ? { titulo:elegir, recomendacion:elegir, fuente:"soluciones", familiaKey:pasillo.key } : null),
+    alternativaDisponible:Boolean(seleccionada),
+    roi:{ cuantificable:false, mensaje:"La matriz actual no contiene precios comparables por unidad ni composición cuantificada para este reemplazo. No se publica un porcentaje; compará precio por kg o litro y cantidad por porción." },
+    accion:regla?.soluciones?.accion_usuario || "",
+    observacion:regla?.soluciones?.observacion_usuario || "",
+    continuidad:regla?.soluciones?.continuidad || "",
+    rotacion:{ fecha:new Date().toLocaleDateString("en-CA",{timeZone:"America/Argentina/Tucuman"}), indice }
   };
-  const titulo=String(regla.combinacion||"").replace(/^Supermercado:\s*/,"");
-  const bloque={
-    id:regla.id,titulo,
-    trampa:campo("TRAMPA DE MARKETING"),criterio:campo("CRITERIO"),evitar:campo("EVITAR"),elegir:campo("ELEGIR"),
-    nivelAcceso:regla.nivel_acceso,momento:regla.momento_requerido
-  };
-  const nombre=normalizarBusqueda(titulo);
-  if(/fiambres|embutidos/.test(nombre)){
-    bloque.trampa="Algunos fiambres se venden como si fueran un corte de carne, pero son una pasta de recortes procesados con agua, almidón o harina y aditivos.";
-    bloque.criterio="Buscá fibras o vetas visibles de carne curada. Si el interior es liso, uniforme y gomoso, probablemente sea un producto más reconstituido.";
-    bloque.evitar="Salchichas, paleta sanguchera económica y fiambres picados de textura gomosa.";
-    bloque.elegir="Jamón cocido de primera marca elaborado con pata real, jamón crudo o bondiola.";
-  }
-  if(/fideos|arroz|legumbres secas/.test(nombre)){
-    bloque.trampa="El envase puede destacar palabras como “integral” o “natural” sin explicar cómo está procesado el producto.";
-    bloque.criterio="Por qué importa: el trigo candeal suele conservar mejor la estructura del almidón durante la cocción; el arroz parboiled recibe un tratamiento previo que modifica el almidón. Ambos pueden reducir la respuesta glucémica frente a algunas alternativas, según variedad, cocción y porción.";
-    bloque.evitar="No elijas solo por el frente del paquete ni te guíes únicamente por el color.";
-    bloque.elegir="Para fideos, priorizá sémola de trigo candeal; para arroz, considerá parboiled. Ajustá la porción y acompañá con verduras, legumbres o proteína.";
-  }
-  return bloque;
 }
 function puntuacionCoincidencia(ingredientes, textoFicha) {
   const stop = new Set(["con","para","sin","que","esto","esta","tengo","cocinar","hacer","algo","comida","ingredientes","hoy","una","uno","unos","unas","los","las","del","por","pero","como","desde","quiero","podria","podemos","tiene","tienen"]);
@@ -150,10 +180,15 @@ export default async function handler(req, res) {
     if (req.query?.vista === "supermercado") {
       const auth = await validarUsuario(req);
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
-      const reglasSuper = await supabaseFetch(`reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key&combinacion=like.Supermercado%3A%20*&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado&order=combinacion.asc`);
-      const bloques = reglasSuper.map(parsearBloqueSupermercado);
-      if (auth.nivelAcceso !== "Premium") return res.status(200).json({ ok:true, requierePremium:true, bloques:bloques.map((b)=>({id:b.id,titulo:b.titulo,nivelAcceso:b.nivelAcceso})) });
-      return res.status(200).json({ ok:true, requierePremium:false, bloques });
+      const [reglasSuper, alternativas] = await Promise.all([
+        supabaseFetch("reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado"),
+        supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,estado_curado,prioridad_busqueda")
+      ]);
+      const reglasPorFamilia = new Map(reglasSuper.map(r => [r.familia_key, r]));
+      const esPremium = auth.nivelAcceso === "Premium";
+      const bloques = SUPERMERCADO_PASILLOS.map(p => construirBloqueSupermercado(p, reglasPorFamilia.get(p.key), alternativas, esPremium));
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.status(200).json({ ok:true, requierePremium:!esPremium, bloques });
     }
     const alternativas = await supabaseFetch(`alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia,tipo_card,badge_principal,tag_frio_calor,orden_prioridad,intencion_principal_id,intenciones_secundarias,familia_key,prioridad_busqueda,estado_curado,accion_texto,observacion_texto,continuidad_texto`);
     const intenciones = await supabaseFetch(`intenciones?select=id,clave`);
