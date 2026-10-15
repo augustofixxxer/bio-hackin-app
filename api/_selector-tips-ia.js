@@ -146,17 +146,17 @@ function construirProtocoloCulinarioAdaptativo(textoComida) {
   const t = normalizarProtocolo(textoComida);
   if (!t.trim()) return null;
   const contiene = (re) => re.test(t);
-  const hayAlmidon = contiene(/\\b(arroz|papa|papas|patata|batata|boniato|maiz|choclo|fideo|fideos|pasta|noqui|ñoqui|polenta|avena|lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|quinoa|pan|tortilla|harina|empanada|pizza|batata|mandioca|yuca)\\b/);
-  const hayVegetales = contiene(/\\b(verdura|verduras|vegetal|vegetales|ensalada|lechuga|rucula|espinaca|acelga|brocoli|coliflor|repollo|tomate|zanahoria|cebolla|morr[oó]n|pimiento|zapallito|zucchini|berenjena|pepino|esparrago|chaucha|calabaza)\\b/);
-  const hayProteinaAnimal = contiene(/\\b(carne|vacuno|ternera|cerdo|pollo|pavo|pescado|atun|salmon|merluza|huevo|huevos|marisco|langostino|camaron)\\b/);
-  const hayLegumbres = contiene(/\\b(lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|arveja|arvejas|haba|habas)\\b/);
-  const hayCucurma = contiene(/\\b(curcuma|turmeric)\\b/);
-  const hayJengibre = contiene(/\\b(jengibre)\\b/);
-  const hayComino = contiene(/\\b(comino)\\b/);
-  const hayAjoCebolla = contiene(/\\b(ajo|cebolla)\\b/);
-  const hayFrito = contiene(/\\b(frito|frita|fritos|fritas|rebozado|rebozada|milanesa)\\b/);
-  const haySopaGuiso = contiene(/\\b(sopa|guiso|estofado|cazuela|olla)\\b/);
-  const hayGrasaNombrada = contiene(/\\b(manteca|ghee|grasa vacuna|sebo|aceite de oliva|oliva)\\b/);
+  const hayAlmidon = contiene(/\b(arroz|papa|papas|patata|batata|boniato|maiz|choclo|fideo|fideos|pasta|noqui|ñoqui|polenta|avena|lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|quinoa|pan|tortilla|harina|empanada|pizza|batata|mandioca|yuca)\b/);
+  const hayVegetales = contiene(/\b(verdura|verduras|vegetal|vegetales|ensalada|lechuga|rucula|espinaca|acelga|brocoli|coliflor|repollo|tomate|zanahoria|cebolla|morr[oó]n|pimiento|zapallito|zucchini|berenjena|pepino|esparrago|chaucha|calabaza)\b/);
+  const hayProteinaAnimal = contiene(/\b(carne|vacuno|ternera|cerdo|pollo|pavo|pescado|atun|salmon|merluza|huevo|huevos|marisco|langostino|camaron)\b/);
+  const hayLegumbres = contiene(/\b(lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|arveja|arvejas|haba|habas)\b/);
+  const hayCucurma = contiene(/\b(curcuma|turmeric)\b/);
+  const hayJengibre = contiene(/\b(jengibre)\b/);
+  const hayComino = contiene(/\b(comino)\b/);
+  const hayAjoCebolla = contiene(/\b(ajo|cebolla)\b/);
+  const hayFrito = contiene(/\b(frito|frita|fritos|fritas|rebozado|rebozada|milanesa)\b/);
+  const haySopaGuiso = contiene(/\b(sopa|guiso|estofado|cazuela|olla)\b/);
+  const hayGrasaNombrada = contiene(/\b(manteca|ghee|grasa vacuna|sebo|aceite de oliva|oliva)\b/);
 
   const coccion = haySopaGuiso
     ? "Como ya es una preparación húmeda (sopa, guiso o estofado), mantené un hervor suave y la olla tapada para conservar humedad; evitá reducirla a fuego fuerte."
@@ -195,11 +195,11 @@ function construirProtocoloCulinarioAdaptativo(textoComida) {
   if (hayAlmidon) {
     protocolo.almidonResistente = hayLegumbres
       ? "Como aparecen legumbres (y pueden coexistir con otros almidones), podés cocinar con antelación, enfriar en heladera y recalentar bien cuando corresponda; el enfriado también puede aumentar el almidón resistente en arroz o papa si forman parte del plato."
-      : contiene(/\\b(arroz)\\b/) && contiene(/\\b(papa|papas|patata|batata|boniato)\\b/)
+      : contiene(/\b(arroz)\b/) && contiene(/\b(papa|papas|patata|batata|boniato)\b/)
         ? "La descripción incluye arroz y papa/batata: si preparás una porción extra, enfriá pronto en heladera durante 12–24 h y recalentá bien; hacelo solo con sobrantes conservados de forma segura."
-        : contiene(/\\b(arroz)\\b/)
+        : contiene(/\b(arroz)\b/)
           ? "Como el plato incluye arroz, podés preparar una porción con antelación, enfriarla pronto en heladera durante 12–24 h y recalentarla bien; conservá el arroz de forma segura y no lo dejes horas a temperatura ambiente."
-          : contiene(/\\b(papa|papas|patata|batata|boniato|mandioca|yuca)\\b/)
+          : contiene(/\b(papa|papas|patata|batata|boniato|mandioca|yuca)\b/)
             ? "Como el plato incluye papa, batata o mandioca, podés enfriar una porción cocida en heladera durante 12–24 h y recalentarla bien; conservá los sobrantes de forma segura."
             : "Como el plato incluye un alimento con almidón o una legumbre, podés cocinarlo con antelación, enfriarlo pronto en heladera y recalentarlo bien; el enfriado puede aumentar el almidón resistente, aunque el efecto depende del alimento y la preparación.";
   }
