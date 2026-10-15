@@ -37,33 +37,81 @@
 
 
 
-/* Pulido final de Heladera y Góndola */
-.supermarket-detail{padding:14px;background:#111a17;border:1px solid rgba(255,255,255,.1);border-radius:16px}
-.supermarket-detail>h3,.heladera-result>h3{font-size:20px;font-weight:700;line-height:1.2;color:#fff;margin:0 0 12px}
-.supermarket-detail .decision{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}
-.supermarket-detail .decision>div{min-width:0;padding:13px;border-radius:13px}
-.supermarket-detail .decision .warning{background:rgba(130,37,48,.3);border:1px solid rgba(224,104,115,.38)}
-.supermarket-detail .decision .choice{background:rgba(27,112,72,.27);border:1px solid rgba(92,190,137,.38)}
-.supermarket-detail .decision b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}
-.supermarket-detail .decision .warning>b{color:#ffabb0}
-.supermarket-detail .decision .choice>b{color:#9ce8b8}
-.supermarket-detail .decision span{display:block;font-size:12px;line-height:1.5;color:#f7f5f0}
-.supermarket-detail .decision small{display:block;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.09);font-size:11px;line-height:1.5;color:#d2ddd6}
-.supermarket-detail .decision small>b{display:block;text-transform:none;letter-spacing:0;font-size:11px;color:#fff;margin-bottom:4px}
-.supermarket-detail .decision .avoid{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;line-height:1.45;color:#f5c4c7}
-.supermarket-detail .decision .avoid b{display:inline;text-transform:none;letter-spacing:0;color:#ffabb0}
-.heladera-result{margin-top:14px;padding:16px;border-radius:18px;background:linear-gradient(155deg,#1b2823 0%,#121a18 100%);border:1px solid rgba(143,168,155,.26);box-shadow:0 12px 30px rgba(0,0,0,.2)}
-.heladera-result>h3{margin-bottom:0}
-.heladera-result .adjustment{margin-top:15px;padding:13px;border-radius:12px;background:rgba(197,160,89,.11);border:1px solid rgba(197,160,89,.18);border-left:4px solid #e3b84f}
-.heladera-result .adjustment b{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:800;color:#f0cb70;margin-bottom:7px}
-.heladera-result .adjustment p{margin:0;color:#f4eee1;font-size:13px;line-height:1.55}
-.method-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:13px}
-.method-grid>div{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;min-width:0;padding:12px;border:1px solid rgba(255,255,255,.075);border-radius:13px;background:#202a26}
-.method-grid .method-number{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:rgba(197,160,89,.14);color:#e7c776;font-size:15px}
-.method-grid b{display:block;color:#fff;font-size:12px;font-weight:700;margin:1px 0 5px}
-.method-grid span{font-size:12px;color:#c4cec8;line-height:1.5}
-@media(min-width:390px){.supermarket-detail .decision{grid-template-columns:repeat(2,minmax(0,1fr))}.method-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:389px){.supermarket-detail .decision,.method-grid{grid-template-columns:1fr}}
+
+/* Sistema visual integral: pestaña Descubrir */
+.discover-screen{padding:20px 16px 108px;line-height:1.6}
+.discover-screen .top{align-items:center;margin-bottom:22px}
+.discover-screen .brand{font-size:20px;font-weight:700;color:#fff;letter-spacing:.01em}
+.discover-screen .status{font-size:12px;color:#a6b0aa}
+.discover-screen .hero{margin-bottom:22px}
+.discover-screen .eyebrow,.discover-screen .label,.discover-screen .feature-kicker{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;line-height:1.35}
+.discover-screen .eyebrow{color:#d9b96b;margin-bottom:4px}
+.discover-screen h1,.discover-screen h2,.discover-screen h3{font-size:20px;font-weight:700;line-height:1.35;color:#fff}
+.discover-screen h1{margin:7px 0 9px}
+.discover-screen h3{margin:7px 0 8px}
+.discover-screen p{font-size:14px;font-weight:400;line-height:1.6;color:#e0e0e0}
+.discover-screen .hero p{margin:0;color:#d0d7d2}
+.discover-screen .precomer,.discover-screen .pillbox,.discover-screen .card,.discover-screen .event{padding:18px;margin-top:16px;border-radius:17px}
+.discover-screen .precomer>p{margin:3px 0 10px}
+.discover-screen .precomer h3{margin:5px 0 8px}
+.discover-screen .label{color:#d9b96b;margin:12px 0 7px;padding:5px 9px;border-radius:999px;background:rgba(197,160,89,.12)}
+.discover-screen .card{padding:16px;background:#111a17}
+.discover-screen .card h3,.discover-screen .event h3{font-size:20px;margin:5px 0 8px}
+.discover-screen .card p,.discover-screen .event p{font-size:14px;color:#e0e0e0;line-height:1.6}
+.discover-screen .search{padding:7px;background:#111a17}
+.discover-screen .search input,.discover-screen textarea{font-size:14px;line-height:1.5}
+.discover-screen .primary,.discover-screen .search button{background:#d8ad4c;color:#19170f;font-size:14px;font-weight:700;padding:13px 15px;border-radius:12px}
+.discover-screen .secondary{font-size:13px;padding:12px}
+.discover-screen .supermarket-grid{gap:9px;margin-top:14px}
+.discover-screen .supermarket-chip{padding:12px 10px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.2px;line-height:1.45;border-radius:12px;background:#111a17}
+.discover-screen .supermarket-detail{margin-top:14px;padding:14px;border-radius:15px;background:#101714}
+.discover-screen .supermarket-detail>h3{font-size:20px;font-weight:700;margin:0 0 12px}
+.discover-screen .supermarket-detail .decision{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+.discover-screen .supermarket-detail .decision>div{min-width:0;padding:14px;border-radius:12px}
+.discover-screen .supermarket-detail .decision .warning{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35)}
+.discover-screen .supermarket-detail .decision .choice{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.34)}
+.discover-screen .supermarket-detail .decision b{font-size:14px;font-weight:600;letter-spacing:.5px;margin-bottom:8px}
+.discover-screen .supermarket-detail .decision .warning>b{color:#ff9b9b}
+.discover-screen .supermarket-detail .decision .choice>b{color:#7de3b6}
+.discover-screen .supermarket-detail .decision span{font-size:14px;line-height:1.6;color:#e0e0e0}
+.discover-screen .supermarket-detail .decision small{display:block;margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.6;color:#d0d8d2}
+.discover-screen .supermarket-detail .decision small>b{display:block;font-size:13px;text-transform:none;letter-spacing:0;color:#fff}
+.discover-screen .supermarket-detail .decision .avoid{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.1);font-size:13px;line-height:1.6;color:#f2c7c7}
+.discover-screen .supermarket-detail .decision .avoid b{display:inline;font-size:13px;text-transform:none;letter-spacing:0;color:#ffb0b0}
+.discover-screen .heladera-result{margin-top:15px;padding:18px;border-radius:17px;background:#111a17;border:1px solid rgba(255,255,255,.1)}
+.discover-screen .heladera-result>h3{font-size:20px;font-weight:700;color:#fff;margin:0}
+.discover-screen .heladera-result .adjustment{margin-top:14px;padding:12px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.1);border-left:4px solid #ffd700;border-radius:8px}
+.discover-screen .heladera-result .adjustment b{font-size:14px;font-weight:700;letter-spacing:.5px;color:#ffdf70;margin-bottom:6px}
+.discover-screen .heladera-result .adjustment p{font-size:14px;color:#e0e0e0;line-height:1.6}
+.discover-screen .method-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+.discover-screen .method-grid>div{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;padding:16px;margin:0;border:1px solid #2a2d2a;border-radius:8px;background:#1a1d1a}
+.discover-screen .method-grid .method-number{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:rgba(255,215,0,.1);color:#ffd966;font-size:17px}
+.discover-screen .method-grid b{font-size:13px;font-weight:700;color:#fff;margin:0 0 5px}
+.discover-screen .method-grid span{font-size:13px;line-height:1.6;color:#cbd1cd}
+.discover-screen .result{margin-top:13px}
+.discover-screen .result>.card{padding:17px;background:#111a17;border:1px solid rgba(255,255,255,.1)}
+.discover-screen .result>.card>h3{font-size:20px;font-weight:700;color:#fff}
+.discover-screen .observation-panel{margin-top:12px;padding:14px;border-radius:12px;background:#1a211e;border:1px solid rgba(255,255,255,.1)}
+.discover-screen .observation-panel .label{margin-top:0}
+.discover-screen .premium-prompt{margin-top:14px;padding:15px;border-radius:12px;background:rgba(197,160,89,.08);border:1px solid rgba(197,160,89,.25)}
+.discover-screen .premium-prompt>b{display:block;font-size:14px;font-weight:700;letter-spacing:.5px;color:#f1ce77}
+.discover-screen .premium-prompt p{margin:6px 0 8px;color:#d5d9d6;font-size:14px}
+.discover-screen .pills{gap:9px;margin-top:14px}
+.discover-screen .pill{padding:13px 12px;font-size:12px;font-weight:600;letter-spacing:.2px;text-transform:uppercase;line-height:1.45;border-radius:12px;background:#111a17}
+.discover-screen .pill-slot>.result{margin-top:10px}
+.discover-screen .pill-slot>.result .card{margin-top:0}
+.discover-screen .pillbox>h3{font-size:20px;font-weight:700;margin:0 0 7px!important}
+.discover-screen .pillbox>p{margin:0;color:#d0d7d2!important}
+.discover-screen .pillbox .card{margin-top:0}
+.discover-screen .pillbox .card .label{margin-top:0}
+.discover-screen .pillbox .card h3{font-size:18px}
+.discover-screen .pillbox .card p{position:relative;padding-left:14px}
+.discover-screen .pillbox .card p:before{content:"•";position:absolute;left:0;color:#d9b96b;font-weight:700}
+.discover-screen .pillbox .card .primary{margin-top:8px}
+.discover-screen .precomer-search{margin-top:13px}
+.discover-screen .saved{font-size:13px;line-height:1.5;padding:12px}
+@media(min-width:520px){.discover-screen .supermarket-detail .decision{grid-template-columns:repeat(2,minmax(0,1fr))}.discover-screen .method-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:380px){.discover-screen{padding-left:12px;padding-right:12px}.discover-screen .precomer,.discover-screen .pillbox{padding:14px}.discover-screen .supermarket-chip{font-size:11px;padding:10px 8px}}
 
 </style>
 </head>
@@ -80,7 +128,8 @@ function suenoValor(valor){const h=Number(valor);if(!h)return '';if(h<6)return '
 function hidratacionValor(valor){const l=Number(valor);if(!l)return '';if(l<1)return 'menos_1l';if(l<2)return '1_2l';if(l<=3)return '2_3l';return 'mas_3l'}
 function actividadValor(valor){const m=Number(valor);if(!m)return 'sedentario';if(m<60)return 'activo';return 'muy_activo'}
 function intentDeTexto(t){const n=String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');for(const [intent,terms] of Object.entries(INTENTOS)){if(terms.some(x=>n.includes(String(x).normalize('NFD').replace(/[\u0300-\u036f]/g,''))))return intent}return null}
-function PillCards({data,onMiDia}){if(!data)return null;const food=data.food;const activity=data.activity;return <><div className="card"><div className="label">🔴 POSIBLES CAUSAS</div><h3>{data.intro}</h3><p>Primero entendé qué podría estar pasando. Después podés probar un cambio simple y registrar qué ocurre en tu día.</p></div><div className="card"><div className="label">🟡 UNA PROPUESTA PARA PROBAR</div><h3>Reseteo Propio te invita a probar con:</h3>{food?.accion_texto&&<p className="action"><b>Alimento:</b> {food.accion_texto}</p>}{activity?.accion_texto&&<p className="action"><b>Hábito de bienestar:</b> {activity.accion_texto}</p>}<button className="primary" onClick={onMiDia}>✦ Llevarlo a Mi Día</button></div></>}
+function PillCards({data,onMiDia}){if(!data)return null;const food=data.food;const activity=data.activity;return <><div className="card"><div className="label">🔴 POSIBLES CAUSAS</div><h3>{data.intro}</h3><p>Primero entendé qué podría estar pasando.</p><p>Probá un cambio simple y registrá qué ocurre en tu día.</p></div><div className="card"><div className="label">🟡 UNA PROPUESTA PARA PROBAR</div><h3>Una opción concreta para empezar</h3>{food?.accion_texto&&<p className="action"><b>Alimento:</b> {food.accion_texto}</p>}{activity?.accion_texto&&<p className="action"><b>Hábito de bienestar:</b> {activity.accion_texto}</p>}<button className="primary" onClick={onMiDia}>✦ LLEVARLO A MI DÍA</button></div></>}
+function iconoCategoriaSupermercado(titulo){const t=String(titulo||'').toLowerCase();if(/fiambre|embutid|carne/.test(t))return '🥩';if(/enlat|conserva|lata/.test(t))return '🥫';if(/fideo|arroz|legumbre|cereal/.test(t))return '🌾';if(/grasa|aceite/.test(t))return '🥑';if(/láct|lacte|leche|queso|yogur/.test(t))return '🥛';if(/panific|pan|gallet/.test(t))return '🍞';if(/untable|dulce|miel|mermelada/.test(t))return '🍯';return '🛒'}
 function textoAjusteHeladera(data){
  const bruto=String(data?.accion||data?.recomendacion||"Usá la ficha como punto de partida y adaptá la combinación a los ingredientes disponibles.");
  const sinGramos=bruto.replace(/\b\d+(?:[.,]\d+)?\s*(?:g|gr|gramos)\b/gi,"una porción");
@@ -135,17 +184,17 @@ function App(){
  }
 
  async function registrarBienestar(){const body={energia:escalaValor(energy)||undefined,digestion:escalaValor(dig)||undefined,sueno:suenoValor(sleep)||undefined,hidratacion:hidratacionValor(water)||undefined,actividad_fisica:actividadValor(activity)||undefined};if(!Object.values(body).some(v=>v!==undefined)){setMsg('Elegí al menos una señal para guardar.');return}if(!pase()){window.location.replace('/index.html');return}setBusy(true);setMsg('');try{const r=await fetch('/api/registrar-bienestar',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+pase()},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||'No se pudo guardar');setMsg('✓ Listo. Guardamos lo que anotaste hoy.')}catch(e){setMsg(e.message||'No pudimos guardar esto ahora.')}finally{setBusy(false)}}
- function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;return <div className="result"><div className="card"><div className="label">Observación antes de comer</div><h3>{data.titulo}</h3><p>{data.texto}</p>{data.observacion&&<><div className="label">Qué observar en tu experiencia</div><p>{data.observacion}</p></>}{data.premium&&<><div className="bridge"><b>Si estas características te generan dudas, podés profundizar.</b><p style={{margin:'6px 0 0'}}>Premium te permite explorar distintas formas de preparar, combinar o modificar una comida y después observar qué cambia en tu propia experiencia.</p><button className="primary" onClick={()=>irPremium('antes-de-comer',data)}>✦ Ir a mi experimento en Premium →</button></div></>}</div></div>}function renderResultado(data=resultado){if(!data)return null;if(data.tipo==='pildora')return <PillCards data={{intro:data.intro,food:data.food,activity:data.activity,premium:data.premium}} onMiDia={irMiDiaDesdePildora}/>;if(data.tipo==='vacio')return <div className="result"><div className="card"><div className="label">Todavía no</div><h3>{data.titulo}</h3><p>{data.texto}</p></div></div>;return <div className="result"><div className="card"><div className="label">Lo que encontramos</div><h3>{data.titulo}</h3><p>{data.texto}</p>{data.contexto&&<><div className="label">Por qué puede ser interesante</div><p>{data.contexto}</p></>}{data.adaptacion&&<><div className="label">Una idea para probar</div><p className="action">{data.adaptacion}</p></>}{data.accion&&<><div className="label">Podés probar</div><p className="action">{data.accion}</p></>}{data.observacion&&<><div className="label">Prestá atención a</div><p>{data.observacion}</p></>}{data.continuidad&&<><div className="label">Para seguir aprendiendo</div><p>{data.continuidad}</p></>}{data.variable&&<p style={{fontSize:11,color:'#8fa89b'}}>Aspecto a comparar: {data.variable}{data.categoria?' · '+data.categoria:''}</p>}{data.premium&&<button className="primary" onClick={()=>irPremium('hallazgo',data)}>✦ Ver la sugerencia en Premium →</button>}</div></div>}
+ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;return <div className="result"><div className="card observation-result"><div className="label">OBSERVACIÓN ANTES DE COMER</div><h3>{data.titulo}</h3><div className="observation-panel"><p>{data.texto}</p>{data.observacion&&<><div className="label">QUÉ OBSERVAR EN TU EXPERIENCIA</div><p>{data.observacion}</p></>}</div>{data.premium&&<div className="premium-prompt"><b>✦ EXPLORÁ MÁS</b><p>Compará distintas formas de preparar o combinar esta comida y observá qué cambia en tu experiencia.</p><button className="primary" onClick={()=>irPremium('antes-de-comer',data)}>✦ IR A MI EXPERIMENTO EN PREMIUM</button></div>}</div></div>}function renderResultado(data=resultado){if(!data)return null;if(data.tipo==='pildora')return <PillCards data={{intro:data.intro,food:data.food,activity:data.activity,premium:data.premium}} onMiDia={irMiDiaDesdePildora}/>;if(data.tipo==='vacio')return <div className="result"><div className="card"><div className="label">NO ENCONTRAMOS UNA COINCIDENCIA</div><h3>{data.titulo}</h3><div className="observation-panel"><p>{data.texto}</p></div></div></div>;return <div className="result"><div className="card observation-result"><div className="label">LO QUE ENCONTRAMOS</div><h3>{data.titulo}</h3><div className="observation-panel"><p>{data.texto}</p>{data.contexto&&<><div className="label">POR QUÉ PUEDE SER INTERESANTE</div><p>{data.contexto}</p></>}{data.adaptacion&&<><div className="label">UNA IDEA PARA PROBAR</div><p className="action">{data.adaptacion}</p></>}{data.accion&&<><div className="label">PODÉS PROBAR</div><p className="action">{data.accion}</p></>}{data.observacion&&<><div className="label">PRESTÁ ATENCIÓN A</div><p>{data.observacion}</p></>}{data.continuidad&&<><div className="label">PARA SEGUIR APRENDIENDO</div><p>{data.continuidad}</p></>}{data.variable&&<p style={{fontSize:13,color:'#aab5af'}}>Aspecto a comparar: {data.variable}{data.categoria?' · '+data.categoria:''}</p>}</div>{data.premium&&<div className="premium-prompt"><b>✦ EXPLORÁ MÁS</b><p>Profundizá en esta sugerencia y definí qué aspecto querés comparar en tu experiencia.</p><button className="primary" onClick={()=>irPremium('hallazgo',data)}>✦ VER LA SUGERENCIA EN PREMIUM</button></div>}</div></div>}
  const premiumAbiertas=premiumExperimentos.filter(x=>x.estado==='abierto');
  const premiumCerradas=premiumExperimentos.filter(x=>x.estado==='cerrado');
  const premiumTienePatrones=premiumCerradas.length>0;
  const premiumEstadoVisual=premiumAbiertas.length>0?'observacion':premiumTienePatrones?'aprendizaje':'listo';
  const premiumEstadoTexto=premiumAbiertas.length>0?'Tenés una prueba en curso':premiumTienePatrones?'Ya tenés aprendizajes para revisar':'Podés crear tu primera prueba';
- return <><main className="wrap"><div className="top"><div className="brand">RESETEO PROPIO</div><div className="status">Tu espacio personal</div></div>
+ return <><main className={'wrap '+(tab==='descubrir'?'discover-screen':'')}><div className="top"><div className="brand">RESETEO PROPIO</div><div className="status">Tu espacio personal</div></div>
  {tab==='descubrir'&&<><section className="hero"><div className="eyebrow">DESCUBRIR</div><h1>Entendé mejor lo que comés y cómo te sentís.</h1><p>Elegí una situación que quieras explorar o mirá una comida antes de comerla. Acá empieza la exploración.</p></section><section className="precomer" style={{marginTop:12}}>
  <div className="eyebrow">ASISTENTE DE SUPERMERCADO</div><h3>¿Vas al súper? Evitá las trampas de góndola</h3>
  <p>Elegí una categoría y compará la etiqueta sin decidir solo por el frente del envase.</p>
- <div className="supermarket-grid">{supermercadoReglas.map((bloque)=><button key={bloque.id} className={'supermarket-chip '+(supermercadoSeleccionada?.id===bloque.id?'active':'')} onClick={()=>setSupermercadoSeleccionada(bloque)}>{bloque.titulo}{supermercadoPremium?' · Premium':''}</button>)}</div>
+ <div className="supermarket-grid">{supermercadoReglas.map((bloque)=><button key={bloque.id} className={'supermarket-chip '+(supermercadoSeleccionada?.id===bloque.id?'active':'')} onClick={()=>setSupermercadoSeleccionada(bloque)}>{iconoCategoriaSupermercado(bloque.titulo)} {bloque.titulo}{supermercadoPremium?' · PREMIUM':''}</button>)}</div>
  {supermercadoMsg&&<div className="saved">{supermercadoMsg}</div>}
  {supermercadoSeleccionada&&<div className="supermarket-detail"><h3>{supermercadoSeleccionada.titulo}</h3>
   {supermercadoPremium?<><p>Las siete categorías están disponibles como acceso rápido. El detalle de las trampas y los veredictos forma parte de Premium.</p><button className="primary" onClick={()=>irPremium('basica')}>✦ Explorar Premium</button></>:<>
