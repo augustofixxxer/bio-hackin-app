@@ -91,6 +91,22 @@
 @media(min-width:520px){.discover-screen .supermarket-detail .decision{grid-template-columns:repeat(2,minmax(0,1fr))}.discover-screen }
 @media(max-width:380px){.discover-screen{padding-left:12px;padding-right:12px}.discover-screen .precomer,.discover-screen .pillbox{padding:14px}.discover-screen .supermarket-chip{font-size:11px;padding:10px 8px}}
 
+
+/* Fase 3: decisión táctica de góndola */
+.supermarket-experience .supermarket-grid{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;padding:2px 1px 9px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.supermarket-experience .supermarket-chip{flex:0 0 auto;max-width:82%;white-space:nowrap;scroll-snap-align:start;padding:12px 14px;font-size:12px;border-radius:999px}
+.supermarket-free-filter,.supermarket-premium-block{margin-top:10px;padding:13px;border-radius:12px;background:#17211e;border:1px solid rgba(255,255,255,.1)}
+.supermarket-free-filter{border-color:rgba(197,160,89,.45);background:rgba(197,160,89,.08)}
+.supermarket-free-filter>b,.supermarket-premium-block>b{display:block;font-size:11px;letter-spacing:.04em;margin-bottom:7px;color:#d9b96b}
+.supermarket-free-filter p,.supermarket-premium-block p{margin:0;color:#e0e0e0;font-size:13px;line-height:1.55}
+.supermarket-premium-block.winner{border-color:rgba(111,190,139,.4);background:rgba(16,185,129,.06)}
+.supermarket-premium-block.winner>b{color:#8fd3a5}
+.supermarket-premium-block h4{font-size:14px;margin:4px 0 7px}
+.supermarket-premium-block small{display:block;margin-top:8px;color:#aab5af;font-size:10px;line-height:1.45}
+.supermarket-premium-block.roi{border-color:rgba(197,160,89,.28)}
+.supermarket-more{margin-top:10px;padding:11px;border:1px solid rgba(255,255,255,.1);border-radius:10px}
+.supermarket-more summary{cursor:pointer;font-size:12px;font-weight:700}
+.supermarket-more p{font-size:12px;margin:8px 0 0}
 </style>
 </head>
 <body><div id="root"><div id="boot" style="padding:24px;font:14px Arial,sans-serif;color:#aab5af">Cargando Reseteo Propio…</div></div>
@@ -153,19 +169,21 @@ function App(){
  const premiumEstadoVisual=premiumAbiertas.length>0?'observacion':premiumTienePatrones?'aprendizaje':'listo';
  const premiumEstadoTexto=premiumAbiertas.length>0?'Tenés una prueba en curso':premiumTienePatrones?'Ya tenés aprendizajes para revisar':'Podés crear tu primera prueba';
  return <><main className={'wrap '+(tab==='descubrir'?'discover-screen':'')}><div className="top"><div className="brand">RESETEO PROPIO</div><div className="status">Tu espacio personal</div></div>
- {tab==='descubrir'&&<><section className="hero"><div className="eyebrow">DESCUBRIR</div><h1>Entendé mejor lo que comés y cómo te sentís.</h1><p>Elegí una situación que quieras explorar o mirá una comida antes de comerla. Acá empieza la exploración.</p></section><section className="precomer" style={{marginTop:12}}>
- <div className="eyebrow">ASISTENTE DE SUPERMERCADO</div><h3>¿Vas al súper? Evitá las trampas de góndola</h3>
- <p>Elegí una categoría y compará la etiqueta sin decidir solo por el frente del envase.</p>
- <div className="supermarket-grid">{supermercadoReglas.map((bloque)=><button key={bloque.id} className={'supermarket-chip '+(supermercadoSeleccionada?.id===bloque.id?'active':'')} onClick={()=>setSupermercadoSeleccionada(bloque)}>{iconoCategoriaSupermercado(bloque.titulo)} {bloque.titulo}{supermercadoPremium?' · PREMIUM':''}</button>)}</div>
+ {tab==='descubrir'&&<><section className="hero"><div className="eyebrow">DESCUBRIR</div><h1>Entendé mejor lo que comés y cómo te sentís.</h1><p>Elegí una situación que quieras explorar o mirá una comida antes de comerla. Acá empieza la exploración.</p></section><section className="precomer supermarket-experience" style={{marginTop:12}}>
+ <div className="eyebrow">ASISTENTE DE SUPERMERCADO · 1 TOQUE</div><h3>Decidí mejor frente a la góndola</h3>
+ <p>Elegí un pasillo. Primero recibís una regla rápida; Premium suma traducción de etiqueta, alternativa curada y comparación económica honesta.</p>
+ <div className="supermarket-grid">{supermercadoReglas.map((bloque)=><button key={bloque.id} className={'supermarket-chip '+(supermercadoSeleccionada?.id===bloque.id?'active':'')} onClick={()=>setSupermercadoSeleccionada(bloque)}>{bloque.icono||iconoCategoriaSupermercado(bloque.titulo)} {bloque.titulo}</button>)}</div>
  {supermercadoMsg&&<div className="saved">{supermercadoMsg}</div>}
- {supermercadoSeleccionada&&<div className="supermarket-detail"><h3>{supermercadoSeleccionada.titulo}</h3>
-  {supermercadoPremium?<><p>Las siete categorías están disponibles como acceso rápido. El detalle de las trampas y los veredictos forma parte de Premium.</p><button className="primary" onClick={()=>irPremium('basica')}>✦ Explorar Premium</button></>:<>
-   <div className="decision">
-    <div className="warning"><b>⚠ LA TRAMPA</b><span>• {supermercadoSeleccionada.trampa||'Revisá la composición real y no decidas solo por el frente del envase.'}</span><div className="avoid"><b>Mejor evitar:</b> {supermercadoSeleccionada.evitar||'Productos cuya composición no esté clara.'}</div></div>
-    <div className="choice"><b>✓ QUÉ ELEGIR</b><span>• {supermercadoSeleccionada.elegir||'Compará ingredientes y nivel de procesamiento antes de decidir.'}</span>
-     {supermercadoSeleccionada.criterio&&<small><b>{/fideos|arroz|legumbres/i.test(supermercadoSeleccionada.titulo)?'Por qué conviene':'En qué fijarte'}</b>{supermercadoSeleccionada.criterio}</small>}
-    </div>
+ {supermercadoSeleccionada&&<div className="supermarket-detail">
+  <h3>{supermercadoSeleccionada.titulo}</h3>
+  <div className="supermarket-free-filter"><b>⚡ FILTRO DE 3 SEGUNDOS</b><p>{supermercadoSeleccionada.filtroGratis||'Usá la lista de ingredientes y la porción declarada para comparar productos de esta categoría.'}</p></div>
+  {supermercadoPremium?<div className="premium-prompt"><b>✦ DESBLOQUEÁ LA DECISIÓN COMPLETA</b><p>La regla rápida queda disponible gratis. Premium agrega la lectura táctica, una alternativa de la matriz curada cuando existe y el criterio para comparar el costo.</p><button className="primary" onClick={()=>irPremium('basica')}>Explorar Premium</button></div>:<>
+   <div className="supermarket-premium-block"><b>💥 1 · TRADUCCIÓN DEL MARKETING</b><p>{supermercadoSeleccionada.traduccionMarketing||supermercadoSeleccionada.criterio||'Criterio de lectura basado en la regla curada de esta categoría.'}</p></div>
+   <div className="supermarket-premium-block winner"><b>🏷️ 2 · OPCIÓN GANADORA</b>
+    {supermercadoSeleccionada.opcionGanadora?<><h4>{supermercadoSeleccionada.opcionGanadora.titulo}</h4><p>{supermercadoSeleccionada.opcionGanadora.accion||supermercadoSeleccionada.opcionGanadora.recomendacion}</p><small>Fuente: {supermercadoSeleccionada.opcionGanadora.fuente==='alternativas_locales'?'alternativas locales curadas':'solución curada existente'}{supermercadoSeleccionada.opcionGanadora.estadoCurado?' · estado '+supermercadoSeleccionada.opcionGanadora.estadoCurado:''}</small></>:<p>No se presenta un reemplazo no validado. La matriz de esta categoría necesita una alternativa local curada antes de recomendar una marca o producto concreto.</p>}
    </div>
+   <div className="supermarket-premium-block roi"><b>💰 3 · AHORRO INTELIGENTE</b><p>{supermercadoSeleccionada.roi?.mensaje||'Solo se calcula ahorro cuando existen precios y unidades comparables en la matriz.'}</p></div>
+   {supermercadoSeleccionada.criterio&&<details className="supermarket-more"><summary>Ver criterio de elección</summary><p>{supermercadoSeleccionada.criterio}</p>{supermercadoSeleccionada.evitar&&<p><b>Mejor evitar:</b> {supermercadoSeleccionada.evitar}</p>}</details>}
   </>}
  </div>}
 </section>
