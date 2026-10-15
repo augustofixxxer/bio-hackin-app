@@ -8,7 +8,7 @@ import { emitirEventoProducto } from "./_eventos-producto.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 // Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
 import { clasificarComidaIA } from "./_clasificador-ia.js";
-import { elegirTipRelevanteIA } from "./_selector-tips-ia.js";
+import { elegirTipRelevanteIA, construirProtocoloCulinarioAdaptativo } from "./_selector-tips-ia.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 
 // AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma de un
@@ -498,7 +498,7 @@ export default async function handler(req, res) {
       });
     }
 
-    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) });
+    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista), protocoloCulinario: construirProtocoloCulinarioAdaptativo(texto) });
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }
