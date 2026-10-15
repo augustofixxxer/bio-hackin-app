@@ -205,6 +205,11 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   const gruposDetectados = (gruposConfigurados.length ? gruposConfigurados : reglasFallback.filter(coincideGrupo))
     .sort((a, b) => Number(a.prioridad || 100) - Number(b.prioridad || 100));
 
+  const esGuisoExplicito = /\\bguiso\\b/.test(t);
+  const tieneArroz = /\\barroz\\b/.test(t);
+  const tieneProteina = /\\b(pollo|pechuga|carne|bife|bifes|churrasco|vacio|matambre|costilla|cuadril|lomo|asado|pavo|pescado|atun|salmon|merluza|cerdo|ternera|vacuno|cordero)\\b/.test(t);
+  const esProteinaConArrozGuarnicion = !esGuisoExplicito && tieneArroz && tieneProteina;
+
   const protocolo = {};
   for (const grupo of gruposDetectados) {
     for (const [clave, texto] of Object.entries(grupo.reglas)) {
@@ -212,6 +217,16 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
       if (!protocolo[clave]) protocolo[clave] = texto;
       else if (protocolo[clave] !== texto && !protocolo[clave].includes(texto)) protocolo[clave] += " " + texto;
     }
+  }
+
+  // Regla de resolución: arroz + proteína no significa guiso salvo que el usuario
+  // escriba explícitamente "guiso". En caso contrario, tratar el arroz como guarnición.
+  if (esProteinaConArrozGuarnicion) {
+    protocolo.coccion = "PREPARACIÓN POR COMPONENTES: cociná la proteína por separado (por ejemplo, sellada en plancha o sartén) y prepará el arroz hervido como guarnición. No asumir salsa, sofrito ni cocción conjunta.";
+    protocolo.sinergia = "SINERGIA PARA PROTEÍNA + GUARNICIÓN: en la proteína, ajo + orégano + pimienta negra; en el arroz, perejil o pimienta al gusto. Mantené los condimentos separados si querés distinguir sus sabores.";
+    protocolo.timingOrden = "El arroz funciona como guarnición y no implica un guiso. Si acompañás el plato con vegetales, podés incluirlos como parte de la comida.";
+    protocolo.gruposDetectados = ["proteina_magra_grasa", "almidon_guarnicion"];
+    protocolo.familiaDetectada = "proteina_magra_grasa + almidon_guarnicion";
   }
 
   // Salvaguarda: toda entrada no vacía obtiene instrucciones útiles y concretas.
