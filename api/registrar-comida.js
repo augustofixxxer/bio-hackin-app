@@ -574,7 +574,19 @@ export default async function handler(req, res) {
     // El protocolo culinario es contenido Premium: no incluir la propiedad en respuestas Free.
     if (esPremiumComida) {
       const textoEnriquecido = await resolverTextoComidaParaProtocolo(texto);
-      const protocoloCulinario = construirProtocoloCulinarioAdaptativo(textoEnriquecido);
+      let reglasGruposCulinarios = [];
+      try {
+        reglasGruposCulinarios = await supabaseFetch(
+          "config_reglas_grupos_culinarios?select=clave,terminos,reglas,prioridad,activo&activo=eq.true&order=prioridad.asc"
+        );
+      } catch (err) {
+        // Degradación segura: el motor usa su matriz local si la configuración no está disponible.
+        console.error("[protocolo-culinario] No se pudo cargar la matriz de grupos:", err);
+      }
+      const protocoloCulinario = construirProtocoloCulinarioAdaptativo(
+        textoEnriquecido,
+        reglasGruposCulinarios
+      );
       if (protocoloCulinario) respuesta.protocoloCulinario = protocoloCulinario;
     }
     res.status(200).json(respuesta);
