@@ -219,8 +219,6 @@ function App(){
       {premiumContexto.porQueCambio&&<><div className="label">POR QUÉ ESTE CAMBIO</div><p>{premiumContexto.porQueCambio}</p></>}
       {premiumContexto.queSeMantiene&&<><div className="label">QUÉ SE MANTIENE</div><p>{premiumContexto.queSeMantiene}</p></>}
       {premiumContexto.aprendizajeComparativo&&<><div className="label">QUÉ PODÉS APRENDER</div><p>{premiumContexto.aprendizajeComparativo}</p></>}
-      {premiumContexto.variable&&<><div className="label">VARIABLE</div><p>{premiumContexto.variable}</p></>}
-      {premiumContexto.observacion&&<><div className="label">QUÉ VAS A OBSERVAR</div><p>{premiumContexto.observacion}</p></>}
       {!premiumContexto.cambioComposicional&&!premiumContexto.aprendizajeComparativo&&!premiumContexto.queSeMantiene&&<div className="saved">Este caso todavía no tiene comparación Premium curada.</div>}
       <button className="primary" onClick={crearExperimento} disabled={premiumExpBusy||premiumAbiertas.length>0}>{premiumAbiertas.length>0?'✓ Comparación en curso':'✦ Empezar esta comparación'}</button>
       <div className="bridge" style={{marginTop:10}}>
