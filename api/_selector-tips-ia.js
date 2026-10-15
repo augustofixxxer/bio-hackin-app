@@ -242,5 +242,5 @@ async function elegirFichaHeladeraIA(ingredientes, fichas) {
   }
 }
 
-export { elegirTipRelevanteIA, elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO };
+export { elegirTipRelevanteIA, elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO, construirProtocoloCulinarioAdaptativo };
 // END: /api/_selector-tips-ia.js
