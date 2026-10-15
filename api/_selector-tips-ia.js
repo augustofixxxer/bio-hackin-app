@@ -137,7 +137,7 @@ Si no hay una ficha suficientemente pertinente, devolvé "ninguna".`;
 
 
 function normalizarProtocolo(texto) {
-  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 // Construye solo los apartados que justifican los ingredientes descritos.
