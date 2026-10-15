@@ -179,9 +179,9 @@ function App(){
   <div className="supermarket-free-filter"><b>⚡ FILTRO DE 3 SEGUNDOS</b><p>{supermercadoSeleccionada.filtroGratis||'Usá la lista de ingredientes y la porción declarada para comparar productos de esta categoría.'}</p></div>
   {supermercadoPremium?<div className="premium-prompt"><b>✦ DESBLOQUEÁ LA DECISIÓN COMPLETA</b><p>La regla rápida queda disponible gratis. Premium agrega la lectura táctica, una alternativa de la matriz curada cuando existe y el criterio para comparar el costo.</p><button className="primary" onClick={()=>irPremium('basica')}>Explorar Premium</button></div>:<>
    <div className="supermarket-premium-block"><b>💥 1 · TRADUCCIÓN DEL MARKETING</b><p>{supermercadoSeleccionada.traduccionMarketing||supermercadoSeleccionada.criterio||'Criterio de lectura basado en la regla curada de esta categoría.'}</p></div>
-   <div className="supermarket-premium-block winner"><b>🏷️ 2 · OPCIÓN GANADORA</b>
-    {supermercadoSeleccionada.opcionGanadora?<><h4>{supermercadoSeleccionada.opcionGanadora.titulo}</h4><p>{supermercadoSeleccionada.opcionGanadora.accion||supermercadoSeleccionada.opcionGanadora.recomendacion}</p><small>Fuente: {supermercadoSeleccionada.opcionGanadora.fuente==='alternativas_locales'?'alternativas locales curadas':'solución curada existente'}{supermercadoSeleccionada.opcionGanadora.estadoCurado?' · estado '+supermercadoSeleccionada.opcionGanadora.estadoCurado:''}</small></>:<p>No se presenta un reemplazo no validado. La matriz de esta categoría necesita una alternativa local curada antes de recomendar una marca o producto concreto.</p>}
-   </div>
+   {supermercadoSeleccionada.opcionGanadora&&<div className="supermarket-premium-block winner"><b>🏷️ 2 · OPCIÓN GANADORA</b>
+    <h4>{supermercadoSeleccionada.opcionGanadora.titulo}</h4><p>{supermercadoSeleccionada.opcionGanadora.accion||supermercadoSeleccionada.opcionGanadora.recomendacion}</p>
+   </div>}
    <div className="supermarket-premium-block roi"><b>💰 3 · AHORRO INTELIGENTE</b><p>{supermercadoSeleccionada.roi?.mensaje||'Solo se calcula ahorro cuando existen precios y unidades comparables en la matriz.'}</p></div>
    {supermercadoSeleccionada.criterio&&<details className="supermarket-more"><summary>Ver criterio de elección</summary><p>{supermercadoSeleccionada.criterio}</p>{supermercadoSeleccionada.evitar&&<p><b>Mejor evitar:</b> {supermercadoSeleccionada.evitar}</p>}</details>}
   </>}
