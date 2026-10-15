@@ -8,7 +8,7 @@ import { emitirEventoProducto } from "./_eventos-producto.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 // Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
 import { clasificarComidaIA } from "./_clasificador-ia.js";
-import { elegirTipRelevanteIA } from "./_selector-tips-ia.js";
+import { elegirTipRelevanteIA, construirProtocoloCulinarioAdaptativo } from "./_selector-tips-ia.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 
 // AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma de un
@@ -30,6 +30,76 @@ function normalizar(texto) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Expande el texto de una comida con ingredientes de una composición curada
+ * cuando la identidad del plato puede resolverse de forma conservadora.
+ * Se usa solo para enriquecer el protocolo Premium; nunca altera el registro original.
+ */
+async function resolverTextoComidaParaProtocolo(texto) {
+  const original = String(texto || "");
+  const t = normalizar(original);
+  if (!t.trim()) return original;
+
+  const ignorados = new Set([
+    "a", "al", "con", "de", "del", "en", "la", "las", "lo", "los", "un", "una",
+    "unos", "unas", "plato", "comida", "casero", "casera", "caseros", "caseras",
+    "estandar", "operativo", "after", "menos", "reducido", "reducida", "reducir",
+    "compensado", "compensada", "version"
+  ]);
+  const tokensEntrada = t.split(/[^a-z0-9]+/).filter((token) => token && !ignorados.has(token));
+  if (!tokensEntrada.length) return original;
+
+  const pideVariante = /\b(after|menos chorizo|chorizo reducido|reducid[oa]|compensad[oa])\b/.test(t);
+
+  try {
+    const composiciones = await supabaseFetch(
+      "motor_nutricional_qa_composicion_estandar?select=id,clave_plato,nombre_visible,estado_qa&estado_qa=eq.validada"
+    );
+
+    const candidatas = (Array.isArray(composiciones) ? composiciones : []).filter((fila) => {
+      const clave = normalizar(fila.clave_plato || "").replace(/_/g, " ");
+      const nombre = normalizar(fila.nombre_visible || "");
+      if (!clave || !nombre) return false;
+
+      const esVariante = /\b(after|reducid[oa]|compensad[oa])\b/.test(clave + " " + nombre);
+      if (esVariante !== pideVariante) return false;
+
+      const tokensFicha = new Set((clave + " " + nombre).split(/[^a-z0-9]+/).filter(Boolean));
+      const coincideIdentidad = tokensEntrada.some((token) => tokensFicha.has(token));
+      if (!coincideIdentidad) return false;
+
+      // Si el usuario dio más detalle que el nombre curado, no forzamos una composición.
+      return tokensEntrada.length === 1 || tokensEntrada.every((token) => tokensFicha.has(token));
+    }).sort((a, b) => {
+      const nombreA = normalizar(a.nombre_visible || "");
+      const nombreB = normalizar(b.nombre_visible || "");
+      const exactitudA = nombreA === t ? 0 : 1;
+      const exactitudB = nombreB === t ? 0 : 1;
+      if (exactitudA !== exactitudB) return exactitudA - exactitudB;
+      return String(a.clave_plato || "").length - String(b.clave_plato || "").length;
+    });
+
+    const ficha = candidatas[0];
+    if (!ficha) return original;
+
+    const componentes = await supabaseFetch(
+      "motor_nutricional_qa_composicion_estandar_componentes?select=componente,gramos_estandar,estado_qa&composicion_id=eq." +
+      encodeURIComponent(ficha.id) +
+      "&order=gramos_estandar.desc"
+    );
+    const nombres = [...new Set((Array.isArray(componentes) ? componentes : [])
+      .filter((componente) => componente.componente)
+      .map((componente) => componente.componente.trim()))];
+
+    if (!nombres.length) return original;
+    return original + ". Ingredientes de la ficha curada " + ficha.nombre_visible + ": " + nombres.join(", ") + ".";
+  } catch (err) {
+    // El enriquecimiento del protocolo es no bloqueante: si falla el corpus, se conserva el texto original.
+    console.error("[protocolo-culinario] No se pudo resolver la composición curada:", err);
+    return original;
+  }
 }
 
 function escapeRegex(texto) {
@@ -249,6 +319,12 @@ export default async function handler(req, res) {
     const reglas = await supabaseFetch(
       `reglas?select=id,combinacion,resultado,palabras_clave,nivel_riesgo,nivel_acceso,momento_requerido,palabras_excluyentes,familia_key,prioridad_motor,soluciones(id,nombre_hackeo,adaptacion,variable_modificada,categoria,accion_usuario,observacion_usuario,contexto_activacion,continuidad,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,por_que_cambio,tipo_comparacion,estado_contenido_premium,fuente_conocimiento)`
     );
+    // Las reglas de supermercado viven en su propio flujo y jamás participan del motor diario.
+    const reglasAplicables = reglas.filter((r) =>
+      r.momento_requerido !== "Durante la compra en supermercado" &&
+      !String(r.familia_key || "").startsWith("supermercado_") &&
+      !String(r.combinacion || "").startsWith("Supermercado: ")
+    );
 
     // 2. Buscar coincidencias: separamos bloqueos reales (combinaciones) de tips positivos.
     // Se evalúa contra textoParaMatching (texto original + sinónimos), nunca contra el texto
@@ -256,7 +332,7 @@ export default async function handler(req, res) {
     // Además del match de palabras, dos condiciones adicionales (auditoría 25/07/2026):
     // exclusión por palabra ("sin activar" mal detectado) y momento del día real (no adivinado
     // por texto) — ver excluidoPorPalabra()/cumpleMomento() más arriba.
-    const evaluaciones = reglas.map((r) => {
+    const evaluaciones = reglasAplicables.map((r) => {
       const evalPalabras = evaluarRegla(textoParaMatching, r.palabras_clave);
       const pasaExclusion = !excluidoPorPalabra(textoParaMatching, r.palabras_excluyentes);
       const pasaMomento = cumpleMomento(momento, r.momento_requerido);
@@ -375,6 +451,8 @@ export default async function handler(req, res) {
         observacionUsuario: soluciones.observacion_usuario || null,
         contextoActivacion: soluciones.contexto_activacion || null,
         continuidad: soluciones.continuidad || null,
+        variableModificada: soluciones.variable_modificada || null,
+        categoria: soluciones.categoria || null,
         cambioComposicional: soluciones.cambio_composicional || null,
         aprendizajeComparativo: soluciones.aprendizaje_comparativo || null,
         queSeMantiene: soluciones.que_se_mantiene || null,
@@ -492,7 +570,14 @@ export default async function handler(req, res) {
       });
     }
 
-    res.status(200).json({ registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) });
+    const respuesta = { registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) };
+    // El protocolo culinario es contenido Premium: no incluir la propiedad en respuestas Free.
+    if (esPremiumComida) {
+      const textoEnriquecido = await resolverTextoComidaParaProtocolo(texto);
+      const protocoloCulinario = construirProtocoloCulinarioAdaptativo(textoEnriquecido);
+      if (protocoloCulinario) respuesta.protocoloCulinario = protocoloCulinario;
+    }
+    res.status(200).json(respuesta);
   } catch (err) {
     res.status(500).json({ error: "Error procesando el registro", detail: String(err) });
   }

@@ -118,5 +118,130 @@ async function elegirTipRelevanteIA(texto, fichas) {
 // null directo acá arriba (return null; como primera línea de elegirTipRelevanteIA).
 // El resto de la app (bloqueos, clasificador de comida, todo lo demás) sigue intacto.
 
-export { elegirTipRelevanteIA };
+
+const PROTOCOLO_CULINARIO_CANONICO = {
+  coccion: "Priorizar cocción a fuego lento en cacerola/sartén tipo Essen con tapa, reteniendo humedad, o sellado en plancha/sartén de hierro. Como materia grasa para cocinar a temperatura media/baja: manteca real, grasa vacuna (cebo) o aceite de oliva virgen extra. Evitar aceites de semilla refinados.",
+  condimentos: "Si el plato incluye cúrcuma, combinarla con una pizca de pimienta negra recién molida y una base grasa. Incorporar jengibre fresco o en polvo, comino, orégano, tomillo o laurel según el ingrediente base.",
+  fibra: "Si la preparación contiene almidones (arroz, papas, fideos) u otros carbohidratos, iniciar la ingesta con una porción de fibra o vegetales verdes/crujientes.",
+  almidonResistente: "Para arroces, papas o legumbres, promover el enfriado previo durante 12–24 horas como mínimo en heladera y luego un recalentado suave."
+};
+
+const HELADERA_SYSTEM_PROMPT = `Sos un selector de fichas existentes para una consulta de cocina.
+Recibís ingredientes disponibles y fichas ya curadas en la base.
+Elegí una ficha SOLO si coincide de forma clara con los ingredientes y aporta una preparación útil.
+No inventes recetas, ingredientes, cantidades ni atribuciones a una ficha.
+El siguiente protocolo es contexto canónico del producto para reconocer pertinencia culinaria; no lo redactes ni lo devuelvas como si proviniera de una ficha seleccionada:
+${JSON.stringify(PROTOCOLO_CULINARIO_CANONICO)}
+Tu única tarea es elegir un ID real de la lista o "ninguna". No escribas explicaciones. Devolvé únicamente el JSON pedido.
+Si no hay una ficha suficientemente pertinente, devolvé "ninguna".`;
+
+
+function normalizarProtocolo(texto) {
+  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// Construye solo los apartados que justifican los ingredientes descritos.
+// No genera una receta ni altera la ficha curada que ya devuelve el motor.
+function construirProtocoloCulinarioAdaptativo(textoComida) {
+  const t = normalizarProtocolo(textoComida);
+  if (!t.trim()) return null;
+  const contiene = (re) => re.test(t);
+  const hayAlmidon = contiene(/\b(arroz|papa|papas|patata|batata|boniato|maiz|choclo|fideo|fideos|pasta|noqui|ñoqui|polenta|avena|lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|quinoa|pan|tortilla|harina|empanada|pizza|batata|mandioca|yuca)\b/);
+  const hayVegetales = contiene(/\b(verdura|verduras|vegetal|vegetales|ensalada|lechuga|rucula|espinaca|acelga|brocoli|coliflor|repollo|tomate|zanahoria|cebolla|morr[oó]n|pimiento|zapallito|zucchini|berenjena|pepino|esparrago|chaucha|calabaza)\b/);
+  const hayProteinaAnimal = contiene(/\b(carne|vacuno|ternera|cerdo|pollo|pavo|pescado|atun|salmon|merluza|huevo|huevos|marisco|langostino|camaron)\b/);
+  const hayLegumbres = contiene(/\b(lenteja|lentejas|garbanzo|garbanzos|poroto|porotos|frijol|frijoles|legumbres|arveja|arvejas|haba|habas)\b/);
+  const hayMaiz = contiene(/\b(maiz|choclo)\b/);
+  const hayCucurma = contiene(/\b(curcuma|turmeric)\b/);
+  const hayJengibre = contiene(/\b(jengibre)\b/);
+  const hayComino = contiene(/\b(comino)\b/);
+  const hayAjoCebolla = contiene(/\b(ajo|cebolla)\b/);
+  const hayFrito = contiene(/\b(frito|frita|fritos|fritas|rebozado|rebozada|milanesa)\b/);
+  const haySopaGuiso = contiene(/\b(sopa|guiso|estofado|cazuela|olla)\b/);
+  const hayGrasaNombrada = contiene(/\b(manteca|ghee|grasa vacuna|sebo|aceite de oliva|oliva)\b/);
+
+  const coccion = haySopaGuiso
+    ? "Como ya es una preparación húmeda (sopa, guiso o estofado), mantené un hervor suave y la olla tapada para conservar humedad; evitá reducirla a fuego fuerte."
+    : hayFrito
+      ? "Como la preparación se describe frita o rebozada, evitá recalentarla sumergiéndola otra vez en aceite; si querés recuperar textura, usá horno o plancha y controlá el dorado."
+      : hayProteinaAnimal
+        ? "Para la proteína que nombraste, elegí una cocción pareja: olla tipo Essen tapada si buscás conservar humedad, o plancha de hierro para sellar sin apurar el dorado."
+        : hayVegetales
+          ? "Para los vegetales nombrados, priorizá salteado breve o cocción tapada a fuego medio-bajo; ajustá el tiempo a cada vegetal para evitar que todo se pase."
+          : "La descripción no especifica una técnica ni una proteína concreta: elegí olla tapada a fuego medio-bajo para preparaciones húmedas o plancha de hierro para sellar, según el plato.";
+  const grasa = hayGrasaNombrada
+    ? "La descripción ya incluye una materia grasa; usá solo la necesaria y evitá sobrecalentarla."
+    : "Si necesitás materia grasa para cocinar, usá poca cantidad de aceite de oliva virgen extra o manteca real a temperatura moderada; no hace falta agregarla si la preparación no la requiere.";
+
+  let condimentos;
+  if (hayCucurma) condimentos = "Como la comida incluye cúrcuma, acompañala con una pizca de pimienta negra y una base grasa si la preparación la necesita. " + (hayJengibre ? "El jengibre ya nombrado puede completar el perfil aromático." : hayComino ? "El comino ya nombrado puede reforzar el perfil especiado." : "No sumes otras especias por sistema: elegí jengibre, comino u orégano solo si combinan con el ingrediente principal.");
+  else if (hayJengibre && hayComino) condimentos = "El jengibre y el comino ya aparecen en la descripción; ajustá ambos al ingrediente principal y evitá sumar cúrcuma automáticamente.";
+  else if (hayJengibre) condimentos = "Como aparece jengibre, usalo en cantidad moderada y combiná el resto con el ingrediente principal; no hace falta añadir cúrcuma si no forma parte de tu receta.";
+  else if (hayComino) condimentos = "El comino ya está contemplado en la preparación; podés equilibrarlo con ajo/cebolla si están presentes, sin acumular especias innecesarias.";
+  else if (hayAjoCebolla) condimentos = "Como la preparación incluye ajo o cebolla, usalos como base aromática y agregá orégano, tomillo o laurel solo si encajan con el plato.";
+  else if (hayLegumbres || hayMaiz) condimentos = "Para preparaciones con legumbres o maíz, incluí comino junto con laurel y/o orégano según el perfil del plato. Se usan tradicionalmente como condimentos carminativos para ayudar a reducir gases; ajustá las cantidades al gusto y la tolerancia.";
+  else if (hayProteinaAnimal) condimentos = "Para la proteína nombrada, elegí una combinación simple de pimienta y orégano o tomillo; reservá cúrcuma, jengibre o comino para cuando encajen con el plato.";
+  else condimentos = "No hay un condimento concreto identificado en el texto: elegí hierbas o especias según el ingrediente principal, en lugar de añadir una mezcla fija.";
+
+  const protocolo = {
+    coccion: coccion + " " + grasa,
+    condimentos,
+  };
+  if (hayAlmidon || hayVegetales) {
+    protocolo.timingOrden = hayVegetales && hayAlmidon
+      ? "Como el plato incluye vegetales y un alimento con almidón, empezá por la porción de vegetales y seguí con el resto de la comida; mantené la misma combinación al comparar cómo te sentís."
+      : hayAlmidon
+        ? "La descripción incluye un alimento con almidón pero no identifica vegetales: si tenés vegetales disponibles, podés comerlos primero; no se presupone que ya formen parte del plato."
+        : "La descripción incluye vegetales pero no identifica almidones: podés comenzar por ellos, sin necesidad de imponer un orden de macronutrientes.";
+  }
+  if (hayAlmidon) {
+    protocolo.almidonResistente = hayLegumbres
+      ? "Como aparecen legumbres (y pueden coexistir con otros almidones), podés cocinar con antelación, enfriar en heladera y recalentar bien cuando corresponda; el enfriado también puede aumentar el almidón resistente en arroz o papa si forman parte del plato."
+      : contiene(/\b(arroz)\b/) && contiene(/\b(papa|papas|patata|batata|boniato)\b/)
+        ? "La descripción incluye arroz y papa/batata: si preparás una porción extra, enfriá pronto en heladera durante 12–24 h y recalentá bien; hacelo solo con sobrantes conservados de forma segura."
+        : contiene(/\b(arroz)\b/)
+          ? "Como el plato incluye arroz, podés preparar una porción con antelación, enfriarla pronto en heladera durante 12–24 h y recalentarla bien; conservá el arroz de forma segura y no lo dejes horas a temperatura ambiente."
+          : contiene(/\b(papa|papas|patata|batata|boniato|mandioca|yuca)\b/)
+            ? "Como el plato incluye papa, batata o mandioca, podés enfriar una porción cocida en heladera durante 12–24 h y recalentarla bien; conservá los sobrantes de forma segura."
+            : "Como el plato incluye un alimento con almidón o una legumbre, podés cocinarlo con antelación, enfriarlo pronto en heladera y recalentarlo bien; el enfriado puede aumentar el almidón resistente, aunque el efecto depende del alimento y la preparación.";
+  }
+  return protocolo;
+}
+
+async function elegirFichaHeladeraIA(ingredientes, fichas) {
+  if (!GROQ_API_KEY || !Array.isArray(fichas) || fichas.length === 0) return null;
+  const idsValidos = fichas.map((f) => f.id);
+  const lista = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
+  const schema = { type:"object", properties:{ id_elegido:{type:"string",enum:[...idsValidos,"ninguna"]} }, required:["id_elegido"], additionalProperties:false };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+  try {
+    const resp = await fetch(GROQ_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json",Authorization:`Bearer ${GROQ_API_KEY}`},
+      body:JSON.stringify({
+        model:"openai/gpt-oss-20b",
+        messages:[
+          {role:"system",content:HELADERA_SYSTEM_PROMPT},
+          {role:"user",content:`Ingredientes disponibles: "${ingredientes}"\n\nFichas reales disponibles:\n${lista}`}
+        ],
+        response_format:{type:"json_schema",json_schema:{name:"seleccion_heladera",strict:true,schema}},
+        reasoning_effort:"low",max_completion_tokens:300,temperature:0
+      }),
+      signal:controller.signal
+    });
+    clearTimeout(timeoutId);
+    if(!resp.ok){console.error("[selector-heladera-ia] Groq respondió",resp.status);return null}
+    const data=await resp.json();
+    const contenido=data.choices?.[0]?.message?.content;
+    if(!contenido)return null;
+    const parsed=JSON.parse(contenido);
+    return idsValidos.includes(parsed.id_elegido)?parsed.id_elegido:null;
+  } catch(err) {
+    clearTimeout(timeoutId);
+    console.error("[selector-heladera-ia] fallo no bloqueante:",err);
+    return null;
+  }
+}
+
+export { elegirTipRelevanteIA, elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO, construirProtocoloCulinarioAdaptativo };
 // END: /api/_selector-tips-ia.js
