@@ -56,9 +56,11 @@ function alternativasParaPasillo(pasillo, alternativas) {
   return alternativas.filter(a => {
     if (["rehacer","hueco"].includes(a.estado_curado)) return false;
     const familia = String(a.familia_key || "");
-    const texto = normalizarBusqueda([a.mecanismo,a.descripcion_mecanismo,a.recomendacion,a.accion_texto].filter(Boolean).join(" "));
-    return (familias.size && familias.has(familia)) || terminos.some(t => t.length >= 3 && texto.includes(t));
-  }).sort((a,b) => (a.estado_curado === "conservar" ? 1 : 0) - (b.estado_curado === "conservar" ? 1 : 0) || (Number(b.prioridad_busqueda)||0) - (Number(a.prioridad_busqueda)||0));
+    const titulo = normalizarBusqueda(a.mecanismo || "");
+    const recomendacion = normalizarBusqueda(a.recomendacion || "");
+    const coincidenciaDirecta = terminos.some(t => t.length >= 3 && (titulo.includes(t) || recomendacion.startsWith(t)));
+    return (familias.size && familias.has(familia)) || coincidenciaDirecta;
+  }).sort((a,b) => (b.estado_curado === "conservar" ? 1 : 0) - (a.estado_curado === "conservar" ? 1 : 0) || (Number(b.prioridad_busqueda)||0) - (Number(a.prioridad_busqueda)||0));
 }
 function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
   const adaptacion = regla?.soluciones?.adaptacion || "";
