@@ -30,18 +30,19 @@ async function validarUsuario(req) {
   return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito" };
 }
 const SUPERMERCADO_PASILLOS = [
-  { key:"supermercado_lacteos_yogures_leches", titulo:"Lácteos", icono:"🥛", alternativas:["yogur","queso","leche","ricota"] },
-  { key:"supermercado_panificados_harinas", titulo:"Panes y harinas", icono:"🍞", alternativas:["pan","harina","bollos","tortilla"] },
-  { key:"supermercado_fideos_arroces_legumbres", titulo:"Pastas, arroz y legumbres", icono:"🌾", alternativas:["fideo","arroz","legumbre","lenteja","arveja"] },
-  { key:"supermercado_embutidos_fiambres", titulo:"Carnes y fiambres", icono:"🥩", alternativas:["fiambre","embutido","jamón","carne","asado"] },
-  { key:"supermercado_grasas_aceites", titulo:"Aceites y grasas", icono:"🫒", alternativas:["aceite","manteca","margarina","oliva"] },
-  { key:"supermercado_enlatados_salsas", titulo:"Enlatados y salsas", icono:"🥫", alternativas:["tomate","salsa","conserva","lata"] },
-  { key:"supermercado_untables_mermeladas", titulo:"Untables y mermeladas", icono:"🍯", alternativas:["untable","mermelada","dulce","manteca"] },
-  { key:"snacks_bebidas", titulo:"Snacks y bebidas", icono:"🥤", familiasAlternativas:["snacks","bebidas"], alternativas:["snack","bebida","apio","avellana","almendra"] }
+  { key:"supermercado_lacteos_yogures_leches", titulo:"Lácteos", icono:"🥛", familiasAlternativas:["lacteos"], terminosProducto:["yogur","leche","queso","ricota","kéfir","kefir"], filtroGratis:"Compará la lista: si entre los primeros ingredientes aparecen azúcar, jarabes o almidón modificado, buscá otra opción. Para una comparación simple, mirá yogur natural con leche y fermentos." },
+  { key:"supermercado_panificados_harinas", titulo:"Panes y harinas", icono:"🍞", familiasAlternativas:["panificados"], terminosProducto:["pan integral","harina integral","tortilla","bollos"], filtroGratis:"Dá vuelta el envase: buscá harina integral como primer ingrediente. Si dice “multicereal” pero empieza con harina refinada, no equivale a un pan integral." },
+  { key:"supermercado_fideos_arroces_legumbres", titulo:"Pastas, arroz y legumbres", icono:"🌾", familiasAlternativas:["pastas","legumbres"], terminosProducto:["fideo","pasta","arroz","lenteja","arveja","garbanzo","poroto"], filtroGratis:"Elegí por el ingrediente principal: sémola de trigo candeal o harina integral en pastas; en legumbres, que el producto sea la legumbre y no una preparación con agregados." },
+  { key:"supermercado_embutidos_fiambres", titulo:"Carnes y fiambres", icono:"🥩", familiasAlternativas:["carnes"], terminosProducto:["jamón","fiambre","bondiola","mortadela","salchicha","chorizo","carne vacuna","pollo"], filtroGratis:"En fiambres, compará el porcentaje de carne y la lista de ingredientes. Si aparecen almidones, féculas o muchos agregados, compará con un corte o fiambre de composición más simple." },
+  { key:"supermercado_grasas_aceites", titulo:"Aceites y grasas", icono:"🫒", familiasAlternativas:["grasas","aceites"], terminosProducto:["aceite","oliva","manteca","margarina"], filtroGratis:"Primero definí el uso: aceite para cocinar o para usar en crudo. Compará el tipo de aceite y evitá elegir solo por frases como “liviano” o “natural”." },
+  { key:"supermercado_enlatados_salsas", titulo:"Enlatados y salsas", icono:"🥫", familiasAlternativas:["conservas","enlatados","salsas"], terminosProducto:["tomate triturado","puré de tomate","salsa de tomate","conserva"], filtroGratis:"En salsa o tomate envasado, mirá el primer ingrediente. Priorizá tomate como ingrediente principal y revisá si agrega azúcar, jarabes o almidones." },
+  { key:"supermercado_untables_mermeladas", titulo:"Untables y mermeladas", icono:"🍯", familiasAlternativas:["untables","mermeladas"], terminosProducto:["mermelada","dulce de fruta","queso untable","ricota","manteca"], filtroGratis:"En mermeladas, revisá qué lugar ocupa la fruta y si hay azúcar o jarabes agregados. En quesos untables, mirá si la lista empieza por queso/leche o por almidones y espesantes." },
+  { key:"snacks_bebidas", titulo:"Snacks y bebidas", icono:"🥤", familiasAlternativas:["snacks","bebidas"], terminosProducto:["almendra","avellana","apio","pepino","jengibre","manzanilla","té","infusión"], filtroGratis:"Compará porciones e ingredientes: para snacks, preferí alimentos reconocibles y porciones claras; para bebidas, revisá si tienen azúcar o jarabes añadidos." }
 ];
 function seccionCurada(texto, encabezado) {
   const parrafos = String(texto || "").split(/\n\s*\n/);
-  const p = parrafos.find(x => normalizarBusqueda(x).startsWith(normalizarBusqueda(encabezado) + ":"));
+  const objetivo = normalizarBusqueda(encabezado);
+  const p = parrafos.find(x => normalizarBusqueda(x).startsWith(objetivo + ":"));
   return p ? p.slice(p.indexOf(":") + 1).trim() : "";
 }
 function rotacionDelDia(clave, cantidad) {
@@ -52,15 +53,17 @@ function rotacionDelDia(clave, cantidad) {
 }
 function alternativasParaPasillo(pasillo, alternativas) {
   const familias = new Set(pasillo.familiasAlternativas || []);
-  const terminos = (pasillo.alternativas || []).map(normalizarBusqueda);
+  const terminos = (pasillo.terminosProducto || []).map(normalizarBusqueda);
+  const noProductoDeGondola = /\b(receta|caser[oa]s? como|plato|preparacion|preparar|acompanamiento|comparar|saciedad|comida|con salsa|al horno|frita|fritas|guiso|bombas|medialunas|canelones|ravioles)\b/;
   return alternativas.filter(a => {
-    if (["rehacer","hueco"].includes(a.estado_curado)) return false;
     const familia = String(a.familia_key || "");
+    if (!familias.has(familia) || ["rehacer","hueco"].includes(a.estado_curado)) return false;
     const titulo = normalizarBusqueda(a.mecanismo || "");
     const recomendacion = normalizarBusqueda(a.recomendacion || "");
-    const coincidenciaDirecta = terminos.some(t => t.length >= 3 && (titulo.includes(t) || recomendacion.startsWith(t)));
-    return (familias.size && familias.has(familia)) || coincidenciaDirecta;
-  }).sort((a,b) => (b.estado_curado === "conservar" ? 1 : 0) - (a.estado_curado === "conservar" ? 1 : 0) || (Number(b.prioridad_busqueda)||0) - (Number(a.prioridad_busqueda)||0));
+    const texto = titulo + " " + recomendacion;
+    if (noProductoDeGondola.test(texto)) return false;
+    return terminos.some(t => t.length >= 3 && texto.includes(t));
+  }).sort((a,b) => (Number(b.prioridad_busqueda)||0) - (Number(a.prioridad_busqueda)||0));
 }
 function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
   const adaptacion = regla?.soluciones?.adaptacion || "";
@@ -71,17 +74,22 @@ function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
   const candidatas = alternativasParaPasillo(pasillo, alternativas);
   const indice = rotacionDelDia(pasillo.key, candidatas.length);
   const seleccionada = candidatas.length ? candidatas[indice] : null;
-  const tipGratis = criterio || (seleccionada ? `Para esta categoría, compará ingredientes y porción. Alternativa curada de la matriz: ${seleccionada.mecanismo || seleccionada.recomendacion}.` : "");
-  const bloque = { id:pasillo.key, familiaKey:pasillo.key, titulo:pasillo.titulo, icono:pasillo.icono, nivelAcceso:"Premium", filtroGratis:tipGratis, requiereCriterioCurado:!tipGratis };
+  const bloque = {
+    id:pasillo.key, familiaKey:pasillo.key, titulo:pasillo.titulo, icono:pasillo.icono,
+    nivelAcceso:"Premium", filtroGratis:pasillo.filtroGratis, requiereCriterioCurado:false
+  };
   if (!esPremium) return bloque;
+  const opcionGanadora = seleccionada
+    ? { titulo:seleccionada.mecanismo || seleccionada.recomendacion, recomendacion:seleccionada.recomendacion || seleccionada.accion_texto || "", accion:seleccionada.accion_texto || "" }
+    : (elegir ? { titulo:elegir, recomendacion:elegir, accion:"" } : null);
   return {
     ...bloque,
     traduccionMarketing:trampa,
     criterio,
     evitar,
-    opcionGanadora:seleccionada ? { titulo:seleccionada.mecanismo || seleccionada.recomendacion, recomendacion:seleccionada.recomendacion || seleccionada.accion_texto || "", accion:seleccionada.accion_texto || "", fuente:"alternativas_locales", familiaKey:seleccionada.familia_key || null, estadoCurado:seleccionada.estado_curado || null } : (elegir ? { titulo:elegir, recomendacion:elegir, fuente:"soluciones", familiaKey:pasillo.key } : null),
-    alternativaDisponible:Boolean(seleccionada),
-    roi:{ cuantificable:false, mensaje:"La matriz actual no contiene precios comparables por unidad ni composición cuantificada para este reemplazo. No se publica un porcentaje; compará precio por kg o litro y cantidad por porción." },
+    opcionGanadora,
+    alternativaDisponible:Boolean(opcionGanadora),
+    roi:{ cuantificable:false, mensaje:"No hay precios comparables por unidad en la matriz para calcular un ahorro fiable. Compará el precio por kg o litro antes de elegir." },
     accion:regla?.soluciones?.accion_usuario || "",
     observacion:regla?.soluciones?.observacion_usuario || "",
     continuidad:regla?.soluciones?.continuidad || "",
