@@ -3076,6 +3076,15 @@ function App() {
 
   const [resultadoMP, setResultadoMP] = useState(null); // null mientras no hay nada que confirmar
   useEffect(() => {
+    if (!usuario || !terminosAceptados || !onboardingCompletado || esRutaAdmin) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("payment_id")) return;
+    // La experiencia de supermercado vive en app.html para Free y Premium.
+    // Evita que una sesión ya iniciada vuelva a abrir el Explorador estático legado.
+    if (window.location.pathname !== "/app.html") window.location.replace("/app.html");
+  }, [usuario, terminosAceptados, onboardingCompletado, esRutaAdmin]);
+
+  useEffect(() => {
     if (!usuario) return;
     const params = new URLSearchParams(window.location.search);
     const paymentId = params.get("payment_id");
@@ -3128,7 +3137,7 @@ function App() {
   }
 
   if (resultadoMP) {
-    return <ConfirmacionMPScreen resultado={resultadoMP} onContinuar={() => setResultadoMP(null)} />;
+    return <ConfirmacionMPScreen resultado={resultadoMP} onContinuar={() => { window.location.replace("/app.html"); }} />;
   }
 
   if (!terminosAceptados) {
