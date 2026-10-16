@@ -25,6 +25,14 @@ function esUUIDValido(valor) {
   return typeof valor === "string" && UUID_REGEX.test(valor);
 }
 
+function fechaHoyArgentina() {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const valores = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+  return `${valores.year}-${valores.month}-${valores.day}`;
+}
+
 function normalizar(texto) {
   return texto
     .toLowerCase()
@@ -406,7 +414,7 @@ export default async function handler(req, res) {
     // 3. Crear el Registro Diario — salvo en modo "planificar antes de comer" (soloVista):
     // ahí se evalúa todo exactamente igual, pero no se persiste nada, porque el usuario
     // todavía no comió — es una consulta preventiva, no un hecho consumado.
-    const fechaHoy = new Date().toISOString().split("T")[0];
+    const fechaHoy = fechaHoyArgentina();
     let registroId = null;
     if (!soloVista) {
       const registroCreado = await supabaseFetch(`registro_diario_real`, {
