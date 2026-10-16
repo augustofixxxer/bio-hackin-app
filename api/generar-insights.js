@@ -104,12 +104,13 @@ async function calcularInsights(usuarioId, opciones = {}) {
   );
   if (fechaDesde) {
     registros = registros.filter((r) => r.fecha && fechaISO(r.fecha) >= fechaDesde);
-    bienestarRecs = bienestarRecs.filter((b) => b.fecha_hora && fechaISO(b.fecha_hora) >= fechaDesde);
+    bienestarRecs = bienestarRecs.filter((b) => b.fecha_hora && fechaLocalArgentina(b.fecha_hora) >= fechaDesde);
   }
 
   const bienestarPorFecha = {};
   for (const rec of bienestarRecs) {
-    const fecha = fechaISO(rec.fecha_hora);
+    const fecha = fechaLocalArgentina(rec.fecha_hora);
+    if (!fecha) continue;
     if (!bienestarPorFecha[fecha]) {
       bienestarPorFecha[fecha] = { energia: [], digestion: [], sueno: [], hidratacion: [], actividad_fisica: [] };
     }
@@ -441,7 +442,7 @@ export default async function handler(req, res) {
     const LIMITE_DIAS_GRATIS = 14;
     const opciones = esPremium
       ? {}
-      : { metricas: ['energia'], fechaDesde: sumarDias(fechaISO(new Date().toISOString()), -LIMITE_DIAS_GRATIS) };
+      : { metricas: ['energia'], fechaDesde: sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS) };
 
     const resultado = await calcularInsights(usuarioId, opciones);
     resultado.limitado14dias = !esPremium;
