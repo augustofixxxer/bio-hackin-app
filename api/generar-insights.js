@@ -302,15 +302,17 @@ async function manejarHistorial(req, res, usuarioId) {
     return res.status(403).json({ error: "Exportar es una función Premium." });
   }
 
-  const fechaDesde = sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS_HISTORIAL);
+  const fechaDesde = acceso.esPremium ? null : sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS_HISTORIAL);
 
   try {
     let [comidas, bienestares] = await Promise.all([
       supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&select=id,fecha,created_at,comida_registrada,momento_dia,alternativa_id&order=fecha.desc,created_at.desc`),
       supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=id,fecha_hora,created_at,energia,digestion,sueno,hidratacion,actividad_fisica&order=fecha_hora.desc`),
     ]);
-    comidas = comidas.filter((c) => c.fecha && c.fecha >= fechaDesde);
-    bienestares = bienestares.filter((b) => b.fecha_hora && fechaLocalArgentina(b.fecha_hora) >= fechaDesde);
+    if (fechaDesde) {
+      comidas = comidas.filter((c) => c.fecha && c.fecha >= fechaDesde);
+      bienestares = bienestares.filter((b) => b.fecha_hora && fechaLocalArgentina(b.fecha_hora) >= fechaDesde);
+    }
 
     const porFecha = {};
     const asegurar = (f) => { if (!porFecha[f]) porFecha[f] = { fecha: f, comidas: [], bienestar: null }; return porFecha[f]; };
