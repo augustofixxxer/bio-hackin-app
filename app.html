@@ -107,6 +107,7 @@
 .supermarket-more{margin-top:10px;padding:11px;border:1px solid rgba(255,255,255,.1);border-radius:10px}
 .supermarket-more summary{cursor:pointer;font-size:12px;font-weight:700}
 .supermarket-more p{font-size:12px;margin:8px 0 0}
+.supermarket-feedback{margin:9px 0 0;padding:10px 12px;border:1px solid rgba(111,190,139,.42);border-radius:10px;background:rgba(16,185,129,.09);color:#a9e7ba;font-size:12px;line-height:1.45}
 </style>
 </head>
 <body><div id="root"><div id="boot" style="padding:24px;font:14px Arial,sans-serif;color:#aab5af">Cargando Reseteo Propio…</div></div>
@@ -179,8 +180,7 @@ function App(){
  {tab==='descubrir'&&<><section className="hero"><div className="eyebrow">DESCUBRIR</div><h1>Entendé mejor lo que comés y cómo te sentís.</h1><p>Elegí una situación que quieras explorar o mirá una comida antes de comerla. Acá empieza la exploración.</p></section><section className="precomer supermarket-experience" style={{marginTop:12}}>
  <div className="eyebrow">ASISTENTE DE SUPERMERCADO · 1 TOQUE</div><h3>Decidí mejor frente a la góndola</h3>
  <p>Elegí un pasillo. Primero recibís una regla rápida; Premium suma traducción de etiqueta, alternativa curada y comparación económica honesta.</p>
- <div className="supermarket-grid">{supermercadoReglas.map((bloque)=><button key={bloque.id} className={'supermarket-chip '+(supermercadoSeleccionada?.id===bloque.id?'active':'')} onClick={()=>setSupermercadoSeleccionada(bloque)}>{bloque.icono||iconoCategoriaSupermercado(bloque.titulo)} {bloque.titulo}</button>)}</div>
- {supermercadoMsg&&<div className="saved">{supermercadoMsg}</div>}
+ <div className="supermarket-grid">{supermercadoReglas.map((bloque)=><button key={bloque.id} className={'supermarket-chip '+(supermercadoSeleccionada?.id===bloque.id?'active':'')} onClick={()=>{setSupermercadoSeleccionada(bloque);setSupermercadoMsg('')}}>{bloque.icono||iconoCategoriaSupermercado(bloque.titulo)} {bloque.titulo}</button>)}</div>
  {supermercadoSeleccionada&&<div className="supermarket-detail">
   <h3>{supermercadoSeleccionada.titulo}</h3>
   <div className="supermarket-free-filter"><b>⚡ FILTRO DE 3 SEGUNDOS</b><p>{supermercadoSeleccionada.filtroGratis||'Usá la lista de ingredientes y la porción declarada para comparar productos de esta categoría.'}</p></div>
@@ -193,6 +193,7 @@ function App(){
    <div className="supermarket-premium-block roi"><b>💰 3 · AHORRO INTELIGENTE</b><p>{supermercadoSeleccionada.roi?.mensaje||'Solo se calcula ahorro cuando existen precios y unidades comparables en la matriz.'}</p></div>
    {supermercadoSeleccionada.criterio&&<details className="supermarket-more"><summary>Ver criterio de elección</summary><p>{supermercadoSeleccionada.criterio}</p>{supermercadoSeleccionada.evitar&&<p><b>Mejor evitar:</b> {supermercadoSeleccionada.evitar}</p>}</details>}
    <button className="primary supermarket-apply" onClick={aplicarReemplazoSupermercado}>💡 Aplicar este reemplazo hoy</button>
+   {supermercadoMsg&&<p className="supermarket-feedback" role="status" aria-live="polite">{supermercadoMsg}</p>}
   </>}
  </div>}
 </section>
