@@ -216,6 +216,7 @@ export default async function handler(req, res) {
     await consultarHeladera(req, res);
     return;
   }
+  // Jornada diaria comparte esta función serverless para respetar el límite de Vercel Hobby.
   if (req.method === "POST" && req.body?.accion === "jornada") {
     try { await manejarJornada(req,res,true); }
     catch (error) { res.status(500).json({error:"No pudimos guardar tu jornada. Verificá que plan_jornada_diaria esté disponible."}); }
