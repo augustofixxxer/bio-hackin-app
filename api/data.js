@@ -30,8 +30,8 @@ async function validarUsuario(req) {
   return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito",objetivoGrupo:u.objetivo_grupo||"salud_general" };
 }
 
-const PLAN_FECHA_REGEX = /^\\d{4}-\\d{2}-\\d{2}$/;
-const PLAN_HORA_REGEX = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
+const PLAN_FECHA_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const PLAN_HORA_REGEX = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 function fechaPlanArgentina() {
   const parts = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Argentina/Buenos_Aires",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
   const part = (type) => parts.find((p) => p.type === type)?.value;
