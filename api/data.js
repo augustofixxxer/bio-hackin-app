@@ -211,6 +211,47 @@ const INTENT_BRIDGE = {
   recuperacion: "Después de entrenar, lo que comés y lo que hacés después pueden cambiar cómo transcurren las horas siguientes. Acá podés probar una opción de cada lado y comparar.",
 };
 
+
+async function manejarCatalogoNutricional(req, res) {
+  const auth = await validarUsuario(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  const [alimentos, composiciones, nutrientes, fuentes] = await Promise.all([
+    supabaseFetch("motor_nutricional_alimentos?select=id,fuente_id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc"),
+    supabaseFetch("motor_nutricional_composicion?select=alimento_id,nutriente_id,valor_por_100g,unidad,calidad_dato,trazabilidad"),
+    supabaseFetch("motor_nutricional_nutrientes?select=id,codigo,nombre,unidad_canonica"),
+    supabaseFetch("motor_nutricional_fuentes?select=id,nombre,version")
+  ]);
+  const nutrientesPorId = new Map(nutrientes.map((n) => [n.id, n]));
+  const fuentesPorId = new Map(fuentes.map((f) => [f.id, f]));
+  const composicionesPorAlimento = new Map();
+  for (const c of composiciones) {
+    if (!composicionesPorAlimento.has(c.alimento_id)) composicionesPorAlimento.set(c.alimento_id, {});
+    const nutriente = nutrientesPorId.get(c.nutriente_id);
+    if (!nutriente?.codigo) continue;
+    composicionesPorAlimento.get(c.alimento_id)[nutriente.codigo] = {
+      valor: Number(c.valor_por_100g),
+      unidad: c.unidad,
+      calidadDato: c.calidad_dato,
+      trazabilidad: c.trazabilidad || null
+    };
+  }
+  const resultado = alimentos.map((a) => {
+    const fuente = fuentesPorId.get(a.fuente_id);
+    return {
+      id: a.id,
+      nombre: a.descripcion_fuente,
+      preparacion: a.preparacion || null,
+      baseComestible: a.base_comestible,
+      estado: a.estado,
+      fuente: fuente ? { nombre: fuente.nombre, version: fuente.version || null } : null,
+      nutrientes: composicionesPorAlimento.get(a.id) || {}
+    };
+  });
+  res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
+  return res.status(200).json({ ok: true, alimentos: resultado, actualizado: new Date().toISOString() });
+}
+
 export default async function handler(req, res) {
   if (req.method === "POST" && req.body?.accion === "heladera") {
     await consultarHeladera(req, res);
@@ -230,7 +271,7 @@ export default async function handler(req, res) {
   }
   if (!SUPABASE_URL || !SUPABASE_KEY) { res.status(500).json({ error: "Falta configurar Supabase." }); return; }
   try {
-    if (req.query?.vista === "jornada") {
+    if (req.query?.vista === "catalogo-alimentos") {\n      try { await manejarCatalogoNutricional(req,res); }\n      catch (error) { return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."}); }\n      return;\n    }\n    if (req.query?.vista === "jornada") {
       try { await manejarJornada(req,res,false); }
       catch (error) { return res.status(500).json({error:"No pudimos cargar tu jornada. Verificá que plan_jornada_diaria esté disponible."}); }
       return;
