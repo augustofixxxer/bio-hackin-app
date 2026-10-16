@@ -127,11 +127,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // fecha_hora conserva el instante real en ISO/UTC (timestamptz). No se debe
+    // fabricar un timestamp local sin offset: las consultas de lectura derivan el
+    // "Día del Usuario" con America/Argentina/Buenos_Aires a partir de este instante.
+    const fechaHoraInstante = new Date().toISOString();
     const creado = await supabaseFetch(`bienestar_diario_real`, {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        fecha_hora: new Date().toISOString(),
+        fecha_hora: fechaHoraInstante,
         usuario_id: usuarioId,
         ...registro,
       }),

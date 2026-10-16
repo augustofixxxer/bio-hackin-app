@@ -104,12 +104,13 @@ async function calcularInsights(usuarioId, opciones = {}) {
   );
   if (fechaDesde) {
     registros = registros.filter((r) => r.fecha && fechaISO(r.fecha) >= fechaDesde);
-    bienestarRecs = bienestarRecs.filter((b) => b.fecha_hora && fechaISO(b.fecha_hora) >= fechaDesde);
+    bienestarRecs = bienestarRecs.filter((b) => b.fecha_hora && fechaLocalArgentina(b.fecha_hora) >= fechaDesde);
   }
 
   const bienestarPorFecha = {};
   for (const rec of bienestarRecs) {
-    const fecha = fechaISO(rec.fecha_hora);
+    const fecha = fechaLocalArgentina(rec.fecha_hora);
+    if (!fecha) continue;
     if (!bienestarPorFecha[fecha]) {
       bienestarPorFecha[fecha] = { energia: [], digestion: [], sueno: [], hidratacion: [], actividad_fisica: [] };
     }
@@ -239,11 +240,22 @@ async function guardarResultado(usuarioId, resultado) {
 // ============================================================
 
 const LIMITE_DIAS_GRATIS_HISTORIAL = 14;
+const ZONA_HORARIA_USUARIO = "America/Argentina/Buenos_Aires";
+
+function fechaLocalArgentina(valor = new Date()) {
+  const fecha = valor instanceof Date ? valor : new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return null;
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA_HORARIA_USUARIO, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(fecha);
+  const valores = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+  return `${valores.year}-${valores.month}-${valores.day}`;
+}
 
 function calcularRacha(fechasConActividad) {
   const set = new Set(fechasConActividad);
   let racha = 0;
-  let cursor = fechaISO(new Date().toISOString());
+  let cursor = fechaLocalArgentina();
   while (set.has(cursor)) {
     racha += 1;
     cursor = sumarDias(cursor, -1);
@@ -291,28 +303,34 @@ async function manejarHistorial(req, res, usuarioId) {
     return res.status(403).json({ error: "Exportar es una función Premium." });
   }
 
-  const fechaDesde = acceso.esPremium ? null : sumarDias(fechaISO(new Date().toISOString()), -LIMITE_DIAS_GRATIS_HISTORIAL);
+  const fechaDesde = acceso.esPremium ? null : sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS_HISTORIAL);
 
   try {
     let [comidas, bienestares] = await Promise.all([
-      supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&select=fecha,comida_registrada,alternativa_id&order=fecha.desc`),
-      supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion,sueno,hidratacion,actividad_fisica`),
+      supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&select=id,fecha,created_at,comida_registrada,momento_dia,alternativa_id&order=fecha.desc,created_at.desc`),
+      supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=id,fecha_hora,created_at,energia,digestion,sueno,hidratacion,actividad_fisica&order=fecha_hora.desc`),
     ]);
     if (fechaDesde) {
-      comidas = comidas.filter((c) => c.fecha && fechaISO(c.fecha) >= fechaDesde);
-      bienestares = bienestares.filter((b) => b.fecha_hora && fechaISO(b.fecha_hora) >= fechaDesde);
+      comidas = comidas.filter((c) => c.fecha && c.fecha >= fechaDesde);
+      bienestares = bienestares.filter((b) => b.fecha_hora && fechaLocalArgentina(b.fecha_hora) >= fechaDesde);
     }
 
     const porFecha = {};
     const asegurar = (f) => { if (!porFecha[f]) porFecha[f] = { fecha: f, comidas: [], bienestar: null }; return porFecha[f]; };
     for (const c of comidas) {
       if (!c.fecha) continue;
-      asegurar(fechaISO(c.fecha)).comidas.push({ texto: c.comida_registrada, alternativaId: c.alternativa_id || null });
+      asegurar(c.fecha).comidas.push({ id: c.id, texto: c.comida_registrada, momento: c.momento_dia || null, hora: c.created_at || null, alternativaId: c.alternativa_id || null });
     }
     for (const b of bienestares) {
       if (!b.fecha_hora) continue;
-      const dia = asegurar(fechaISO(b.fecha_hora));
-      dia.bienestar = { energia: b.energia, digestion: b.digestion, sueno: b.sueno, hidratacion: b.hidratacion, actividad_fisica: b.actividad_fisica };
+      const fecha = fechaLocalArgentina(b.fecha_hora);
+      if (!fecha) continue;
+      const dia = asegurar(fecha);
+      if (!dia.bienestar) dia.bienestar = { energia: null, digestion: null, sueno: null, hidratacion: null, actividad_fisica: null };
+      for (const campo of METRICAS) {
+        if (b[campo] !== null && b[campo] !== undefined && dia.bienestar[campo] === null) dia.bienestar[campo] = b[campo];
+      }
+      dia.bienestar.ultimaActualizacion = b.fecha_hora;
     }
 
     const historial = Object.values(porFecha).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
@@ -326,7 +344,7 @@ async function manejarHistorial(req, res, usuarioId) {
 
     let resumenSemanal = null;
     if (acceso.esPremium) {
-      const hoy = fechaISO(new Date().toISOString());
+      const hoy = fechaLocalArgentina();
       const hace7 = sumarDias(hoy, -7);
       const hace14 = sumarDias(hoy, -14);
       const diasEstaSemana = Object.keys(porFecha).filter((f) => f >= hace7 && f <= hoy).length;
@@ -424,7 +442,7 @@ export default async function handler(req, res) {
     const LIMITE_DIAS_GRATIS = 14;
     const opciones = esPremium
       ? {}
-      : { metricas: ['energia'], fechaDesde: sumarDias(fechaISO(new Date().toISOString()), -LIMITE_DIAS_GRATIS) };
+      : { metricas: ['energia'], fechaDesde: sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS) };
 
     const resultado = await calcularInsights(usuarioId, opciones);
     resultado.limitado14dias = !esPremium;

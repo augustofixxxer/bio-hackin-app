@@ -82,14 +82,24 @@ function sumarUnDia(fechaStr) {
 // traen abajo, solo se filtran también por fecha de hoy.
 const CAMPOS_BIENESTAR = ["energia", "digestion", "sueno", "hidratacion", "actividad_fisica"];
 
+function fechaArgentina(valor = new Date()) {
+  const fecha = valor instanceof Date ? valor : new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return null;
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(fecha);
+  const valores = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+  return `${valores.year}-${valores.month}-${valores.day}`;
+}
+
 function fechaHoyArgentina() {
-  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  return fechaArgentina();
 }
 
 function calcularHoy(comidas, bienestares) {
   const hoyStr = fechaHoyArgentina();
   const comidasHoy = comidas.filter((c) => c.fecha === hoyStr).length;
-  const filasHoy = bienestares.filter((b) => String(b.fecha_hora).slice(0, 10) === hoyStr);
+  const filasHoy = bienestares.filter((b) => fechaArgentina(b.fecha_hora) === hoyStr);
   let bienestarCampos = 0;
   for (const campo of CAMPOS_BIENESTAR) {
     if (filasHoy.some((b) => b[campo] !== null && b[campo] !== undefined)) bienestarCampos++;
@@ -137,7 +147,8 @@ export default async function handler(req, res) {
     const conteoPorFecha = {};
     for (const b of bienestares) {
       if (b.energia === null || b.energia === undefined) continue;
-      const fecha = String(b.fecha_hora).slice(0, 10);
+      const fecha = fechaArgentina(b.fecha_hora);
+      if (!fecha) continue;
       energiaPorFecha[fecha] = (energiaPorFecha[fecha] || 0) + b.energia;
       conteoPorFecha[fecha] = (conteoPorFecha[fecha] || 0) + 1;
     }
