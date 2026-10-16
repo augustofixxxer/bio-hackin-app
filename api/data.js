@@ -21,14 +21,49 @@ function normalizarBusqueda(texto) {
 async function validarUsuario(req) {
   const usuarioId = usuarioIdDesdeRequest(req);
   if (!usuarioId) return { ok:false,status:401,error:"Sesión inválida o vencida. Volvé a iniciar sesión." };
-  const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`);
+  const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados,objetivo_grupo`);
   if (!usuarios.length) return { ok:false,status:404,error:"Usuario no encontrado." };
   const u = usuarios[0];
   if (u.cuenta_suspendida === true) return { ok:false,status:403,error:"La cuenta está suspendida." };
   if (u.terminos_aceptados !== true) return { ok:false,status:403,error:"Debés aceptar los Términos y Condiciones para continuar." };
   const premiumVigente = u.nivel_acceso === "Premium" && (!u.premium_until || Date.parse(u.premium_until) > Date.now());
-  return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito" };
+  return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito",objetivoGrupo:u.objetivo_grupo||"salud_general" };
 }
+
+const PLAN_FECHA_REGEX = /^\\d{4}-\\d{2}-\\d{2}$/;
+const PLAN_HORA_REGEX = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;
+function fechaPlanArgentina() {
+  const parts = new Intl.DateTimeFormat("en-CA", {timeZone:"America/Argentina/Buenos_Aires",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const part = (type) => parts.find((p) => p.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+function fechaPlanValida(value) {
+  if (typeof value !== "string" || !PLAN_FECHA_REGEX.test(value)) return false;
+  const d = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0,10) === value;
+}
+function normalizarPlanJornada(row, fecha) {
+  return {fecha,tipo:row?.tipo==="entreno"?"entreno":"descanso",hora:row?.hora_sesion?String(row.hora_sesion).slice(0,5):"07:00"};
+}
+async function manejarJornada(req,res,escritura=false) {
+  const auth = await validarUsuario(req);
+  if (!auth.ok) return res.status(auth.status).json({error:auth.error});
+  const perfil = {objetivoGrupo:auth.objetivoGrupo||"salud_general",nivelAcceso:auth.nivelAcceso,premium:auth.nivelAcceso==="Premium"};
+  if (!escritura) {
+    const solicitada=req.query?.fecha;
+    const fecha=fechaPlanValida(solicitada)?solicitada:fechaPlanArgentina();
+    const rows=await supabaseFetch(`plan_jornada_diaria?usuario_id=eq.${encodeURIComponent(auth.usuarioId)}&fecha=eq.${encodeURIComponent(fecha)}&select=fecha,tipo,hora_sesion&limit=1`);
+    return res.status(200).json({perfil,plan:normalizarPlanJornada(rows?.[0],fecha)});
+  }
+  const {fecha,tipo,hora}=req.body||{};
+  if(!fechaPlanValida(fecha)) return res.status(400).json({error:"La fecha enviada no es válida."});
+  if(tipo!=="entreno"&&tipo!=="descanso") return res.status(400).json({error:"El tipo de jornada debe ser entreno o descanso."});
+  if(tipo==="entreno"&&!PLAN_HORA_REGEX.test(String(hora||""))) return res.status(400).json({error:"Indicá una hora válida para la sesión."});
+  const row={usuario_id:auth.usuarioId,fecha,tipo,hora_sesion:tipo==="entreno"?hora:null,updated_at:new Date().toISOString()};
+  const saved=await supabaseFetch("plan_jornada_diaria?on_conflict=usuario_id,fecha",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify(row)});
+  return res.status(200).json({ok:true,perfil,plan:normalizarPlanJornada(saved?.[0]||row,fecha)});
+}
+
 const SUPERMERCADO_PASILLOS = [
   { key:"supermercado_lacteos_yogures_leches", titulo:"Lácteos", icono:"🥛", opcionesGondola:[{titulo:"Yogur natural firme sin azúcar añadida",detalle:"Revisá que la lista sea breve y compará precio por kilo."},{titulo:"Ricota fresca al peso de fiambrería",detalle:"Pedí el precio por kilo y compará frescura, conservación y uso previsto."},{titulo:"Queso Tybo feteado al peso",detalle:"Una opción de fiambrería para sándwiches o colaciones; compará precio por kilo con el producto envasado."}], familiasAlternativas:["lacteos"], terminosProducto:["yogur natural","yogur firme","leche entera","leche descremada","queso tybo","ricota","kefir"], fallbackGondola:"Yogur natural firme sin sabor añadido", filtroGratis:"Compará la lista: si entre los primeros ingredientes aparecen azúcar, jarabes o almidón modificado, buscá otra opción. Para una comparación simple, mirá yogur natural con leche y fermentos.", ahorroInteligente:"No pagues de más solo por la etiqueta “Light” o “Fit”. Compará el precio por kilo y la lista de ingredientes: el nombre comercial no garantiza una mejor compra ni una diferencia nutricional que justifique el sobreprecio." },
   { key:"supermercado_panificados_harinas", titulo:"Panes y harinas", icono:"🍞", opcionesGondola:[{titulo:"Harina integral 100%",detalle:"Revisá que sea harina integral y compará el precio por kilo."},{titulo:"Pan integral de panadería",detalle:"Preguntá si está elaborado principalmente con harina integral; “multicereal” por sí solo no lo garantiza."},{titulo:"Pan integral envasado con harina integral como primer ingrediente",detalle:"Compará la lista de ingredientes y el precio por kilo entre marcas."}], familiasAlternativas:["panificados"], terminosProducto:["pan integral envasado","pan 100% integral","harina integral","harina de trigo integral"], fallbackGondola:"Harina integral 100% o pan integral envasado cuyo primer ingrediente sea harina integral", filtroGratis:"Dá vuelta el envase: buscá harina integral como primer ingrediente. Si dice “multicereal” pero empieza con harina refinada, no equivale a un pan integral.", ahorroInteligente:"“Multicereal”, “artesanal” y “rústico” pueden funcionar como señales de valor sin garantizar que el producto sea integral. Compará ingredientes y precio por kilo antes de pagar más por el nombre." },
@@ -181,6 +216,11 @@ export default async function handler(req, res) {
     await consultarHeladera(req, res);
     return;
   }
+  if (req.method === "POST" && req.body?.accion === "jornada") {
+    try { await manejarJornada(req,res,true); }
+    catch (error) { res.status(500).json({error:"No pudimos guardar tu jornada. Verificá que plan_jornada_diaria esté disponible."}); }
+    return;
+  }
   if (req.method === "POST") {
     const { evento, contexto, metadata } = req.body || {};
     await emitirEventoProducto({ usuarioId: usuarioIdDesdeRequest(req), evento, contexto, metadata });
@@ -189,6 +229,11 @@ export default async function handler(req, res) {
   }
   if (!SUPABASE_URL || !SUPABASE_KEY) { res.status(500).json({ error: "Falta configurar Supabase." }); return; }
   try {
+    if (req.query?.vista === "jornada") {
+      try { await manejarJornada(req,res,false); }
+      catch (error) { return res.status(500).json({error:"No pudimos cargar tu jornada. Verificá que plan_jornada_diaria esté disponible."}); }
+      return;
+    }
     if (req.query?.vista === "supermercado") {
       const auth = await validarUsuario(req);
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
