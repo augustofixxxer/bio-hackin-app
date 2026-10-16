@@ -29,32 +29,74 @@ async function validarUsuario(req) {
   const premiumVigente = u.nivel_acceso === "Premium" && (!u.premium_until || Date.parse(u.premium_until) > Date.now());
   return { ok:true,usuarioId,nivelAcceso:premiumVigente ? "Premium" : "gratuito" };
 }
-function parsearBloqueSupermercado(regla) {
-  const lineas = String(regla.resultado || "").split(/\r?\n/);
-  const campo = (prefijo) => {
-    const linea = lineas.find((x) => x.toLowerCase().startsWith(prefijo.toLowerCase()));
-    return linea ? linea.slice(linea.indexOf(":") + 1).trim() : "";
+const SUPERMERCADO_PASILLOS = [
+  { key:"supermercado_lacteos_yogures_leches", titulo:"Lácteos", icono:"🥛", opcionesGondola:[{titulo:"Yogur natural firme sin azúcar añadida",detalle:"Revisá que la lista sea breve y compará precio por kilo."},{titulo:"Ricota fresca al peso de fiambrería",detalle:"Pedí el precio por kilo y compará frescura, conservación y uso previsto."},{titulo:"Queso Tybo feteado al peso",detalle:"Una opción de fiambrería para sándwiches o colaciones; compará precio por kilo con el producto envasado."}], familiasAlternativas:["lacteos"], terminosProducto:["yogur natural","yogur firme","leche entera","leche descremada","queso tybo","ricota","kefir"], fallbackGondola:"Yogur natural firme sin sabor añadido", filtroGratis:"Compará la lista: si entre los primeros ingredientes aparecen azúcar, jarabes o almidón modificado, buscá otra opción. Para una comparación simple, mirá yogur natural con leche y fermentos.", ahorroInteligente:"No pagues de más solo por la etiqueta “Light” o “Fit”. Compará el precio por kilo y la lista de ingredientes: el nombre comercial no garantiza una mejor compra ni una diferencia nutricional que justifique el sobreprecio." },
+  { key:"supermercado_panificados_harinas", titulo:"Panes y harinas", icono:"🍞", opcionesGondola:[{titulo:"Harina integral 100%",detalle:"Revisá que sea harina integral y compará el precio por kilo."},{titulo:"Pan integral de panadería",detalle:"Preguntá si está elaborado principalmente con harina integral; “multicereal” por sí solo no lo garantiza."},{titulo:"Pan integral envasado con harina integral como primer ingrediente",detalle:"Compará la lista de ingredientes y el precio por kilo entre marcas."}], familiasAlternativas:["panificados"], terminosProducto:["pan integral envasado","pan 100% integral","harina integral","harina de trigo integral"], fallbackGondola:"Harina integral 100% o pan integral envasado cuyo primer ingrediente sea harina integral", filtroGratis:"Dá vuelta el envase: buscá harina integral como primer ingrediente. Si dice “multicereal” pero empieza con harina refinada, no equivale a un pan integral.", ahorroInteligente:"“Multicereal”, “artesanal” y “rústico” pueden funcionar como señales de valor sin garantizar que el producto sea integral. Compará ingredientes y precio por kilo antes de pagar más por el nombre." },
+  { key:"supermercado_fideos_arroces_legumbres", titulo:"Pastas, arroz y legumbres", icono:"🌾", opcionesGondola:[{titulo:"Lentejas secas",detalle:"Producto básico de góndola; compará precio por kilo y tiempo de preparación."},{titulo:"Fideos de sémola de trigo candeal",detalle:"Compará precio por kilo entre marcas equivalentes."},{titulo:"Arroz parboiled",detalle:"Una alternativa de góndola fácil de comparar por precio por kilo."}], familiasAlternativas:["pastas","legumbres"], terminosProducto:["fideos de sémola","fideos integrales","arroz integral","arroz parboil","lentejas secas","garbanzos secos","porotos secos"], fallbackGondola:"Fideos de sémola de trigo candeal o arroz parboiled de marca disponible", filtroGratis:"Elegí por el ingrediente principal: sémola de trigo candeal o harina integral en pastas; en legumbres, que el producto sea la legumbre y no una preparación con agregados.", ahorroInteligente:"No confundas el diseño del envase o las promesas “premium” con mayor valor. Compará precio por kilo entre productos equivalentes; en básicos, la marca más cara no siempre cambia el ingrediente principal." },
+  { key:"supermercado_embutidos_fiambres", titulo:"Carnes y fiambres", icono:"🥩", opcionesGondola:[{titulo:"Corte de carne fresco del día",detalle:"Consultá el precio por kilo y elegí el corte según el uso y el presupuesto."},{titulo:"Pollo fresco de mostrador",detalle:"Compará precio por kilo y rendimiento para la comida que vas a preparar."},{titulo:"Jamón cocido de fiambrería con lista breve de ingredientes",detalle:"Pedí ver la etiqueta o información del proveedor y compará precio por kilo."}], familiasAlternativas:["carnes"], terminosProducto:["jamón cocido envasado","jamón crudo","bondiola envasada","carne vacuna envasada","pollo envasado"], fallbackGondola:"Corte de carne fresco o fiambre envasado con lista de ingredientes breve", filtroGratis:"En fiambres, compará el porcentaje de carne y la lista de ingredientes. Si aparecen almidones, féculas o muchos agregados, compará con un corte o fiambre de composición más simple.", ahorroInteligente:"El packaging y palabras como “selección” pueden elevar el precio sin que la diferencia sea clara. Compará precio por kilo, porcentaje de carne y merma; no pagues el extra sin identificar qué recibís a cambio." },
+  { key:"supermercado_grasas_aceites", titulo:"Aceites y grasas", icono:"🫒", opcionesGondola:[{titulo:"Aceite de girasol",detalle:"Compará precio por litro y elegí según el uso previsto."},{titulo:"Aceite de oliva",detalle:"Si lo preferís para usar en crudo, compará precio por litro y origen declarado."},{titulo:"Aceite de girasol alto oleico",detalle:"Compará el tipo de aceite, el uso previsto y el precio por litro."}], familiasAlternativas:["grasas","aceites"], terminosProducto:["aceite de oliva","aceite de girasol","aceite alto oleico","manteca"], fallbackGondola:"Aceite de oliva o aceite de girasol según el uso y el presupuesto", filtroGratis:"Primero definí el uso: aceite para cocinar o para usar en crudo. Compará el tipo de aceite y evitá elegir solo por frases como “liviano” o “natural”.", ahorroInteligente:"“Premium”, “suave” o “natural” no explican por sí solos el precio. Compará tipo de aceite y precio por litro; elegí por el uso real, no por el halo publicitario del envase." },
+  { key:"supermercado_enlatados_salsas", titulo:"Enlatados y salsas", icono:"🥫", opcionesGondola:[{titulo:"Tomate triturado envasado",detalle:"Buscá tomate como ingrediente principal y compará precio por kilo o litro."},{titulo:"Legumbres en lata al natural",detalle:"Revisá si agregan sal y compará el peso escurrido y el precio."},{titulo:"Tomates en conserva",detalle:"Compará ingredientes, peso neto y precio por kilo."}], familiasAlternativas:["conservas","enlatados","salsas"], terminosProducto:["tomate triturado envasado","puré de tomate envasado","tomates en conserva","legumbres en lata"], fallbackGondola:"Tomate triturado envasado con tomate como ingrediente principal", filtroGratis:"En salsa o tomate envasado, mirá el primer ingrediente. Priorizá tomate como ingrediente principal y revisá si agrega azúcar, jarabes o almidones.", ahorroInteligente:"Una etiqueta con imágenes de campo o palabras como “casero” no garantiza una composición superior. Compará ingredientes y precio por kilo o litro entre productos equivalentes antes de pagar el extra." },
+  { key:"supermercado_untables_mermeladas", titulo:"Untables y mermeladas", icono:"🍯", opcionesGondola:[{titulo:"Ricota fresca al peso de fiambrería",detalle:"Puede servir como alternativa para untar según la preparación; compará precio por kilo y conservación."},{titulo:"Queso Tybo feteado al peso",detalle:"Opción de fiambrería para un sándwich; compará precio por kilo con quesos untables envasados."},{titulo:"Pasta de maní envasada con maní como ingrediente principal",detalle:"Revisá ingredientes y compará precio por kilo entre envases."}], familiasAlternativas:["untables","mermeladas"], terminosProducto:["queso untable envasado","mermelada envasada","dulce de fruta envasado","pasta de maní envasada"], fallbackGondola:"Queso untable, mermelada o pasta de maní envasada según el uso buscado", filtroGratis:"En mermeladas, revisá qué lugar ocupa la fruta y si hay azúcar o jarabes agregados. En quesos untables, mirá si la lista empieza por queso/leche o por almidones y espesantes.", ahorroInteligente:"“Sin culpa”, “fit” y “natural” son mensajes publicitarios, no una comparación de valor. Revisá ingredientes, tamaño real del envase y precio por kilo antes de pagar más por una promesa." },
+  { key:"snacks_bebidas", titulo:"Snacks y bebidas", icono:"🥤", familiasAlternativas:["snacks"], terminosProducto:["frutos secos tostados","almendras tostadas","nueces tostadas","semillas tostadas","semillas de girasol","chocolate 70% cacao","chocolate amargo"], opcionesGondola:[{titulo:"Frutos secos tostados sin sal",detalle:"Elegí una porción que te resulte práctica y compará el precio por kilo entre opciones a granel y envasadas."},{titulo:"Semillas envasadas sin sal agregada",detalle:"Una alternativa simple para sumar a una colación; revisá que el envase no agregue azúcar ni saborizantes."},{titulo:"Chocolate amargo con más de 70% de cacao",detalle:"Compará porcentaje de cacao, ingredientes y precio por kilo: el frente del paquete no alcanza para evaluar el producto."}], fallbackGondola:"Frutos secos tostados sin sal, semillas envasadas o chocolate amargo con 70% o más de cacao", filtroGratis:"Mirá los primeros 2 ingredientes: si hay azúcar, JMAF, aceite vegetal refinado o harina de maíz, compará con otra opción que tenga ingredientes más simples y una porción que te sacie.", traduccionMarketing:"Los snacks de arroz o “saludables” pueden reemplazar grasa por almidón refinado y sodio. El impacto glucémico depende de la fórmula y la porción: compará ingredientes antes de asumir que el frente “Fit” los vuelve mejores.", ahorroInteligente:"Compará precio por kilo y porción entre snacks “Fit”, frutos secos, semillas y chocolate amargo. El empaque puede sumar un sobreprecio que no se traduce automáticamente en más saciedad." }
+];
+function seccionCurada(texto, encabezado) {
+  const parrafos = String(texto || "").split(/\n\s*\n/);
+  const objetivo = normalizarBusqueda(encabezado);
+  const p = parrafos.find(x => normalizarBusqueda(x).startsWith(objetivo + ":"));
+  return p ? p.slice(p.indexOf(":") + 1).trim() : "";
+}
+function rotacionDelDia(clave, cantidad) {
+  if (!cantidad) return 0;
+  const fecha = new Date().toLocaleDateString("en-CA", { timeZone:"America/Argentina/Tucuman" });
+  const hash = [...String(clave) + fecha].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7);
+  return hash % cantidad;
+}
+function alternativasParaPasillo(pasillo, alternativas) {
+  const familias = new Set(pasillo.familiasAlternativas || []);
+  const terminos = (pasillo.terminosProducto || []).map(normalizarBusqueda);
+  const noProductoDeGondola = /\b(receta|caser[oa]s? como|plato|preparacion|preparar|acompanamiento|comparar|saciedad|comida|con salsa|al horno|frita|fritas|guiso|bombas|medialunas|canelones|ravioles|bastones|tortillas? de campo|ensalada|licuado|batido|budin|galletas caseras)\b/;
+  return alternativas.filter(a => {
+    const familia = String(a.familia_key || "");
+    if (!familias.has(familia) || ["rehacer","hueco"].includes(a.estado_curado)) return false;
+    const titulo = normalizarBusqueda(a.mecanismo || "");
+    const recomendacion = normalizarBusqueda(a.recomendacion || "");
+    const texto = titulo + " " + recomendacion;
+    if (noProductoDeGondola.test(texto)) return false;
+    return terminos.some(t => t.length >= 3 && texto.includes(t));
+  }).sort((a,b) => (Number(b.prioridad_busqueda)||0) - (Number(a.prioridad_busqueda)||0));
+}
+function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
+  const adaptacion = regla?.soluciones?.adaptacion || "";
+  const trampa = seccionCurada(adaptacion, "TRAMPA DE MARKETING");
+  const criterio = seccionCurada(adaptacion, "CRITERIO DE ELECCIÓN");
+  const evitar = seccionCurada(adaptacion, "OPCIÓN A EVITAR");
+  const candidatas = alternativasParaPasillo(pasillo, alternativas);
+  const opcionesGondola = pasillo.opcionesGondola || [{titulo:pasillo.fallbackGondola,detalle:"Compará ingredientes, formato y precio por kilo o litro."}];
+  const indice = rotacionDelDia(pasillo.key, opcionesGondola.length);
+  const seleccionada = opcionesGondola[indice] || opcionesGondola[0];
+  const bloque = {
+    id:pasillo.key, familiaKey:pasillo.key, titulo:pasillo.titulo, icono:pasillo.icono,
+    nivelAcceso:"Premium", filtroGratis:pasillo.filtroGratis, requiereCriterioCurado:false
   };
-  const titulo=String(regla.combinacion||"").replace(/^Supermercado:\s*/,"");
-  const bloque={
-    id:regla.id,titulo,
-    trampa:campo("TRAMPA DE MARKETING"),criterio:campo("CRITERIO"),evitar:campo("EVITAR"),elegir:campo("ELEGIR"),
-    nivelAcceso:regla.nivel_acceso,momento:regla.momento_requerido
+  if (!esPremium) return bloque;
+  const opcionGanadora = {
+    titulo:seleccionada.titulo || pasillo.fallbackGondola,
+    recomendacion:seleccionada.detalle || "",
+    accion:""
   };
-  const nombre=normalizarBusqueda(titulo);
-  if(/fiambres|embutidos/.test(nombre)){
-    bloque.trampa="Algunos fiambres se venden como si fueran un corte de carne, pero son una pasta de recortes procesados con agua, almidón o harina y aditivos.";
-    bloque.criterio="Buscá fibras o vetas visibles de carne curada. Si el interior es liso, uniforme y gomoso, probablemente sea un producto más reconstituido.";
-    bloque.evitar="Salchichas, paleta sanguchera económica y fiambres picados de textura gomosa.";
-    bloque.elegir="Jamón cocido de primera marca elaborado con pata real, jamón crudo o bondiola.";
-  }
-  if(/fideos|arroz|legumbres secas/.test(nombre)){
-    bloque.trampa="El envase puede destacar palabras como “integral” o “natural” sin explicar cómo está procesado el producto.";
-    bloque.criterio="Por qué importa: el trigo candeal suele conservar mejor la estructura del almidón durante la cocción; el arroz parboiled recibe un tratamiento previo que modifica el almidón. Ambos pueden reducir la respuesta glucémica frente a algunas alternativas, según variedad, cocción y porción.";
-    bloque.evitar="No elijas solo por el frente del paquete ni te guíes únicamente por el color.";
-    bloque.elegir="Para fideos, priorizá sémola de trigo candeal; para arroz, considerá parboiled. Ajustá la porción y acompañá con verduras, legumbres o proteína.";
-  }
-  return bloque;
+  return {
+    ...bloque,
+    traduccionMarketing:pasillo.traduccionMarketing || trampa,
+    criterio,
+    evitar,
+    opcionGanadora,
+    alternativaDisponible:true,
+    roi:{ cuantificable:false, mensaje:pasillo.ahorroInteligente },
+    accion:regla?.soluciones?.accion_usuario || "",
+    observacion:regla?.soluciones?.observacion_usuario || "",
+    continuidad:regla?.soluciones?.continuidad || "",
+    rotacion:{ fecha:new Date().toLocaleDateString("en-CA",{timeZone:"America/Argentina/Tucuman"}), indice, enfoque:seleccionada.titulo || pasillo.fallbackGondola }
+  };
 }
 function puntuacionCoincidencia(ingredientes, textoFicha) {
   const stop = new Set(["con","para","sin","que","esto","esta","tengo","cocinar","hacer","algo","comida","ingredientes","hoy","una","uno","unos","unas","los","las","del","por","pero","como","desde","quiero","podria","podemos","tiene","tienen"]);
@@ -150,10 +192,15 @@ export default async function handler(req, res) {
     if (req.query?.vista === "supermercado") {
       const auth = await validarUsuario(req);
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
-      const reglasSuper = await supabaseFetch(`reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key&combinacion=like.Supermercado%3A%20*&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado&order=combinacion.asc`);
-      const bloques = reglasSuper.map(parsearBloqueSupermercado);
-      if (auth.nivelAcceso !== "Premium") return res.status(200).json({ ok:true, requierePremium:true, bloques:bloques.map((b)=>({id:b.id,titulo:b.titulo,nivelAcceso:b.nivelAcceso})) });
-      return res.status(200).json({ ok:true, requierePremium:false, bloques });
+      const [reglasSuper, alternativas] = await Promise.all([
+        supabaseFetch("reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado"),
+        supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,estado_curado,prioridad_busqueda")
+      ]);
+      const reglasPorFamilia = new Map(reglasSuper.map(r => [r.familia_key, r]));
+      const esPremium = auth.nivelAcceso === "Premium";
+      const bloques = SUPERMERCADO_PASILLOS.map(p => construirBloqueSupermercado(p, reglasPorFamilia.get(p.key), alternativas, esPremium));
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.status(200).json({ ok:true, requierePremium:!esPremium, bloques });
     }
     const alternativas = await supabaseFetch(`alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,frecuencia_dosis,compuesto_activo,tipo,objetivo,nivel_evidencia,tipo_card,badge_principal,tag_frio_calor,orden_prioridad,intencion_principal_id,intenciones_secundarias,familia_key,prioridad_busqueda,estado_curado,accion_texto,observacion_texto,continuidad_texto`);
     const intenciones = await supabaseFetch(`intenciones?select=id,clave`);
