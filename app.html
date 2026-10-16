@@ -185,7 +185,7 @@ function App(){
  {supermercadoSeleccionada&&<div className="supermarket-detail">
   <h3>{supermercadoSeleccionada.titulo}</h3>
   <div className="supermarket-free-filter"><b>⚡ FILTRO DE 3 SEGUNDOS</b><p>{supermercadoSeleccionada.filtroGratis||'Usá la lista de ingredientes y la porción declarada para comparar productos de esta categoría.'}</p></div>
-  {supermercadoPremium?<div className="premium-prompt"><b>✦ DESBLOQUEÁ LA DECISIÓN COMPLETA</b><p>La regla rápida queda disponible gratis. Premium agrega la lectura táctica, una alternativa de la matriz curada cuando existe y el criterio para comparar el costo.</p><button className="primary" onClick={()=>irPremium('basica')}>Explorar Premium</button></div>:<>
+  {supermercadoPremium?<div className="premium-prompt"><b>✦ NO PAGUES EL SOBREPRECIO DEL MARKETING</b><p>Descubrí el engaño oculto de la etiqueta, el reemplazo ganador de este pasillo y cómo cuidar tu bolsillo sin caer en falsas opciones "Fit".</p><button className="primary" onClick={()=>irPremium('basica')}>🚀 DESBLOQUEAR ASISTENTE DE GÓNDOLA</button></div>:<>
    <div className="supermarket-premium-block"><b>💥 1 · TRADUCCIÓN DEL MARKETING</b><p>{supermercadoSeleccionada.traduccionMarketing||supermercadoSeleccionada.criterio||supermercadoSeleccionada.roi?.mensaje||'Compará ingredientes, porción y precio por kilo antes de elegir.'}</p></div>
    {supermercadoSeleccionada.opcionGanadora&&<div className="supermarket-premium-block winner"><b>🏷️ 2 · OPCIÓN GANADORA</b>
     <h4>{supermercadoSeleccionada.opcionGanadora.titulo}</h4>
