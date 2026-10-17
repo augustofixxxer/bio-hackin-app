@@ -214,40 +214,30 @@ const INTENT_BRIDGE = {
 
 async function manejarCatalogoNutricional(req, res) {
   const auth = await validarUsuario(req);
-  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
-
-  const [alimentos, composiciones, nutrientes, fuentes] = await Promise.all([
-    supabaseFetch("motor_nutricional_alimentos?select=id,fuente_id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc"),
-    supabaseFetch("motor_nutricional_composicion?select=alimento_id,nutriente_id,valor_por_100g,unidad,calidad_dato,trazabilidad"),
-    supabaseFetch("motor_nutricional_nutrientes?select=id,codigo,nombre,unidad_canonica"),
-    supabaseFetch("motor_nutricional_fuentes?select=id,nombre,version")
-  ]);
-  const nutrientesPorId = new Map(nutrientes.map((n) => [n.id, n]));
-  const fuentesPorId = new Map(fuentes.map((f) => [f.id, f]));
-  const composicionesPorAlimento = new Map();
-  for (const c of composiciones) {
-    if (!composicionesPorAlimento.has(c.alimento_id)) composicionesPorAlimento.set(c.alimento_id, {});
-    const nutriente = nutrientesPorId.get(c.nutriente_id);
-    if (!nutriente?.codigo) continue;
-    composicionesPorAlimento.get(c.alimento_id)[nutriente.codigo] = {
-      valor: Number(c.valor_por_100g),
-      unidad: c.unidad,
-      calidadDato: c.calidad_dato,
-      trazabilidad: c.trazabilidad || null
-    };
+  if (!auth.ok) {
+    console.warn("[catalogo-alimentos] Sesión rechazada:", auth.status, auth.error);
+    return res.status(auth.status).json({ error: auth.error });
   }
-  const resultado = alimentos.map((a) => {
-    const fuente = fuentesPorId.get(a.fuente_id);
-    return {
-      id: a.id,
-      nombre: a.descripcion_fuente,
-      preparacion: a.preparacion || null,
-      baseComestible: a.base_comestible,
-      estado: a.estado,
-      fuente: fuente ? { nombre: fuente.nombre, version: fuente.version || null } : null,
-      nutrientes: composicionesPorAlimento.get(a.id) || {}
-    };
-  });
+
+  // Mi Día necesita la identidad y clasificación de los alimentos para generar
+  // alternativas. No debe depender de tres lecturas adicionales de composición,
+  // nutrientes y fuentes que no utiliza esta vista.
+  const alimentos = await supabaseFetch(
+    "motor_nutricional_alimentos?select=id,fuente_id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc"
+  );
+  const resultado = alimentos.map((a) => ({
+    id: a.id,
+    nombre: a.descripcion_fuente,
+    preparacion: a.preparacion || null,
+    baseComestible: a.base_comestible,
+    estado: a.estado,
+    // Se conserva la forma del contrato. Mi Día no calcula nutrientes.
+    fuente: null,
+    nutrientes: {}
+  }));
+  if (!resultado.length) {
+    console.error("[catalogo-alimentos] La consulta respondió correctamente, pero no devolvió alimentos validados.");
+  }
   res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
   return res.status(200).json({ ok: true, alimentos: resultado, actualizado: new Date().toISOString() });
 }
@@ -273,7 +263,10 @@ export default async function handler(req, res) {
   try {
     if (req.query?.vista === "catalogo-alimentos") {
       try { await manejarCatalogoNutricional(req,res); }
-      catch (error) { return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."}); }
+      catch (error) {
+        console.error("[catalogo-alimentos] Falló la consulta autenticada:", error?.message || error);
+        return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."});
+      }
       return;
     }
     if (req.query?.vista === "jornada") {
