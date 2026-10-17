@@ -7,10 +7,33 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function supabaseFetch(path) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" } });
+  const faltantes = [];
+  if (!SUPABASE_URL) faltantes.push("SUPABASE_URL");
+  if (!SUPABASE_KEY) faltantes.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (faltantes.length) {
+    throw new Error(`Configuración de Supabase incompleta en el entorno: falta ${faltantes.join(", ")}`);
+  }
+  let resp;
+  try {
+    resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json"
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (error) {
+    throw new Error(`No se pudo conectar con Supabase: ${error?.name === "TimeoutError" ? "timeout de 10 segundos" : (error?.message || "error de red")}`);
+  }
   const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; }
+  catch { throw new Error(`Supabase respondió HTTP ${resp.status} con un cuerpo no JSON`); }
+  if (!resp.ok) {
+    const detalle = (data && (data.message || data.error || data.details || data.hint)) || "sin detalle";
+    throw new Error(`Supabase/PostgREST HTTP ${resp.status}: ${detalle}`);
+  }
   return data;
 }
 
