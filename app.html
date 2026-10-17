@@ -216,12 +216,12 @@ function alternativaDesdeCatalogo(catalogo,bloque,principales,alternativasPrevia
  const excluirIds=comidas.map(a=>a.id).filter(Boolean);
  const ordenProteina=bloque==='cena'?['huevo','pescado','legumbre','ave','lacteo','cerdo','carne']:bloque==='desayuno'?['huevo','lacteo','legumbre','pescado','ave','cerdo','carne']:['pescado','huevo','legumbre','ave','lacteo','cerdo','carne'];
  const ordenCarbo=bloque==='cena'?['batata','sweet potato','arroz integral','brown rice','quinoa','avena','oat']:bloque==='desayuno'?['avena','oat','pan integral','whole-wheat','batata','sweet potato','arroz integral','brown rice']:['arroz integral','brown rice','batata','sweet potato','quinoa','avena','oat'];
- const proteinas=(catalogo||[]).filter(a=>categoriasDeAlimento(a.nombre).includes('proteina')&&!excluirIds.includes(a.id)&&(!familiaPrincipal||familiaFuenteProteica(a.nombre)!==familiaPrincipal));
- const carbohidratos=(catalogo||[]).filter(a=>categoriasDeAlimento(a.nombre).includes('carbohidrato')&&!excluirIds.includes(a.id));
+ const previas=new Set(alternativasPrevias);
+ const proteinas=(catalogo||[]).filter(a=>categoriasDeAlimento(a.nombre).includes('proteina')&&!excluirIds.includes(a.id)&&!previas.has(a.id||a.nombre)&&(!familiaPrincipal||familiaFuenteProteica(a.nombre)!==familiaPrincipal));
+ const carbohidratos=(catalogo||[]).filter(a=>categoriasDeAlimento(a.nombre).includes('carbohidrato')&&!excluirIds.includes(a.id)&&!previas.has(a.id||a.nombre));
  const rank=(item,orden)=>{const n=String(item.nombre||'').toLowerCase();const i=orden.findIndex(k=>n.includes(k));return i<0?100:i};
  proteinas.sort((a,b)=>rank(a,ordenProteina)-rank(b,ordenProteina)||a.nombre.localeCompare(b.nombre));
  carbohidratos.sort((a,b)=>rank(a,ordenCarbo)-rank(b,ordenCarbo)||a.nombre.localeCompare(b.nombre));
- const previas=new Set(alternativasPrevias);
  let elegida=null;
  for(const p of proteinas){
   for(const c of carbohidratos){
@@ -231,7 +231,7 @@ function alternativaDesdeCatalogo(catalogo,bloque,principales,alternativasPrevia
   if(elegida)break;
  }
  if(!elegida)return '';
- alternativasPrevias.push(elegida.clave);
+ alternativasPrevias.push(elegida.p.id||elegida.p.nombre,elegida.c.id||elegida.c.nombre);
  return 'En lugar de repetir la combinación actual, probá '+nombreCatalogoUI(elegida.p.nombre)+' con '+nombreCatalogoUI(elegida.c.nombre).toLowerCase()+'.';
 }
 
