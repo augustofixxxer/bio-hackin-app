@@ -252,8 +252,8 @@ function construirContenidoJornada(objetivo,tipo,hora,energiaBaja,catalogoAlimen
  const cenaDinamica=conectado?opcionesJornadaDesdeCatalogo(catalogoAlimentos,'cena'):null;
  const desayunoDinamico=conectado?opcionesJornadaDesdeCatalogo(catalogoAlimentos,'desayuno'):null;
  const combinacionesAlternativas=[];
- const alternativaPost=conectado?alternativaDesdeCatalogo(catalogoAlimentos,'post',alimentosDinamicos,combinacionesAlternativas):base.reemplazoPost;
- const alternativaDesayuno=conectado?alternativaDesdeCatalogo(catalogoAlimentos,'desayuno',desayunoDinamico,combinacionesAlternativas):base.reemplazoDesayuno;
+ const alternativaPost=conectado&&esEntreno?alternativaDesdeCatalogo(catalogoAlimentos,'post',alimentosDinamicos,combinacionesAlternativas):base.reemplazoPost;
+ const alternativaDesayuno=conectado&&!esEntreno?alternativaDesdeCatalogo(catalogoAlimentos,'desayuno',desayunoDinamico,combinacionesAlternativas):base.reemplazoDesayuno;
  const alternativaCena=conectado?alternativaDesdeCatalogo(catalogoAlimentos,'cena',cenaDinamica,combinacionesAlternativas):base.reemplazoCena;
  return {momento,principal,alimentos:conectado?(alimentosDinamicos.length?alimentosDinamicos:alimentos||[]):alimentos||[],alimentosCena:conectado?(cenaDinamica.length?cenaDinamica:base.alimentosCena||[]):base.alimentosCena||[],alimentosDesayuno:conectado?(desayunoDinamico.length?desayunoDinamico:base.alimentosDesayuno||[]):base.alimentosDesayuno||[],cena,alternativas:esEntreno?alternativaPost:alternativaDesayuno,alternativaDesayuno,alternativaCena,ajusteEnergia,fuenteCatalogo:'catalogo_nutricional_75',estadoCatalogo:conectado?'supabase':'fallback_curado',notaCatalogo:conectado?'Alimentos y alternativas seleccionados del catálogo nutricional conectado.':'No se pudo consultar el catálogo; se muestran ejemplos de respaldo.'};
 }
