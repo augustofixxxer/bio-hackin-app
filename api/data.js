@@ -271,7 +271,12 @@ export default async function handler(req, res) {
   }
   if (!SUPABASE_URL || !SUPABASE_KEY) { res.status(500).json({ error: "Falta configurar Supabase." }); return; }
   try {
-    if (req.query?.vista === "catalogo-alimentos") {\n      try { await manejarCatalogoNutricional(req,res); }\n      catch (error) { return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."}); }\n      return;\n    }\n    if (req.query?.vista === "jornada") {
+    if (req.query?.vista === "catalogo-alimentos") {
+      try { await manejarCatalogoNutricional(req,res); }
+      catch (error) { return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."}); }
+      return;
+    }
+    if (req.query?.vista === "jornada") {
       try { await manejarJornada(req,res,false); }
       catch (error) { return res.status(500).json({error:"No pudimos cargar tu jornada. Verificá que plan_jornada_diaria esté disponible."}); }
       return;
