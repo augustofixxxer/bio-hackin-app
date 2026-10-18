@@ -15,7 +15,7 @@ async function supabaseFetch(path) {
   }
   let resp;
   try {
-    const baseUrl = SUPABASE_URL.replace(/\\/+$/, "");
+    const baseUrl = SUPABASE_URL.replace(/\/+$/, "");
     const endpoint = `${baseUrl}/rest/v1/${path}`;
     resp = await fetch(endpoint, {
       headers: {
