@@ -15,7 +15,9 @@ async function supabaseFetch(path) {
   }
   let resp;
   try {
-    resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    const baseUrl = SUPABASE_URL.replace(/\\/+$/, "");
+    const endpoint = `${baseUrl}/rest/v1/${path}`;
+    resp = await fetch(endpoint, {
       headers: {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -245,9 +247,14 @@ async function manejarCatalogoNutricional(req, res) {
   // Mi Día necesita la identidad y clasificación de los alimentos para generar
   // alternativas. No debe depender de tres lecturas adicionales de composición,
   // nutrientes y fuentes que no utiliza esta vista.
+  console.info("[catalogo-alimentos] Sesión validada; consultando alimentos validados.");
   const alimentos = await supabaseFetch(
-    "motor_nutricional_alimentos?select=id,fuente_id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc"
+    "motor_nutricional_alimentos?select=id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc&limit=500"
   );
+  if (!Array.isArray(alimentos)) {
+    throw new Error("Supabase/PostgREST devolvió un formato inesperado para el catálogo de alimentos.");
+  }
+  console.info(`[catalogo-alimentos] Consulta completada: ${alimentos.length} alimentos validados.`);
   const resultado = alimentos.map((a) => ({
     id: a.id,
     nombre: a.descripcion_fuente,
