@@ -2944,7 +2944,11 @@ function completarOnboarding() {
   try {
     lsSet("reseteo_onboarding_v1", "true");
   } catch (e) {}
-  window.location.href = "/app.html";
+  // Reemplaza la entrada del onboarding para que Atrás no vuelva a ese flujo.
+  try {
+    window.history.replaceState({ reseteoApp: true, tab: "descubrir" }, "", "/app.html");
+  } catch (e) {}
+  window.location.replace("/app.html");
 }
 
 function OnboardingFlow({ pase, onCompletar, onVolver }) {
