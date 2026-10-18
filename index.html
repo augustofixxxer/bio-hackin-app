@@ -1791,17 +1791,17 @@ function TerminosGate({ pase, onAceptar }) {
 
   return (
     <div style={{
-      position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex",
-      alignItems: "center", justifyContent: "center", padding: 24, background: EXPLORADOR_TOKENS.bg,
+      position: "relative", overflowX: "hidden", overflowY: "auto", minHeight: "100vh", minHeight: "100dvh", display: "flex",
+      alignItems: "center", justifyContent: "center", padding: "12px", background: EXPLORADOR_TOKENS.bg,
     }}>
       <HojasDecorativas zIndex={0} />
       <div style={{
         position: "relative", zIndex: 1, maxWidth: 440, width: "100%",
         background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
         backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
-        borderRadius: 26, padding: 28, boxShadow: EXPLORADOR_TOKENS.cardShadow,
+        borderRadius: 26, padding: "18px 20px", boxShadow: EXPLORADOR_TOKENS.cardShadow,
       }}>
-        <h1 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 12, letterSpacing: "-0.01em" }}>
+        <h1 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 10, letterSpacing: "-0.01em" }}>
           Antes de arrancar
         </h1>
         <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "rgba(242,239,233,0.85)", fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
@@ -1815,10 +1815,10 @@ function TerminosGate({ pase, onAceptar }) {
           </span>
         </label>
 
-        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 10, fontWeight: 700 }}>
+        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 8, fontWeight: 700 }}>
           ¿Tenés algún diagnóstico médico preexistente (ej. diabetes, hipotiroidismo, patologías cardíacas, renales, etc.)?
         </p>
-        <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
           {[{ label: "No", val: false }, { label: "Sí", val: true }].map((op) => {
             const activo = condicionMedica === op.val;
             return (
@@ -1837,9 +1837,9 @@ function TerminosGate({ pase, onAceptar }) {
         </div>
 
         {condicionMedica === true && (
-          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: 14, marginBottom: 18 }}>
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.5, margin: 0 }}>
-              Por seguridad, te vamos a mostrar una confirmación extra cada vez que aparezca una sugerencia que amerite más cuidado en tu caso. Igual, consultá siempre con tu profesional antes de aplicar cambios.
+          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,160,0.3)`, borderRadius: 14, padding: "10px 12px", marginBottom: 10 }}>
+            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.4, margin: 0 }}>
+              Para tu tranquilidad, la app activará avisos de precaución contextuales en sugerencias que requieran mayor auto-observación. Consultá siempre con tu profesional de confianza.
             </p>
           </div>
         )}
@@ -1858,7 +1858,7 @@ function TerminosGate({ pase, onAceptar }) {
           borderBottom: puedeContinuar && !enviando ? "2.5px solid rgba(90,60,10,0.6)" : "1px solid rgba(255,255,255,0.1)",
           boxShadow: puedeContinuar && !enviando ? "0 10px 22px -6px rgba(0,0,0,0.6)" : "none",
         }}>
-          {enviando ? "Guardando..." : "Continuar"}
+          {enviando ? "Guardando..." : "ENTENDIDO, INGRESAR"}
         </button>
       </div>
     </div>
@@ -2967,11 +2967,11 @@ function OnboardingFlow({ pase, onCompletar }) {
     position: "relative", zIndex: 1, maxWidth: 440, width: "100%",
     background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
     backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
-    borderRadius: 26, padding: 28, boxShadow: EXPLORADOR_TOKENS.cardShadow,
+    borderRadius: 26, padding: "22px 24px", boxShadow: EXPLORADOR_TOKENS.cardShadow,
   };
   const wrapStyle = {
-    position: "relative", overflow: "hidden", minHeight: "100vh", display: "flex",
-    alignItems: "center", justifyContent: "center", padding: 24, background: EXPLORADOR_TOKENS.bg,
+    position: "relative", overflowX: "hidden", overflowY: "auto", minHeight: "100vh", minHeight: "100dvh", display: "flex",
+    alignItems: "center", justifyContent: "center", padding: 12, background: EXPLORADOR_TOKENS.bg,
   };
   const h1Style = {
     fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22,
@@ -2989,8 +2989,8 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
-          <OnboardingProgreso paso={1} />
-          <OnboardingEyebrow>Reseteo Propio · Paso 1 de 3</OnboardingEyebrow>
+          <OnboardingProgreso paso={2} />
+          <OnboardingEyebrow>PASO 2 DE 3</OnboardingEyebrow>
           <h1 style={h1Style}>¿Cómo querés que te llamemos?</h1>
           <p style={pStyle}>Nada de formularios largos. Esto es tuyo: un espacio para observar cómo responde tu cuerpo a tus propios hábitos, a tu ritmo.</p>
           <input
@@ -2998,7 +2998,7 @@ function OnboardingFlow({ pase, onCompletar }) {
             value={nombre} onChange={(e) => setNombre(e.target.value)}
           />
           <OnboardingBotonPrimario onClick={guardarNombreYAvanzar} disabled={guardando}>
-            {guardando ? "Guardando..." : "Continuar"}
+            {guardando ? "Guardando..." : "SIGUIENTE PASO"}
           </OnboardingBotonPrimario>
           <OnboardingBotonFantasma onClick={() => setPaso(2)}>Prefiero omitir esto por ahora</OnboardingBotonFantasma>
         </div>
@@ -3011,26 +3011,29 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
-          <OnboardingProgreso paso={2} />
-          <OnboardingEyebrow>Reseteo Propio · Paso 2 de 2</OnboardingEyebrow>
-          <h1 style={h1Style}>Así funciona un "hackeo"</h1>
-          <p style={pStyle}>No te vamos a decir qué no comer. Te mostramos cómo mejorar lo que ya elegiste.</p>
+          <OnboardingProgreso paso={3} />
+          <OnboardingEyebrow>PASO 3 DE 3</OnboardingEyebrow>
+          <h1 style={h1Style}>EJEMPLO PRÁCTICO</h1>
           <div style={{
             background: "rgba(197,160,89,0.10)", border: `1px solid rgba(197,160,89,0.3)`,
-            borderRadius: 18, padding: 16, marginBottom: 22, display: "flex", gap: 12, alignItems: "flex-start",
+            borderRadius: 18, padding: 14, marginBottom: 16,
           }}>
-            <span style={{
-              width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-              background: `radial-gradient(circle at 32% 28%, rgba(255,240,210,0.9), rgba(197,160,89,0.55) 35%, rgba(197,160,89,0.12) 75%)`,
-              borderTop: "1.5px solid rgba(255,255,255,0.6)", borderLeft: "1.5px solid rgba(255,255,255,0.35)",
-              borderRight: "1.5px solid rgba(120,85,20,0.5)", borderBottom: "2px solid rgba(90,60,10,0.6)",
-              display: "flex", alignItems: "center", justifyContent: "center", color: "#3A2A0F",
-            }}><IconoHackeo size={18} /></span>
-            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, lineHeight: 1.55, color: EXPLORADOR_TOKENS.textPrimary }}>
-              Registrás <b>"milanesa con papas fritas"</b> → te mostramos cómo experimentar sin cambiar toda la comida. Podés probar una milanesa al horno y comparar qué notás frente a la versión frita. También podés experimentar con el rebozado: por ejemplo, usar avena molida en lugar del pan rallado habitual y observar la diferencia de textura y crocancia. Y si querés ir un paso más allá, podés comparar las papas fritas con una versión al horno. Misma comida, distintas variables: probás, observás y registrás qué notás.
-            </p>
+            <p style={{ margin: "0 0 8px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", color: EXPLORADOR_TOKENS.accent, textTransform: "uppercase" }}>PLATO BASE</p>
+            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 16, fontWeight: 800, lineHeight: 1.35, color: EXPLORADOR_TOKENS.textPrimary }}>Milanesa con papas fritas</p>
           </div>
-          <OnboardingBotonPrimario onClick={completarOnboarding}>Entendido, quiero probar</OnboardingBotonPrimario>
+          <div style={{
+            background: "rgba(255,255,255,0.04)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
+            borderRadius: 18, padding: 14, marginBottom: 14,
+          }}>
+            <p style={{ margin: "0 0 8px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", color: EXPLORADOR_TOKENS.accent, textTransform: "uppercase" }}>OPCIÓN DE BIOHACKING</p>
+            <p style={{ margin: "0 0 8px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, lineHeight: 1.45, color: EXPLORADOR_TOKENS.textPrimary }}>- Rebozado: Avena molida en lugar de pan rallado (Fibra &amp; Crocancia)</p>
+            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, lineHeight: 1.45, color: EXPLORADOR_TOKENS.textPrimary }}>- Cocción: Versión al horno para optimizar digestión</p>
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>↗</span>
+            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: EXPLORADOR_TOKENS.menta }}>Misma comida, menor impacto, más energía.</p>
+          </div>
+          <OnboardingBotonPrimario onClick={completarOnboarding}>COMENZAR MI RESETEO 🚀</OnboardingBotonPrimario>
         </div>
       </div>
     );
