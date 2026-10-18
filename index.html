@@ -26,6 +26,13 @@
      excepción al patrón de estilos inline del resto del archivo. */
   .glass-press { transition: transform 0.12s ease, box-shadow 0.12s ease; }
   .glass-press:active { transform: scale(0.97); }
+  /* Navegación de retorno accesible: área táctil mínima de 44 px, sin dependencias. */
+  .back-navigation {
+    min-width: 44px; min-height: 44px; padding: 10px 12px !important;
+    display: inline-flex; align-items: center; justify-content: flex-start; gap: 6px;
+    border-radius: 10px; touch-action: manipulation;
+  }
+  .back-navigation:focus-visible { outline: 2px solid #C5A059; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -305,7 +312,7 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar, onV
     const sugerencias = resultado.sugerencias || [];
     return (
       <div className="fade-in">
-        <button onClick={onBack} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
+        <button onClick={onBack} className="back-navigation" style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
           ← Categorías
         </button>
         <h2 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 21, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 16, letterSpacing: "-0.01em" }}>
@@ -391,7 +398,7 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar, onV
             }}>
               Sí, cómo me siento - 10 seg
             </button>
-            <button onClick={onBack} style={{
+            <button onClick={onBack} className="back-navigation" style={{
               background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary,
               fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0,
             }}>
@@ -1761,8 +1768,11 @@ class ErrorBoundary extends React.Component {
 }
 
 function TerminosGate({ pase, onAceptar }) {
-  const [checkTerminos, setCheckTerminos] = useState(false);
-  const [condicionMedica, setCondicionMedica] = useState(null); // null | true | false
+  const [checkTerminos, setCheckTerminos] = useState(() => lsGet("reseteo_terminos_v1") === "true");
+  const [condicionMedica, setCondicionMedica] = useState(() => {
+    const guardada = lsGet("reseteo_condicion_medica");
+    return guardada === "true" ? true : guardada === "false" ? false : null;
+  }); // null | true | false; conserva la selección si el usuario vuelve desde onboarding
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
 
@@ -2175,7 +2185,7 @@ function CheckCelda({ valor }) {
 function PremiumScreen({ onVolver, pase }) {
   return (
     <div className="fade-in">
-      <button onClick={onVolver} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
+      <button onClick={onVolver} className="back-navigation" style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 20, cursor: "pointer", padding: 0 }}>
         ← Volver
       </button>
 
@@ -2937,7 +2947,7 @@ function completarOnboarding() {
   window.location.href = "/app.html";
 }
 
-function OnboardingFlow({ pase, onCompletar }) {
+function OnboardingFlow({ pase, onCompletar, onVolver }) {
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -2989,6 +2999,10 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
+          <button type="button" className="back-navigation" onClick={onVolver} aria-label="Volver a seguridad y consentimiento" style={{
+            background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary,
+            fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, fontWeight: 600, cursor: "pointer", margin: "-8px 0 6px -8px",
+          }}>← VOLVER</button>
           <OnboardingProgreso paso={2} />
           <OnboardingEyebrow>PASO 2 DE 3</OnboardingEyebrow>
           <h1 style={h1Style}>¿Cómo querés que te llamemos?</h1>
@@ -3011,6 +3025,10 @@ function OnboardingFlow({ pase, onCompletar }) {
       <div style={wrapStyle} className="fade-in">
         <HojasDecorativas zIndex={0} />
         <div style={cardStyle}>
+          <button type="button" className="back-navigation" onClick={() => setPaso(1)} aria-label="Volver al paso anterior" style={{
+            background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary,
+            fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, fontWeight: 600, cursor: "pointer", margin: "-8px 0 6px -8px",
+          }}>← VOLVER</button>
           <OnboardingProgreso paso={3} />
           <OnboardingEyebrow>PASO 3 DE 3</OnboardingEyebrow>
           <h1 style={h1Style}>EJEMPLO PRÁCTICO</h1>
@@ -3151,7 +3169,7 @@ function App() {
   }
 
   if (!onboardingCompletado) {
-    return <OnboardingFlow pase={usuario.pase} onCompletar={completarOnboarding} />;
+    return <OnboardingFlow pase={usuario.pase} onCompletar={completarOnboarding} onVolver={() => setTerminosAceptados(false)} />;
   }
 
   const grupos = groupByCategoria(data.entradas);
@@ -3316,7 +3334,7 @@ function App() {
           const cat = view.idsCoincidentes ? catCompleta.filter((e) => view.idsCoincidentes.includes(e.id)) : catCompleta;
           return (
             <div className="fade-in">
-              <button onClick={() => setView({ screen: "categories" })} style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
+              <button onClick={() => setView({ screen: "categories" })} className="back-navigation" style={{ background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, marginBottom: 16, cursor: "pointer", padding: 0 }}>
                 ← Categorías
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
