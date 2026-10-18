@@ -216,7 +216,12 @@ async function calcularInsights(usuarioId, opciones = {}) {
   }
 
   const estado = insights.length > 0 ? 'ok' : 'sin_patron_aun';
-  return await guardarResultado(usuarioId, { estado, insights });
+  return await guardarResultado(usuarioId, {
+    estado,
+    diasRegistrados: fechasComidaConCruce.size,
+    diasFaltantes: Math.max(0, UMBRAL_DIAS_CRUZADOS - fechasComidaConCruce.size),
+    insights,
+  });
 }
 
 async function guardarResultado(usuarioId, resultado) {
