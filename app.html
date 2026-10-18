@@ -514,7 +514,7 @@ function App(){
 {premiumEstado?.premium&&<div className="premium-founder-state">{premiumEstado.modoPruebaFundador&&'Modo prueba fundador activo · activación experimental, no representa una compra.'}</div>}
 <button className="secondary" onClick={()=>setTab('descubrir')}>← Seguir explorando</button>
 </section>}
- <footer><button className="secondary" onClick={cerrarSesion}>Cerrar sesión</button><div style={{marginTop:10}}><a href="/privacidad.html">Política de privacidad</a></div></footer></main><nav className="tabs"><div className="tabs-inner"><button className={'tab '+(tab==='descubrir'?'active':'')} onClick={()=>setTab('descubrir')}>DESCUBRIR<small>Explorar</small></button><button className={'tab '+(tab==='mi-dia'?'active':'')} onClick={()=>setTab('mi-dia')}>MI DÍA<small>Registrar</small></button><button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>irPremium('basica')}>PREMIUM<small>Ir más allá</small></button></div></nav></>;
+ <footer><button className="secondary" onClick={cerrarSesion}>Cerrar sesión</button><div style={{marginTop:10}}><a href="/privacidad.html">Política de privacidad</a></div></footer></main><nav className="tabs"><div className="tabs-inner"><button className={'tab '+(tab==='descubrir'?'active':'')} onClick={()=>{setDiscoverView('home');setTab('descubrir')}}>DESCUBRIR<small>Explorar</small></button><button className={'tab '+(tab==='mi-dia'?'active':'')} onClick={()=>setTab('mi-dia')}>MI DÍA<small>Registrar</small></button><button className={'tab '+(tab==='premium'?'active':'')} onClick={()=>irPremium('basica')}>PREMIUM<small>Ir más allá</small></button></div></nav></>;
 }
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
