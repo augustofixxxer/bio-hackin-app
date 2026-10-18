@@ -1,16 +1,41 @@
 // Alimenta el Explorador con alternativas reutilizables.
 import { emitirEventoProducto } from "./_eventos-producto.js";
-import { usuarioIdDesdeRequest } from "./_sesion.js";
+import { usuarioIdDesdeRequest, diagnosticarPaseRequest } from "./_sesion.js";
 import { elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO } from "./_selector-tips-ia.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function supabaseFetch(path) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" } });
+  const faltantes = [];
+  if (!SUPABASE_URL) faltantes.push("SUPABASE_URL");
+  if (!SUPABASE_KEY) faltantes.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (faltantes.length) {
+    throw new Error(`Configuración de Supabase incompleta en el entorno: falta ${faltantes.join(", ")}`);
+  }
+  let resp;
+  try {
+    const baseUrl = SUPABASE_URL.replace(/\/+$/, "");
+    const endpoint = `${baseUrl}/rest/v1/${path}`;
+    resp = await fetch(endpoint, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json"
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (error) {
+    throw new Error(`No se pudo conectar con Supabase: ${error?.name === "TimeoutError" ? "timeout de 10 segundos" : (error?.message || "error de red")}`);
+  }
   const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; }
+  catch { throw new Error(`Supabase respondió HTTP ${resp.status} con un cuerpo no JSON`); }
+  if (!resp.ok) {
+    const detalle = (data && (data.message || data.error || data.details || data.hint)) || "sin detalle";
+    throw new Error(`Supabase/PostgREST HTTP ${resp.status}: ${detalle}`);
+  }
   return data;
 }
 
@@ -213,41 +238,38 @@ const INTENT_BRIDGE = {
 
 
 async function manejarCatalogoNutricional(req, res) {
+  console.info("[catalogo-alimentos] Solicitud recibida:", { method: req.method, bearerPresente: Boolean((req.headers?.authorization || "").startsWith("Bearer ")), sessionSecretConfigurado: Boolean(process.env.SESSION_SECRET) });
   const auth = await validarUsuario(req);
-  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
-
-  const [alimentos, composiciones, nutrientes, fuentes] = await Promise.all([
-    supabaseFetch("motor_nutricional_alimentos?select=id,fuente_id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc"),
-    supabaseFetch("motor_nutricional_composicion?select=alimento_id,nutriente_id,valor_por_100g,unidad,calidad_dato,trazabilidad"),
-    supabaseFetch("motor_nutricional_nutrientes?select=id,codigo,nombre,unidad_canonica"),
-    supabaseFetch("motor_nutricional_fuentes?select=id,nombre,version")
-  ]);
-  const nutrientesPorId = new Map(nutrientes.map((n) => [n.id, n]));
-  const fuentesPorId = new Map(fuentes.map((f) => [f.id, f]));
-  const composicionesPorAlimento = new Map();
-  for (const c of composiciones) {
-    if (!composicionesPorAlimento.has(c.alimento_id)) composicionesPorAlimento.set(c.alimento_id, {});
-    const nutriente = nutrientesPorId.get(c.nutriente_id);
-    if (!nutriente?.codigo) continue;
-    composicionesPorAlimento.get(c.alimento_id)[nutriente.codigo] = {
-      valor: Number(c.valor_por_100g),
-      unidad: c.unidad,
-      calidadDato: c.calidad_dato,
-      trazabilidad: c.trazabilidad || null
-    };
+  if (!auth.ok) {
+    console.warn("[catalogo-alimentos] Sesión rechazada:", { status: auth.status, causa: diagnosticarPaseRequest(req), error: auth.error });
+    return res.status(auth.status).json({ error: auth.error });
   }
-  const resultado = alimentos.map((a) => {
-    const fuente = fuentesPorId.get(a.fuente_id);
-    return {
-      id: a.id,
-      nombre: a.descripcion_fuente,
-      preparacion: a.preparacion || null,
-      baseComestible: a.base_comestible,
-      estado: a.estado,
-      fuente: fuente ? { nombre: fuente.nombre, version: fuente.version || null } : null,
-      nutrientes: composicionesPorAlimento.get(a.id) || {}
-    };
-  });
+
+  // Mi Día necesita la identidad y clasificación de los alimentos para generar
+  // alternativas. No debe depender de tres lecturas adicionales de composición,
+  // nutrientes y fuentes que no utiliza esta vista.
+  console.info("[catalogo-alimentos] Sesión validada; consultando alimentos validados.");
+  console.info("[catalogo-alimentos] Consultando public.motor_nutricional_alimentos con filtro estado=eq.validado.");
+  const alimentos = await supabaseFetch(
+    "motor_nutricional_alimentos?select=id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc&limit=500"
+  );
+  if (!Array.isArray(alimentos)) {
+    throw new Error("Supabase/PostgREST devolvió un formato inesperado para el catálogo de alimentos.");
+  }
+  console.info(`[catalogo-alimentos] Consulta completada: ${alimentos.length} alimentos validados.`);
+  const resultado = alimentos.map((a) => ({
+    id: a.id,
+    nombre: a.descripcion_fuente,
+    preparacion: a.preparacion || null,
+    baseComestible: a.base_comestible,
+    estado: a.estado,
+    // Se conserva la forma del contrato. Mi Día no calcula nutrientes.
+    fuente: null,
+    nutrientes: {}
+  }));
+  if (!resultado.length) {
+    console.error("[catalogo-alimentos] La consulta respondió correctamente, pero no devolvió alimentos validados.");
+  }
   res.setHeader("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
   return res.status(200).json({ ok: true, alimentos: resultado, actualizado: new Date().toISOString() });
 }
@@ -273,7 +295,10 @@ export default async function handler(req, res) {
   try {
     if (req.query?.vista === "catalogo-alimentos") {
       try { await manejarCatalogoNutricional(req,res); }
-      catch (error) { return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."}); }
+      catch (error) {
+        console.error("[catalogo-alimentos] Falló la consulta autenticada:", error?.message || error);
+        return res.status(500).json({error:"No pudimos cargar el catálogo nutricional."});
+      }
       return;
     }
     if (req.query?.vista === "jornada") {

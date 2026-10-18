@@ -197,12 +197,42 @@ function opcionesJornadaDesdeCatalogo(catalogo,bloque){
  for(const categoria of categorias){const item=seleccionarCatalogo(catalogo,categoria,1,usados)[0];if(!item)continue;usados.push(item.id);const p=usos[categoria];salida.push({id:item.id,nombre:item.nombre,rol:p[0],uso:p[1],categoria});}
  return salida;
 }
-function alternativaDesdeCatalogo(catalogo){
- const p=seleccionarCatalogo(catalogo,'proteina',2),c=seleccionarCatalogo(catalogo,'carbohidrato',1)[0],f=seleccionarCatalogo(catalogo,'fruta',1)[0];
- const acompanamiento=(c&&c.nombre)||(f&&f.nombre);
- if(p[0]&&p[1]&&acompanamiento)return 'Podés alternar '+p[0].nombre+' por '+p[1].nombre+' y acompañarlo con '+acompanamiento.toLowerCase()+'.';
- if(p[0]&&acompanamiento)return 'Podés combinar '+p[0].nombre.toLowerCase()+' con '+acompanamiento.toLowerCase()+' según la comida.';
- return '';
+function familiaFuenteProteica(nombre){
+ const n=String(nombre||'').toLowerCase();
+ if(['atun','atún','tuna','merluza','hake','pescado','fish'].some(x=>n.includes(x)))return 'pescado';
+ if(['pollo','chicken','pavo','turkey'].some(x=>n.includes(x)))return 'ave';
+ if(['huevo','egg'].some(x=>n.includes(x)))return 'huevo';
+ if(['lentej','lentil','poroto','bean','garbanzo','chickpea'].some(x=>n.includes(x)))return 'legumbre';
+ if(['yogur','yogurt','ricota','ricotta','queso','cheese','leche','milk'].some(x=>n.includes(x)))return 'lacteo';
+ if(['cerdo','pork'].some(x=>n.includes(x)))return 'cerdo';
+ if(['vacuno','beef','carne'].some(x=>n.includes(x)))return 'carne_roja';
+ return 'otra';
+}
+function alternativaDesdeCatalogo(catalogo,bloque,principales,alternativasPrevias=[]){
+ const comidas=Array.isArray(principales)?principales:[];
+ const proteinaPrincipal=comidas.find(a=>categoriasDeAlimento(a.nombre).includes('proteina'));
+ const carboPrincipal=comidas.find(a=>categoriasDeAlimento(a.nombre).includes('carbohidrato'));
+ const familiaPrincipal=proteinaPrincipal?familiaFuenteProteica(proteinaPrincipal.nombre):'';
+ const excluirIds=comidas.map(a=>a.id).filter(Boolean);
+ const ordenProteina=bloque==='cena'?['huevo','pescado','legumbre','ave','lacteo','cerdo','carne']:bloque==='desayuno'?['huevo','lacteo','legumbre','pescado','ave','cerdo','carne']:['pescado','huevo','legumbre','ave','lacteo','cerdo','carne'];
+ const ordenCarbo=bloque==='cena'?['batata','sweet potato','arroz integral','brown rice','quinoa','avena','oat']:bloque==='desayuno'?['avena','oat','pan integral','whole-wheat','batata','sweet potato','arroz integral','brown rice']:['arroz integral','brown rice','batata','sweet potato','quinoa','avena','oat'];
+ const previas=new Set(alternativasPrevias);
+ const proteinas=(catalogo||[]).filter(a=>categoriasDeAlimento(a.nombre).includes('proteina')&&!excluirIds.includes(a.id)&&!previas.has(a.id||a.nombre)&&(!familiaPrincipal||familiaFuenteProteica(a.nombre)!==familiaPrincipal));
+ const carbohidratos=(catalogo||[]).filter(a=>categoriasDeAlimento(a.nombre).includes('carbohidrato')&&!excluirIds.includes(a.id)&&!previas.has(a.id||a.nombre));
+ const rank=(item,orden)=>{const n=String(item.nombre||'').toLowerCase();const i=orden.findIndex(k=>n.includes(k));return i<0?100:i};
+ proteinas.sort((a,b)=>rank(a,ordenProteina)-rank(b,ordenProteina)||a.nombre.localeCompare(b.nombre));
+ carbohidratos.sort((a,b)=>rank(a,ordenCarbo)-rank(b,ordenCarbo)||a.nombre.localeCompare(b.nombre));
+ let elegida=null;
+ for(const p of proteinas){
+  for(const c of carbohidratos){
+   const clave=[p.id||p.nombre,c.id||c.nombre].join('|');
+   if(!previas.has(clave)){elegida={p,c,clave};break;}
+  }
+  if(elegida)break;
+ }
+ if(!elegida)return '';
+ alternativasPrevias.push(elegida.p.id||elegida.p.nombre,elegida.c.id||elegida.c.nombre);
+ return 'En lugar de repetir la combinación actual, probá '+nombreCatalogoUI(elegida.p.nombre)+' con '+nombreCatalogoUI(elegida.c.nombre).toLowerCase()+'.';
 }
 
 function construirContenidoJornada(objetivo,tipo,hora,energiaBaja,catalogoAlimentos=[]){
@@ -221,9 +251,10 @@ function construirContenidoJornada(objetivo,tipo,hora,energiaBaja,catalogoAlimen
  const alimentosDinamicos=conectado?opcionesJornadaDesdeCatalogo(catalogoAlimentos,bloquePrincipal==='pre'?'pre':'post'):null;
  const cenaDinamica=conectado?opcionesJornadaDesdeCatalogo(catalogoAlimentos,'cena'):null;
  const desayunoDinamico=conectado?opcionesJornadaDesdeCatalogo(catalogoAlimentos,'desayuno'):null;
- const alternativaPost=conectado?alternativaDesdeCatalogo(catalogoAlimentos):base.reemplazoPost;
- const alternativaDesayuno=conectado?alternativaDesdeCatalogo(catalogoAlimentos):base.reemplazoDesayuno;
- const alternativaCena=conectado?alternativaDesdeCatalogo(catalogoAlimentos):base.reemplazoCena;
+ const combinacionesAlternativas=[];
+ const alternativaPost=conectado&&esEntreno?alternativaDesdeCatalogo(catalogoAlimentos,'post',alimentosDinamicos,combinacionesAlternativas):base.reemplazoPost;
+ const alternativaDesayuno=conectado&&!esEntreno?alternativaDesdeCatalogo(catalogoAlimentos,'desayuno',desayunoDinamico,combinacionesAlternativas):base.reemplazoDesayuno;
+ const alternativaCena=conectado?alternativaDesdeCatalogo(catalogoAlimentos,'cena',cenaDinamica,combinacionesAlternativas):base.reemplazoCena;
  return {momento,principal,alimentos:conectado?(alimentosDinamicos.length?alimentosDinamicos:alimentos||[]):alimentos||[],alimentosCena:conectado?(cenaDinamica.length?cenaDinamica:base.alimentosCena||[]):base.alimentosCena||[],alimentosDesayuno:conectado?(desayunoDinamico.length?desayunoDinamico:base.alimentosDesayuno||[]):base.alimentosDesayuno||[],cena,alternativas:esEntreno?alternativaPost:alternativaDesayuno,alternativaDesayuno,alternativaCena,ajusteEnergia,fuenteCatalogo:'catalogo_nutricional_75',estadoCatalogo:conectado?'supabase':'fallback_curado',notaCatalogo:conectado?'Alimentos y alternativas seleccionados del catálogo nutricional conectado.':'No se pudo consultar el catálogo; se muestran ejemplos de respaldo.'};
 }
 function App(){
@@ -237,7 +268,7 @@ function App(){
  const [focusMiDia,setFocusMiDia]=useState(''),[tab,setTab]=useState('descubrir'),[supermercadoReglas,setSupermercadoReglas]=useState([]),[supermercadoSeleccionada,setSupermercadoSeleccionada]=useState(null),[supermercadoPremium,setSupermercadoPremium]=useState(false),[supermercadoMsg,setSupermercadoMsg]=useState(''),[supermercadoError,setSupermercadoError]=useState(''),[premiumOrigen,setPremiumOrigen]=useState('basica'),[premiumVista,setPremiumVista]=useState('home'),[premiumContexto,setPremiumContexto]=useState(null),[premiumEstado,setPremiumEstado]=useState(null),[premiumEstadoMsg,setPremiumEstadoMsg]=useState(''),[premiumExperimentos,setPremiumExperimentos]=useState([]),[premiumExpMsg,setPremiumExpMsg]=useState(''),[premiumExpBusy,setPremiumExpBusy]=useState(false),[texto,setTexto]=useState(''),[textoAntesDeComer,setTextoAntesDeComer]=useState(''),[textoMiDia,setTextoMiDia]=useState(''),[momentoMiDia,setMomentoMiDia]=useState(''),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[msgAntesDeComer,setMsgAntesDeComer]=useState(''),[msgMiDia,setMsgMiDia]=useState(''),[resultado,setResultado]=useState(null),[resultadoAntesDeComer,setResultadoAntesDeComer]=useState(null),[resultadoMiDia,setResultadoMiDia]=useState(null),[entradas,setEntradas]=useState([]),[energy,setEnergy]=useState(''),[dig,setDig]=useState(''),[sleep,setSleep]=useState(''),[water,setWater]=useState(''),[activity,setActivity]=useState(''),[historialMiDia,setHistorialMiDia]=useState([]),[historialLoading,setHistorialLoading]=useState(false),[historialError,setHistorialError]=useState(''),[historialExpandido,setHistorialExpandido]=useState(false);
  useEffect(()=>{if(!pase()){window.location.replace('/index.html');return}fetch('/api/data').then(r=>r.ok?r.json():Promise.reject()).then(d=>setEntradas(d.entradas||[])).catch(()=>setEntradas([]))},[]);
  useEffect(()=>{if(!pase())return;fetch('/api/data?vista=jornada&fecha='+encodeURIComponent(fechaPlanLocal()),{headers:{Authorization:'Bearer '+pase()}}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar tu jornada.');setPlanDia(d.plan);setPlanPerfil(d.perfil)}).catch(e=>setPlanDiaError(e.message||'No pudimos cargar tu jornada.')).finally(()=>setPlanDiaCargando(false))},[]);
- useEffect(()=>{if(tab!=='mi-dia'||catalogoAlimentos.length||!pase())return;let vigente=true;fetch('/api/data?vista=catalogo-alimentos',{headers:{Authorization:'Bearer '+pase()}}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar el catálogo nutricional.');if(vigente)setCatalogoAlimentos(Array.isArray(d.alimentos)?d.alimentos:[])}).catch(()=>{if(vigente)setCatalogoAlimentos([])});return()=>{vigente=false}},[tab,catalogoAlimentos.length]);
+ useEffect(()=>{if(!pase())return;let vigente=true;const cargar=async()=>{let ultimoError=null;console.info('[Mi Día] Iniciando carga del catálogo nutricional al montar la app.');for(let intento=0;intento<3&&vigente;intento++){try{const r=await fetch('/api/data?vista=catalogo-alimentos',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar el catálogo nutricional.');if(!Array.isArray(d.alimentos)||!d.alimentos.length)throw Error('El catálogo no devolvió alimentos validados.');if(vigente){setCatalogoAlimentos(d.alimentos);console.info('[Mi Día] Catálogo nutricional cargado:',d.alimentos.length,'alimentos.')}return}catch(e){ultimoError=e;if(intento<2)await new Promise(resolve=>setTimeout(resolve,350*(intento+1)))}}if(vigente){console.error('[Mi Día] No se pudo cargar el catálogo tras reintentos:',ultimoError?.message||ultimoError);setCatalogoAlimentos([])}};cargar();return()=>{vigente=false}},[]);
  useEffect(()=>{if(tab==='mi-dia'&&pase()){setHistorialExpandido(false);cargarHistorialMiDia()}},[tab]);
  useEffect(()=>{if(tab!=='mi-dia'||!focusMiDia)return;const el=document.getElementById('mi-dia-'+focusMiDia);if(!el)return;el.scrollIntoView({behavior:'smooth',block:'center'});const control=el.matches('input,select,textarea,button,[tabindex]')?el:el.querySelector('input,select,textarea,button,[tabindex]');if(control)control.focus({preventScroll:true});},[tab,focusMiDia]);
  useEffect(()=>{if(!pase())return;fetch('/api/data?vista=supermercado',{headers:{Authorization:'Bearer '+pase()}}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar las categorías.');setSupermercadoReglas(d.bloques||[]);setSupermercadoPremium(Boolean(d.requierePremium));setSupermercadoSeleccionada((d.bloques||[])[0]||null)}).catch(e=>setSupermercadoError(e.message||'No pudimos cargar el asistente de supermercado.'))},[]);
@@ -314,7 +345,7 @@ function App(){
   <div className="plan-dia-timeline">
    <div className="plan-dia-step"><span className="plan-dia-step-icon">{planDia.tipo==='entreno'?'⏱️':'💧'}</span><div><b>{planDia.tipo==='entreno'?(planContenido.momento==='antes de tu sesión'?'Pre-entreno':'Preparación de recuperación'):'Hidratación'}</b><p>{planDia.tipo==='entreno'?planContenido.principal:copyObjetivoJornada(planPerfil?.objetivoGrupo,planDia.tipo).inicio}</p>{planDia.tipo==='entreno'&&<p className="plan-dia-note">Hora de sesión: {planDia.hora||'07:00'} · Recomendación situada {planContenido.momento}.</p>}</div><span className="plan-dia-tag">Paso 1</span></div>
    {planPerfil?.premium===true&&<><div className="plan-dia-step"><span className="plan-dia-step-icon">{planDia.tipo==='entreno'?'🥣':'🍳'}</span><div><b>{planDia.tipo==='entreno'?'Post-entreno':'Desayuno estable'}</b><p>{planDia.tipo==='entreno'?copyObjetivoJornada(planPerfil?.objetivoGrupo,planDia.tipo).post:planContenido.principal}</p>{planContenido.ajusteEnergia&&<p className="plan-dia-note"><b>Ajuste por energía:</b> {planContenido.ajusteEnergia}</p>}<div className="plan-dia-foods"><b>Alimentos para llevarlo a la práctica</b>{planContenido.alimentos.slice(0,3).map((a,i)=><p key={a.nombre+i}><strong>{a.nombre}</strong> · {a.rol}: {a.uso}.</p>)}<p className="plan-dia-note">{planContenido.notaCatalogo}</p></div><p className="plan-dia-note"><b>Alternativa:</b> {planDia.tipo==='entreno'?planContenido.alternativas:planContenido.alternativaDesayuno}</p></div><span className="plan-dia-tag">Premium</span></div>
-   <div className="plan-dia-step"><span className="plan-dia-step-icon">{planDia.tipo==='entreno'?'🍽️':'🌙'}</span><div><b>{planDia.tipo==='entreno'?'Cena clave':'Cena estable'}</b><p>{planContenido.cena}</p><div className="plan-dia-foods"><b>Opciones concretas</b>{(planDia.tipo==='entreno'?planContenido.alimentosCena:planContenido.alimentosCena).slice(0,3).map((a,i)=><p key={a.nombre+i}><strong>{a.nombre}</strong> · {a.uso}.</p>)}</div><p className="plan-dia-note"><b>Alternativa:</b> {planDia.tipo==='entreno'?planContenido.alternativas:planContenido.alternativaCena}</p></div><span className="plan-dia-tag">Premium</span></div></>}
+   <div className="plan-dia-step"><span className="plan-dia-step-icon">{planDia.tipo==='entreno'?'🍽️':'🌙'}</span><div><b>{planDia.tipo==='entreno'?'Cena clave':'Cena estable'}</b><p>{planContenido.cena}</p><div className="plan-dia-foods"><b>Opciones concretas</b>{(planDia.tipo==='entreno'?planContenido.alimentosCena:planContenido.alimentosCena).slice(0,3).map((a,i)=><p key={a.nombre+i}><strong>{a.nombre}</strong> · {a.uso}.</p>)}</div><p className="plan-dia-note"><b>Alternativa:</b> {planContenido.alternativaCena}</p></div><span className="plan-dia-tag">Premium</span></div></>}
   </div>
   {!planDiaCargando&&planPerfil?.premium!==true&&<div className="premium-prompt"><b>Tu jornada completa está en Premium</b><p>Con el acceso Premium podés ver los tres pasos, recomendaciones adaptadas a tu objetivo y alternativas para cada bloque.</p><button type="button" className="secondary" onClick={()=>irPremium('jornada')}>Ver acceso Premium</button></div>}
   <p className="plan-dia-note">Objetivo aplicado: {planPerfil?.objetivoGrupo||'salud_general'}. Las sugerencias son orientativas; no incluyen macros ni porciones calculadas.</p>

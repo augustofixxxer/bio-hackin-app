@@ -75,4 +75,28 @@ export function usuarioIdDesdeRequest(req) {
     : (req.body?.pase || req.query?.pase);
   return verificarPase(pase);
 }
+
+// Diagnóstico seguro para logs: devuelve solo la causa probable, nunca el pase,
+// la firma ni el identificador del usuario.
+export function diagnosticarPaseRequest(req) {
+  if (!SESSION_SECRET) return "session_secret_ausente";
+  const header = req.headers?.authorization || "";
+  const pase = header.startsWith("Bearer ")
+    ? header.slice(7)
+    : (req.body?.pase || req.query?.pase);
+  if (!pase || typeof pase !== "string") return "pase_ausente";
+  const partes = pase.split(".");
+  if (partes.length !== 3) return "formato_pase_invalido";
+  const [usuarioId, expiraStr, firmaRecibida] = partes;
+  const expira = Number(expiraStr);
+  if (!usuarioId || !Number.isFinite(expira)) return "payload_pase_invalido";
+  if (Date.now() > expira) return "pase_expirado";
+  const firmaEsperada = firmar(`${usuarioId}.${expiraStr}`);
+  const recibida = Buffer.from(firmaRecibida, "hex");
+  const esperada = Buffer.from(firmaEsperada, "hex");
+  if (recibida.length !== esperada.length || !timingSafeEqual(recibida, esperada)) {
+    return "firma_pase_invalida";
+  }
+  return "pase_valido";
+}
 // END: /api/_sesion.js
