@@ -111,6 +111,29 @@
 .mi-dia-history{margin-top:12px}.mi-dia-day{border:1px solid rgba(160,190,175,.18);border-radius:12px;padding:12px;margin-top:10px;background:rgba(255,255,255,.025)}.mi-dia-day-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid rgba(160,190,175,.14)}.mi-dia-day-head span,.mi-dia-history-item small,.mi-dia-history-note{font-size:11px;color:#aab5af}.mi-dia-history-group{margin-top:10px}.mi-dia-history-group> b{display:block;font-size:12px;margin-bottom:6px}.mi-dia-history-item{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13px}.mi-dia-history-item span{overflow-wrap:anywhere}.mi-dia-signals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.mi-dia-signals span{display:flex;flex-direction:column;gap:3px;padding:8px;border-radius:8px;background:rgba(16,185,129,.07)}.mi-dia-signals small{font-size:10px;color:#aab5af}.mi-dia-signals b{font-size:12px;font-weight:600}.mi-dia-history-note{display:block;margin-top:12px;line-height:1.5}
 .mi-dia-history-more{width:100%;margin-top:10px;text-align:center;cursor:pointer}.mi-dia-history-more:focus-visible{outline:2px solid #a9e7ba;outline-offset:3px}
 
+/* Mi Día: panel compacto de registro */
+.mi-dia-screen{padding:20px 16px 108px;line-height:1.55}
+.mi-dia-screen .hero{margin-bottom:14px}
+.mi-dia-screen .hero h1{font-size:24px;line-height:1.2;margin:6px 0 7px}
+.mi-dia-screen .hero p{margin:0;font-size:13px;color:#cbd4ce}
+.mi-dia-screen .mi-dia-block{margin-top:12px;padding:15px;border-radius:16px;background:#17211e;border:1px solid rgba(255,255,255,.1)}
+.mi-dia-screen .mi-dia-block h2{font-size:18px;line-height:1.3;margin:0 0 12px;color:#fff}
+.mi-dia-screen .mi-dia-label{display:block;margin:10px 0 6px;font-size:12px;font-weight:700;color:#cbd4ce}
+.mi-dia-screen .mi-dia-block select,.mi-dia-screen .mi-dia-block textarea{width:100%;min-width:0;background:#111a17;color:#f2efe9;border:1px solid rgba(255,255,255,.13);border-radius:11px;padding:11px;font-size:13px}
+.mi-dia-screen .mi-dia-block textarea{min-height:66px;resize:vertical;margin-top:0}
+.mi-dia-screen .mi-dia-main-action{margin-top:12px;min-height:46px;font-size:13px;line-height:1.35}
+.mi-dia-screen .mi-dia-section-hint{font-size:12px;color:#aab5af;margin:-5px 0 12px}
+.mi-dia-wellbeing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.mi-dia-field{display:grid;gap:6px;min-width:0;padding:10px;border-radius:12px;background:#111a17;border:1px solid rgba(255,255,255,.07)}
+.mi-dia-field span{font-size:12px;font-weight:700;color:#e8ece9}
+.mi-dia-screen .mi-dia-field select{padding:10px 8px;font-size:12px}
+.mi-dia-field:last-child{grid-column:1/-1}
+.mi-dia-history-toggle{width:100%;margin-top:2px;min-height:44px;border-color:rgba(197,160,89,.4);color:#f2efe9;background:rgba(197,160,89,.07);font-size:13px}
+.mi-dia-history-content{margin-top:12px}
+.mi-dia-screen .mi-dia-day{margin-top:9px;padding:11px}
+.mi-dia-screen .mi-dia-history-note{display:none}
+@media(max-width:360px){.mi-dia-screen{padding-left:12px;padding-right:12px}.mi-dia-screen .mi-dia-block{padding:12px}.mi-dia-wellbeing-grid{gap:7px}.mi-dia-field{padding:8px}.mi-dia-field span{font-size:11px}}
+ 
 /* Día de Entreno / Descanso — Fase 1 */
 .plan-dia{margin-top:16px;padding:16px;background:#17211e;border:1px solid rgba(197,160,89,.3);border-radius:18px}
 .plan-dia h2{margin:5px 0 6px;font-size:20px}
@@ -439,7 +462,60 @@ function App(){
  </div>}
 </section></>}
  {discoverView==='situaciones'&&<><div className="discover-subview-head"><button type="button" className="back-link discover-back" onClick={()=>setDiscoverView('home')}>← PANEL PRINCIPAL</button><div className="eyebrow">DESCUBRIR</div><h2>Explorar Situaciones Cotidianas</h2><p>Elige la señal que más se parece a lo que estás viviendo.</p></div><section className="pillbox" style={{marginTop:12}}><h3 style={{margin:'0 0 5px',fontSize:14}}>Elegí algo para explorar</h3><p style={{margin:0,color:'#aab5af',fontSize:12}}>Entrá por una situación concreta y descubrí qué podés observar y probar.</p><div className="pills">{PILLS.map(pill=><div className="pill-slot" key={pill.id}><button className="pill" onClick={()=>irPill(pill)}>{pill.label}</button>{resultado?.tipo==='pildora'&&resultado.id===pill.id&&renderResultado(resultado)}</div>)}</div></section>{msg&&<div className="saved">{msg}</div>}{resultado?.tipo!=='pildora'&&renderResultado()}{resultado&&<button className="secondary" style={{marginTop:8}} onClick={()=>{setResultado(null);setMsg('');setTexto('')}}>Borrar devolución</button>}</>}
- </>}{tab==='mi-dia'&&<><section className="hero"><div className="eyebrow">MI DÍA</div><h1>Hacé visible lo que pasa en tu día.</h1><p>Anotá lo que comiste y cómo te sentiste. Con el tiempo, esas anotaciones te ayudan a comparar experiencias.</p></section><section className="event"><h3>¿Qué comiste?</h3><p>Escribilo como lo recordarías al contárselo a alguien.</p><select value={momentoMiDia} onChange={e=>{setMomentoMiDia(e.target.value);setMsgMiDia('');setResultadoMiDia(null)}}><option value="">Momento del día</option><option value="Desayuno">Desayuno</option><option value="Almuerzo">Almuerzo</option><option value="Merienda">Merienda</option><option value="Cena">Cena</option></select><textarea id="mi-dia-comida" value={textoMiDia} onChange={e=>{setTextoMiDia(e.target.value);setMsgMiDia('');setResultadoMiDia(null)}} placeholder="Ej: arroz con pollo" style={{marginTop:8}}></textarea><button className="primary" onClick={()=>registrarComida('mi-dia')} disabled={busy}>{busy?'Procesando...':'Quiero entender esta comida'}</button>{msgMiDia&&<div className="saved">{msgMiDia}</div>}{renderResultado(resultadoMiDia)}</section><section id="mi-dia-bienestar" className="event" tabIndex={-1}><h3>¿Cómo te sentiste?</h3><p>Guardá una o varias señales de hoy para poder compararlas más adelante.</p><div className="row"><select id="mi-dia-energia" value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Energía</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select><select id="mi-dia-digestion" value={dig} onChange={e=>setDig(e.target.value)}><option value="">Digestión</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></div><div className="row"><select id="mi-dia-sueno" value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Sueño</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="7">7 h</option><option value="8">8 h</option><option value="9">9 h</option><option value="10">10 h</option></select><select id="mi-dia-hidratacion" value={water} onChange={e=>setWater(e.target.value)}><option value="">Hidratación</option><option value="0.5">0,5 L</option><option value="1">1 L</option><option value="1.5">1,5 L</option><option value="2">2 L</option><option value="2.5">2,5 L</option><option value="3">3 L</option><option value="4">4 L</option></select></div><select id="mi-dia-actividad" value={activity} onChange={e=>setActivity(e.target.value)} style={{marginTop:8}}><option value="">Actividad física</option><option value="0">0 min</option><option value="20">20 min</option><option value="40">40 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select><button className="primary" onClick={registrarBienestar} disabled={busy}>{busy?'Guardando...':'Guardar lo de hoy'}</button>{msg&&<div className="saved">{msg}</div>}</section><section className="event mi-dia-history"><div className="eyebrow">REGISTROS RECIENTES</div><h3>Historial reciente</h3><p>Comidas y señales agrupadas por día local de Argentina.</p>{historialLoading&&<p role="status">Actualizando historial…</p>}{historialError&&<div className="saved" role="alert">{historialError}<button className="secondary" onClick={cargarHistorialMiDia}>Reintentar</button></div>}{!historialLoading&&!historialError&&historialMiDia.length===0&&<p>Todavía no hay registros en este período. Cuando guardes una comida o una señal, va a aparecer acá.</p>}{historialMiDia.slice(0,historialExpandido?14:3).map(dia=><article key={dia.fecha} className="mi-dia-day"><div className="mi-dia-day-head"><b>{new Date(dia.fecha+'T12:00:00-03:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short',timeZone:'America/Argentina/Buenos_Aires'})}</b><span>{dia.fecha}</span></div>{dia.comidas?.length>0&&<div className="mi-dia-history-group"><b>🍽️ Comidas</b>{dia.comidas.map((comida,i)=><div className="mi-dia-history-item" key={comida.id||i}><span>{comida.texto}</span>{comida.momento&&<small>{comida.momento}</small>}</div>)}</div>}{dia.bienestar&&Object.entries({energia:'Energía',digestion:'Digestión',sueno:'Sueño',hidratacion:'Hidratación',actividad_fisica:'Actividad'}).some(([k])=>dia.bienestar[k]!==null&&dia.bienestar[k]!==undefined)&&<div className="mi-dia-history-group"><b>◉ Señales de bienestar</b><div className="mi-dia-signals">{Object.entries({energia:'Energía',digestion:'Digestión',sueno:'Sueño',hidratacion:'Hidratación',actividad_fisica:'Actividad'}).filter(([k])=>dia.bienestar[k]!==null&&dia.bienestar[k]!==undefined).map(([k,label])=><span key={k}><small>{label}</small><b>{etiquetaBienestar(k,dia.bienestar[k])}</b></span>)}</div></div>}</article>)}{historialMiDia.length>3&&<button type="button" className="secondary mi-dia-history-more" onClick={alternarHistorialAnterior}>{historialExpandido?'Ver menos ↑':'Ver historial anterior ➔'}</button>}<small className="mi-dia-history-note">Vista inicial: 3 días con registros. Se pueden consultar hasta 14 días. Las fechas usan la zona horaria America/Argentina/Buenos_Aires.</small></section></>}
+ </>}{tab==='mi-dia'&&<div className="mi-dia-screen">
+  <section className="hero mi-dia-hero">
+    <div className="eyebrow">MI DÍA</div>
+    <h1>Tu registro diario, en un solo lugar.</h1>
+    <p>Registrá qué comiste y cómo te sentiste. Sin exigencias: cada dato suma contexto.</p>
+  </section>
+
+  <section className="event mi-dia-block mi-dia-meal">
+    <h2>🍽️ ¿Qué comiste?</h2>
+    <label className="mi-dia-label" htmlFor="mi-dia-momento">Momento del día</label>
+    <select id="mi-dia-momento" value={momentoMiDia} onChange={e=>{setMomentoMiDia(e.target.value);setMsgMiDia('');setResultadoMiDia(null)}}>
+      <option value="">Elegí una opción</option>
+      <option value="Desayuno">Desayuno</option>
+      <option value="Almuerzo">Almuerzo</option>
+      <option value="Merienda">Merienda</option>
+      <option value="Cena">Cena</option>
+    </select>
+    <label className="mi-dia-label" htmlFor="mi-dia-comida">Tu comida</label>
+    <textarea id="mi-dia-comida" value={textoMiDia} onChange={e=>{setTextoMiDia(e.target.value);setMsgMiDia('');setResultadoMiDia(null)}} placeholder="Ej: arroz con pollo" />
+    <button className="primary mi-dia-main-action" onClick={()=>registrarComida('mi-dia')} disabled={busy}>{busy?'Procesando...':'⚡ Quiero entender esta comida'}</button>
+    {msgMiDia&&<div className="saved" role="status">{msgMiDia}</div>}
+    {renderResultado(resultadoMiDia)}
+  </section>
+
+  <section id="mi-dia-bienestar" className="event mi-dia-block mi-dia-wellbeing" tabIndex={-1}>
+    <h2>🌿 ¿Cómo te sentiste hoy?</h2>
+    <p className="mi-dia-section-hint">Elegí solo las señales que quieras registrar.</p>
+    <div className="mi-dia-wellbeing-grid">
+      <label className="mi-dia-field"><span>⚡ Energía</span><select id="mi-dia-energia" value={energy} onChange={e=>setEnergy(e.target.value)}><option value="">Elegir</option><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option></select></label>
+      <label className="mi-dia-field"><span>🍃 Digestión</span><select id="mi-dia-digestion" value={dig} onChange={e=>setDig(e.target.value)}><option value="">Elegir</option><option value="mal">Mal</option><option value="regular">Regular</option><option value="bien">Bien</option></select></label>
+      <label className="mi-dia-field"><span>🌙 Sueño</span><select id="mi-dia-sueno" value={sleep} onChange={e=>setSleep(e.target.value)}><option value="">Elegir horas</option><option value="4">4 h</option><option value="5">5 h</option><option value="6">6 h</option><option value="7">7 h</option><option value="8">8 h</option><option value="9">9 h</option><option value="10">10 h</option></select></label>
+      <label className="mi-dia-field"><span>💧 Hidratación</span><select id="mi-dia-hidratacion" value={water} onChange={e=>setWater(e.target.value)}><option value="">Elegir litros</option><option value="0.5">0,5 L</option><option value="1">1 L</option><option value="1.5">1,5 L</option><option value="2">2 L</option><option value="2.5">2,5 L</option><option value="3">3 L</option><option value="4">4 L</option></select></label>
+      <label className="mi-dia-field"><span>🏃 Actividad</span><select id="mi-dia-actividad" value={activity} onChange={e=>setActivity(e.target.value)}><option value="">Elegir minutos</option><option value="0">0 min</option><option value="20">20 min</option><option value="40">40 min</option><option value="60">60 min</option><option value="90">90 min</option><option value="120">120 min</option></select></label>
+    </div>
+    <button className="primary mi-dia-main-action" onClick={registrarBienestar} disabled={busy}>{busy?'Guardando...':'💾 Guardar mi día'}</button>
+    {msg&&<div className="saved" role="status">{msg}</div>}
+  </section>
+
+  <section className="event mi-dia-block mi-dia-history">
+    <h2>📜 Historial y seguimiento</h2>
+    <p className="mi-dia-section-hint">Tus comidas y señales, ordenadas por día.</p>
+    <button type="button" className="secondary mi-dia-history-toggle" aria-expanded={historialExpandido} onClick={alternarHistorialAnterior}>{historialExpandido?'Ocultar registros anteriores ↑':'📜 Ver mis registros anteriores'}</button>
+    {historialExpandido&&<div className="mi-dia-history-content">
+      {historialLoading&&<p role="status">Actualizando registros…</p>}
+      {historialError&&<div className="saved" role="alert">{historialError}<button className="secondary" onClick={cargarHistorialMiDia}>Reintentar</button></div>}
+      {!historialLoading&&!historialError&&historialMiDia.length===0&&<p>Todavía no hay registros. Cuando guardes una comida o tu día, aparecerán acá.</p>}
+      {historialMiDia.slice(0,14).map(dia=><article key={dia.fecha} className="mi-dia-day">
+        <div className="mi-dia-day-head"><b>{new Date(dia.fecha+'T12:00:00-03:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short',timeZone:'America/Argentina/Buenos_Aires'})}</b></div>
+        {dia.comidas?.length>0&&<div className="mi-dia-history-group"><b>🍽️ Comidas</b>{dia.comidas.map((comida,i)=><div className="mi-dia-history-item" key={comida.id||i}><span>{comida.texto}</span>{comida.momento&&<small>{comida.momento}</small>}</div>)}</div>}
+        {dia.bienestar&&Object.entries({energia:'Energía',digestion:'Digestión',sueno:'Sueño',hidratacion:'Hidratación',actividad_fisica:'Actividad'}).some(([k])=>dia.bienestar[k]!==null&&dia.bienestar[k]!==undefined)&&<div className="mi-dia-history-group"><b>🌿 Señales de bienestar</b><div className="mi-dia-signals">{Object.entries({energia:'Energía',digestion:'Digestión',sueno:'Sueño',hidratacion:'Hidratación',actividad_fisica:'Actividad'}).filter(([k])=>dia.bienestar[k]!==null&&dia.bienestar[k]!==undefined).map(([k,label])=><span key={k}><small>{label}</small><b>{etiquetaBienestar(k,dia.bienestar[k])}</b></span>)}</div></div>}
+      </article>)}
+    </div>}
+  </section>
+</div>}
  {tab==='premium'&&<section className="premium">
 <div className="eyebrow">PREMIUM</div>
 
