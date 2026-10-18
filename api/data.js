@@ -1,6 +1,6 @@
 // Alimenta el Explorador con alternativas reutilizables.
 import { emitirEventoProducto } from "./_eventos-producto.js";
-import { usuarioIdDesdeRequest } from "./_sesion.js";
+import { usuarioIdDesdeRequest, diagnosticarPaseRequest } from "./_sesion.js";
 import { elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO } from "./_selector-tips-ia.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -238,9 +238,10 @@ const INTENT_BRIDGE = {
 
 
 async function manejarCatalogoNutricional(req, res) {
+  console.info("[catalogo-alimentos] Solicitud recibida:", { method: req.method, bearerPresente: Boolean((req.headers?.authorization || "").startsWith("Bearer ")), sessionSecretConfigurado: Boolean(process.env.SESSION_SECRET) });
   const auth = await validarUsuario(req);
   if (!auth.ok) {
-    console.warn("[catalogo-alimentos] Sesión rechazada:", auth.status, auth.error);
+    console.warn("[catalogo-alimentos] Sesión rechazada:", { status: auth.status, causa: diagnosticarPaseRequest(req), error: auth.error });
     return res.status(auth.status).json({ error: auth.error });
   }
 
@@ -248,6 +249,7 @@ async function manejarCatalogoNutricional(req, res) {
   // alternativas. No debe depender de tres lecturas adicionales de composición,
   // nutrientes y fuentes que no utiliza esta vista.
   console.info("[catalogo-alimentos] Sesión validada; consultando alimentos validados.");
+  console.info("[catalogo-alimentos] Consultando public.motor_nutricional_alimentos con filtro estado=eq.validado.");
   const alimentos = await supabaseFetch(
     "motor_nutricional_alimentos?select=id,descripcion_fuente,preparacion,estado,base_comestible&estado=eq.validado&order=descripcion_fuente.asc&limit=500"
   );
