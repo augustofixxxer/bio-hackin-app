@@ -242,7 +242,7 @@ async function rutaExperimento(req, res) {
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
     const { accion, experimentoId, origen, titulo, variable, tipoVariable, condicionAplicada, contextoTarjeta, lado, resultadoCualitativo, opcionA, opcionB, registroA, registroB, reglaId, solucionId, hallazgoFree, hackConcreto, cambioComposicional, aprendizajeComparativo, queSeMantiene } = req.body || {};
     if (accion === "crear") {
-      const condiciones = condicionAplicada && typeof condicionAplicada === "object" && !Array.isArray(condicionAplicada) ? condicionAplicada : null;
+      const condiciones = condicionAplicada && typeof condicionAplicada === "object" && !Array.isArray(condicionAplicada) ? condicionAplicada : ((typeof opcionA === "string" && opcionA.trim() && typeof opcionB === "string" && opcionB.trim()) ? { a: { etiqueta: opcionA.trim().slice(0, 200), parametros: {} }, b: { etiqueta: opcionB.trim().slice(0, 200), parametros: {} } } : null);
       const contexto = contextoTarjeta && typeof contextoTarjeta === "object" && !Array.isArray(contextoTarjeta) ? contextoTarjeta : null;
       const etiqueta = (lado) => {
         const c = condiciones?.[lado];
