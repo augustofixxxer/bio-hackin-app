@@ -236,27 +236,68 @@ async function rutaExperimento(req, res) {
     const premiumVigente = u.cuenta_suspendida !== true && u.terminos_aceptados === true && u.nivel_acceso === "Premium" && (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
-      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
+      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,tipo_variable,condicion_aplicada,contexto_tarjeta,resultado_cualitativo,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
       return res.status(200).json({ ok: true, experimentos: filas });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
-    const { accion, experimentoId, origen, titulo, variable, opcionA, opcionB, registroA, registroB, reglaId, solucionId, hallazgoFree, hackConcreto, cambioComposicional, aprendizajeComparativo, queSeMantiene } = req.body || {};
+    const { accion, experimentoId, origen, titulo, variable, tipoVariable, condicionAplicada, contextoTarjeta, lado, resultadoCualitativo, opcionA, opcionB, registroA, registroB, reglaId, solucionId, hallazgoFree, hackConcreto, cambioComposicional, aprendizajeComparativo, queSeMantiene } = req.body || {};
     if (accion === "crear") {
-      if (!titulo || !variable || !opcionA || !opcionB) return res.status(400).json({ error: "Faltan título, variable y las dos opciones a comparar." });
+      const condiciones = condicionAplicada && typeof condicionAplicada === "object" && !Array.isArray(condicionAplicada) ? condicionAplicada : null;
+      const contexto = contextoTarjeta && typeof contextoTarjeta === "object" && !Array.isArray(contextoTarjeta) ? contextoTarjeta : null;
+      const etiqueta = (lado) => {
+        const c = condiciones?.[lado];
+        if (typeof c === "string") return c.slice(0, 200);
+        if (c && typeof c === "object") {
+          const nombre = c.etiqueta ?? c.label ?? c.nombre ?? c.valor;
+          if (typeof nombre === "string" && nombre.trim()) return nombre.trim().slice(0, 200);
+        }
+        return null;
+      };
+      const opcionACompat = etiqueta("a") || (typeof opcionA === "string" ? opcionA.trim().slice(0, 200) : "");
+      const opcionBCompat = etiqueta("b") || (typeof opcionB === "string" ? opcionB.trim().slice(0, 200) : "");
+      const variableCanonica = typeof tipoVariable === "string" && tipoVariable.trim() ? tipoVariable.trim().slice(0, 100) : (typeof variable === "string" ? variable.trim().slice(0, 100) : "");
+      if (!titulo || !variableCanonica || !condiciones || !opcionACompat || !opcionBCompat) {
+        return res.status(400).json({ error: "Faltan título, tipo de variable y condiciones estructuradas para A y B.", contrato: { tipoVariable: "string", condicionAplicada: { a: { etiqueta: "string", parametros: {} }, b: { etiqueta: "string", parametros: {} } }, contextoTarjeta: { tarjeta: "hallazgo|sugerencia|comparacion", variable: "string" } } });
+      }
+      if (condiciones.a == null || condiciones.b == null) return res.status(400).json({ error: "condicionAplicada debe incluir las variantes a y b." });
+      if (contexto && contexto.tarjeta != null && !["hallazgo", "sugerencia", "comparacion"].includes(contexto.tarjeta)) {
+        return res.status(400).json({ error: "contextoTarjeta.tarjeta debe ser hallazgo, sugerencia o comparacion." });
+      }
       const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id&limit=1`);
       if (activos.length) return res.status(409).json({ error: "Ya tenés una prueba abierta. Cerrala antes de crear otra." });
-      const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({usuario_id:usuarioId,origen:typeof origen==="string"?origen.slice(0,80):null,titulo:String(titulo).slice(0,160),variable:String(variable).slice(0,100),opcion_a:String(opcionA).slice(0,200),opcion_b:String(opcionB).slice(0,200),regla_id:UUID_REGEX.test(String(reglaId||""))?reglaId:null,solucion_id:UUID_REGEX.test(String(solucionId||""))?solucionId:null,hallazgo_free:typeof hallazgoFree==="string"?hallazgoFree.slice(0,1000):null,hack_concreto:typeof hackConcreto==="string"?hackConcreto.slice(0,1000):null,cambio_composicional:typeof cambioComposicional==="string"?cambioComposicional.slice(0,1000):null,aprendizaje_comparativo:typeof aprendizajeComparativo==="string"?aprendizajeComparativo.slice(0,1000):null,que_se_mantiene:typeof queSeMantiene==="string"?queSeMantiene.slice(0,1000):null,estado:"abierto"}) });
+      const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({
+        usuario_id:usuarioId, origen:typeof origen==="string"?origen.slice(0,80):null,
+        titulo:String(titulo).slice(0,160), variable:variableCanonica, tipo_variable:variableCanonica,
+        condicion_aplicada:condiciones, contexto_tarjeta:contexto,
+        opcion_a:opcionACompat, opcion_b:opcionBCompat,
+        regla_id:UUID_REGEX.test(String(reglaId||""))?reglaId:null, solucion_id:UUID_REGEX.test(String(solucionId||""))?solucionId:null,
+        hallazgo_free:typeof hallazgoFree==="string"?hallazgoFree.slice(0,1000):null,
+        hack_concreto:typeof hackConcreto==="string"?hackConcreto.slice(0,1000):null,
+        cambio_composicional:typeof cambioComposicional==="string"?cambioComposicional.slice(0,1000):null,
+        aprendizaje_comparativo:typeof aprendizajeComparativo==="string"?aprendizajeComparativo.slice(0,1000):null,
+        que_se_mantiene:typeof queSeMantiene==="string"?queSeMantiene.slice(0,1000):null, estado:"abierto"
+      }) });
       return res.status(201).json({ ok:true, experimento:filas[0] });
     }
     if (accion === "registrar") {
       if (!UUID_REGEX.test(String(experimentoId||""))) return res.status(400).json({error:"experimentoId inválido."});
-      const lado = registroA !== undefined ? "a" : "b";
-      const valor = lado === "a" ? String(registroA).slice(0,500) : String(registroB||"").slice(0,500);
-      if (!valor.trim()) return res.status(400).json({error:"Falta registrar qué pasó."});
-      const filas = await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,estado`);
+      const ladoNormalizado = lado === "a" || lado === "b" ? lado : (registroA !== undefined ? "a" : "b");
+      const legacyValor = ladoNormalizado === "a" ? registroA : registroB;
+      let resultado = resultadoCualitativo;
+      if (resultado == null && typeof legacyValor === "string") resultado = { observacion: legacyValor.trim().slice(0, 500) };
+      if (typeof resultado === "string") resultado = { observacion: resultado.trim().slice(0, 500) };
+      if (!resultado || typeof resultado !== "object" || Array.isArray(resultado) || !Object.keys(resultado).length) return res.status(400).json({error:"Falta resultadoCualitativo: enviá una observación estructurada."});
+      const valorCompat = typeof legacyValor === "string" && legacyValor.trim()
+        ? legacyValor.trim().slice(0, 500)
+        : (typeof resultado.observacion === "string" ? resultado.observacion.slice(0, 500) : JSON.stringify(resultado).slice(0, 500));
+      const filas = await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,estado,resultado_cualitativo`);
       if (!filas.length) return res.status(404).json({error:"Experimento no encontrado."});
       if (filas[0].estado !== "abierto") return res.status(409).json({error:"Esta prueba ya está cerrada."});
-      const patch = lado==="a"?{registro_a:valor,updated_at:new Date().toISOString()}:{registro_b:valor,updated_at:new Date().toISOString()};
+      const resultadosPrevios = filas[0].resultado_cualitativo && typeof filas[0].resultado_cualitativo === "object" ? filas[0].resultado_cualitativo : {};
+      const resultadoActualizado = { ...resultadosPrevios, [ladoNormalizado]: resultado };
+      const patch = ladoNormalizado==="a"
+        ? {registro_a:valorCompat,resultado_cualitativo:resultadoActualizado,updated_at:new Date().toISOString()}
+        : {registro_b:valorCompat,resultado_cualitativo:resultadoActualizado,updated_at:new Date().toISOString()};
       const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(patch)});
       return res.status(200).json({ok:true,experimento:updated[0]});
     }
