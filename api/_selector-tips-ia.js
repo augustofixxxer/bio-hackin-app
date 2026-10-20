@@ -194,7 +194,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
     const clave = normalizarProtocolo(termino).trim();
     if (!clave) return false;
     const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\\s+");
-    return new RegExp("\\b" + patron + "\\b", "i").test(t);
+    return new RegExp("\b" + patron + "\b", "i").test(t);
   });
   const validarGrupo = (grupo) => grupo && grupo.activo !== false &&
     Array.isArray(grupo.terminos) && grupo.reglas && typeof grupo.reglas === "object";
@@ -205,9 +205,9 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   const gruposDetectados = (gruposConfigurados.length ? gruposConfigurados : reglasFallback.filter(coincideGrupo))
     .sort((a, b) => Number(a.prioridad || 100) - Number(b.prioridad || 100));
 
-  const esGuisoExplicito = /\\bguiso\\b/.test(t);
-  const tieneArroz = /\\barroz\\b/.test(t);
-  const tieneProteina = /\\b(pollo|pechuga|carne|bife|bifes|churrasco|vacio|matambre|costilla|cuadril|lomo|asado|pavo|pescado|atun|salmon|merluza|cerdo|ternera|vacuno|cordero)\\b/.test(t);
+  const esGuisoExplicito = /\bguiso\b/.test(t);
+  const tieneArroz = /\barroz\b/.test(t);
+  const tieneProteina = /\b(pollo|pechuga|carne|bife|bifes|churrasco|vacio|matambre|costilla|cuadril|lomo|asado|pavo|pescado|atun|salmon|merluza|cerdo|ternera|vacuno|cordero)\b/.test(t);
   const esProteinaConArrozGuarnicion = !esGuisoExplicito && tieneArroz && tieneProteina;
 
   const protocolo = {};
@@ -232,9 +232,9 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   // Resolver la variable por alimento antes de devolver el protocolo.
   // El enfriamiento no se recomienda por defecto: solo se aborda si la consulta
   // pregunta explícitamente por enfriar, recalentar o preparar con antelación.
-  const esPasta = /\\b(pasta|fideo|fideos|tallar[ií]n|tallarines|espagueti|espaguetis|spaghetti|macarr[oó]n|macarrones|ñoqui|ñoquis|noqui|noquis)\\b/.test(t);
-  const esTuberculo = /\\b(papa|papas|patata|patatas|batata|boniato|yuca|mandioca)\\b/.test(t);
-  const esCereal = /\\b(arroz|avena|ma[ií]z|cebada|trigo|quinoa|quinua|polenta)\\b/.test(t);
+  const esPasta = /\b(pasta|fideo|fideos|tallar[ií]n|tallarines|espagueti|espaguetis|spaghetti|macarr[oó]n|macarrones|ñoqui|ñoquis|noqui|noquis)\b/.test(t);
+  const esTuberculo = /\b(papa|papas|patata|patatas|batata|boniato|yuca|mandioca)\b/.test(t);
+  const esCereal = /\b(arroz|avena|ma[ií]z|cebada|trigo|quinoa|quinua|polenta)\b/.test(t);
   const pideEnfriamiento = /enfri|refriger|recalent|prepar.{0,15}antelaci|cocid.{0,15}despu[eé]s|para ma[nñ]ana/.test(t);
   const pideGrasa = /aceite|manteca|crema|queso|grasa|aderezo/.test(t);
   const pideTiming = /antes de comer|despu[eé]s de comer|orden de ingesta|primero.{0,20}(vegetal|ensalada|fibra)|horario|momento de ingesta/.test(t);
