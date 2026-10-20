@@ -236,7 +236,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   const esTuberculo = /\b(papa|papas|patata|patatas|batata|boniato|yuca|mandioca)\b/.test(t);
   const esCereal = /\b(arroz|avena|ma[ií]z|cebada|trigo|quinoa|quinua|polenta)\b/.test(t);
   const pideEnfriamiento = /enfri|refriger|recalent|prepar.{0,15}antelaci|cocid.{0,15}despu[eé]s|para ma[nñ]ana/.test(t);
-  const pideGrasa = /(?:agregar|añadir|anadir|sumar|reducir|quitar|menos|más|mas|cantidad de)\\s+(?:aceite|manteca|crema|queso|grasa|aderezo)|(?:aceite|manteca|crema|queso|grasa|aderezo)\\s+(?:añadid[oa]|anadid[oa]|agregad[oa]|extra|en mayor cantidad)|variable.{0,20}(?:aceite|grasa|aderezo)/.test(t);
+  const pideGrasa = /(?:agregar|añadir|anadir|sumar|reducir|quitar|menos|más|mas|cantidad de)\s+(?:aceite|manteca|crema|queso|grasa|aderezo)|(?:aceite|manteca|crema|queso|grasa|aderezo)\s+(?:añadid[oa]|anadid[oa]|agregad[oa]|extra|en mayor cantidad)|variable.{0,20}(?:aceite|grasa|aderezo)/.test(t);
   const pideTiming = /antes de comer|despu[eé]s de comer|orden de ingesta|primero.{0,20}(vegetal|ensalada|fibra)|horario|momento de ingesta/.test(t);
   const pideTipoPasta = /pasta integral|fideos integrales|pasta de legumbres|fideos de legumbres|tipo de pasta/.test(t);
 
