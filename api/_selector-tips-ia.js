@@ -205,9 +205,9 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   const gruposDetectados = (gruposConfigurados.length ? gruposConfigurados : reglasFallback.filter(coincideGrupo))
     .sort((a, b) => Number(a.prioridad || 100) - Number(b.prioridad || 100));
 
-  const esGuisoExplicito = /\\bguiso\\b/.test(t);
-  const tieneArroz = /\\barroz\\b/.test(t);
-  const tieneProteina = /\\b(pollo|pechuga|carne|bife|bifes|churrasco|vacio|matambre|costilla|cuadril|lomo|asado|pavo|pescado|atun|salmon|merluza|cerdo|ternera|vacuno|cordero)\\b/.test(t);
+  const esGuisoExplicito = /\bguiso\b/.test(t);
+  const tieneArroz = /\barroz\b/.test(t);
+  const tieneProteina = /\b(pollo|pechuga|carne|bife|bifes|churrasco|vacio|matambre|costilla|cuadril|lomo|asado|pavo|pescado|atun|salmon|merluza|cerdo|ternera|vacuno|cordero)\b/.test(t);
   const esProteinaConArrozGuarnicion = !esGuisoExplicito && tieneArroz && tieneProteina;
 
   const protocolo = {};
@@ -229,11 +229,50 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
     protocolo.familiaDetectada = "proteina_magra_grasa + almidon_guarnicion";
   }
 
-  // Salvaguarda: toda entrada no vacía obtiene instrucciones útiles y concretas.
-  if (!protocolo.coccion) protocolo.coccion = "Elegí una técnica adecuada al alimento identificado y evitá quemar los ingredientes.";
-  if (!protocolo.sinergia) protocolo.sinergia = "SINERGIA DE CONDIMENTOS: ajo + orégano + pimienta negra; ajustá la combinación al ingrediente principal.";
+  // Resolver la variable por alimento antes de devolver el protocolo.
+  // El enfriamiento no se recomienda por defecto: solo se aborda si la consulta
+  // pregunta explícitamente por enfriar, recalentar o preparar con antelación.
+  const esPasta = /\b(pasta|fideo|fideos|tallar[ií]n|tallarines|espagueti|espaguetis|spaghetti|macarr[oó]n|macarrones|ñoqui|ñoquis|noqui|noquis)\b/.test(t);
+  const esTuberculo = /\b(papa|papas|patata|patatas|batata|boniato|yuca|mandioca)\b/.test(t);
+  const esCereal = /\b(arroz|avena|ma[ií]z|cebada|trigo|quinoa|quinua|polenta)\b/.test(t);
+  const pideEnfriamiento = /enfri|refriger|recalent|prepar.{0,15}antelaci|cocid.{0,15}despu[eé]s|para ma[nñ]ana/.test(t);
+  const pideGrasa = /(?:agregar|añadir|anadir|sumar|reducir|quitar|menos|más|mas|cantidad de)\s+(?:aceite|manteca|crema|queso|grasa|aderezo)|(?:aceite|manteca|crema|queso|grasa|aderezo)\s+(?:añadid[oa]|anadid[oa]|agregad[oa]|extra|en mayor cantidad)|variable.{0,20}(?:aceite|grasa|aderezo)/.test(t);
+  const pideTiming = /antes de comer|despu[eé]s de comer|orden de ingesta|primero.{0,20}(vegetal|ensalada|fibra)|horario|momento de ingesta/.test(t);
+  const pideTipoPasta = /pasta integral|fideos integrales|pasta de legumbres|fideos de legumbres|tipo de pasta/.test(t);
+
+  if (esPasta) {
+    protocolo.familiaDetectada = "pasta";
+    protocolo.variableModificada = pideTiming ? "timing" : pideGrasa ? "grasa_anadida" : pideTipoPasta ? "tipo_pasta" : pideEnfriamiento ? "enfriamiento_pasta" : "coccion_pasta";
+    protocolo.coccion = "Para esta pasta, usá el tiempo y el punto de cocción indicados para el producto; no asumir enfriamiento previo como requisito.";
+    if (!pideGrasa) protocolo.sinergia = /salsa de tomate|tomate/.test(t)
+      ? "Para una salsa de tomate, albahaca u orégano son opciones compatibles; ajustá según el sabor que busques."
+      : "No se especificó la salsa ni el tipo de pasta; no asigno una combinación de condimentos única. Indicá la salsa para afinar la sugerencia.";
+    if (pideEnfriamiento) protocolo.almidonResistente = "Si la pasta se prepara con antelación, enfriá pronto y guardala en heladera; recalentá bien antes de consumir. No es un paso obligatorio para toda preparación.";
+    else delete protocolo.almidonResistente;
+  } else if (esTuberculo) {
+    protocolo.familiaDetectada = "tuberculo";
+    protocolo.variableModificada = pideTiming ? "timing" : pideGrasa ? "grasa_anadida" : pideEnfriamiento ? "enfriamiento_tuberculo" : "coccion_tuberculo";
+    protocolo.coccion = "Para papa, batata o mandioca, elegí la técnica según el plato y la textura buscada; no asumir enfriamiento previo como recomendación por defecto.";
+    if (pideEnfriamiento) protocolo.almidonResistente = "Si el tubérculo se cocina con antelación, enfriá pronto y conservá en heladera; recalentá bien antes de consumir.";
+    else delete protocolo.almidonResistente;
+  } else if (esCereal) {
+    protocolo.familiaDetectada = "cereal";
+    protocolo.variableModificada = pideTiming ? "timing" : pideGrasa ? "grasa_anadida" : pideEnfriamiento ? "enfriamiento_cereal" : "coccion_cereal";
+    protocolo.coccion = "Ajustá el método y el agua a la variedad de cereal; no asumir enfriamiento previo como recomendación por defecto.";
+    if (pideEnfriamiento) protocolo.almidonResistente = "Si el cereal se prepara con antelación, enfriá pronto y conservá en heladera; recalentá bien antes de consumir.";
+    else delete protocolo.almidonResistente;
+  } else if (!pideEnfriamiento) {
+    delete protocolo.almidonResistente;
+    protocolo.variableModificada = pideTiming ? "timing" : pideGrasa ? "grasa_anadida" : "coccion";
+  } else {
+    protocolo.variableModificada = "variable_por_confirmar";
+  }
+
+  // Salvaguarda: si el motor no identificó un detalle culinario, no inventarlo.
+  if (!protocolo.coccion) protocolo.coccion = "No hay información suficiente para recomendar una técnica concreta para esta preparación.";
+  if (!protocolo.sinergia) protocolo.sinergia = "No hay suficiente detalle sobre los ingredientes para asignar una combinación de condimentos específica.";
   protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
-  protocolo.familiaDetectada = gruposDetectados[0]?.clave || "familia_general";
+  if (!protocolo.familiaDetectada) protocolo.familiaDetectada = gruposDetectados[0]?.clave || "familia_general";
   return protocolo;
 }
 async function elegirFichaHeladeraIA(ingredientes, fichas) {
