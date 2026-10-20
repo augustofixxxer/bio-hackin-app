@@ -244,11 +244,18 @@ function normalizarExperimento(fila) {
   const cualitativo = {};
   if (a.estructura) cualitativo.a = a.estructura;
   if (b.estructura) cualitativo.b = b.estructura;
+  let sobre = null;
+  if (typeof fila.hallazgo_free === "string" && fila.hallazgo_free.startsWith("__PREMIUM_V02__")) {
+    try { sobre = JSON.parse(fila.hallazgo_free.slice("__PREMIUM_V02__".length)); } catch (_) {}
+  }
   return {
     ...fila,
+    hallazgo_free: sobre && typeof sobre.hallazgo_free === "string" ? sobre.hallazgo_free : fila.hallazgo_free,
+    condicion_aplicada: sobre?.condicion_aplicada || null,
+    contexto_tarjeta: sobre?.contexto_tarjeta || null,
     registro_a: a.texto,
     registro_b: b.texto,
-    tipo_variable: fila.tipo_variable || fila.variable || null,
+    tipo_variable: fila.variable || null,
     resultado_cualitativo: cualitativo
   };
 }
@@ -265,7 +272,7 @@ async function rutaExperimento(req, res) {
     const premiumVigente = u.cuenta_suspendida !== true && u.terminos_aceptados === true && u.nivel_acceso === "Premium" && (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
-      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,origen,titulo,variable,condicion_aplicada,contexto_tarjeta,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
+      const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,usuario_id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
       return res.status(200).json({ ok: true, experimentos: filas.map(normalizarExperimento) });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar GET o POST." });
@@ -295,7 +302,8 @@ async function rutaExperimento(req, res) {
       // Idempotencia: si el mismo alimento y variable ya tienen una prueba abierta,
       // reutilizarla en vez de bloquear el guardado o crear duplicados por reintentos.
       // Otras comidas pueden mantener su propio registro abierto.
-      const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id,titulo,variable,condicion_aplicada,contexto_tarjeta,opcion_a,opcion_b,registro_a,registro_b,estado,created_at,updated_at&order=created_at.desc&limit=20`);
+      const activosRaw = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,hallazgo_free,created_at,updated_at&order=created_at.desc&limit=20`);
+      const activos = activosRaw.map(normalizarExperimento);
       const alimentoNuevo = String(contexto?.alimento || opcionACompat || "").trim().toLowerCase();
       const existente = activos.find((fila) => {
         const alimentoPrevio = String(fila.contexto_tarjeta?.alimento || fila.opcion_a || "").trim().toLowerCase();
@@ -303,13 +311,18 @@ async function rutaExperimento(req, res) {
         return alimentoNuevo && alimentoPrevio === alimentoNuevo && variablePrevia === variableCanonica;
       });
       if (existente) return res.status(200).json({ ok:true, experimento:normalizarExperimento(existente), reutilizado:true });
+      const sobreV02 = {
+        version:"v02",
+        condicion_aplicada:condiciones,
+        contexto_tarjeta:contexto,
+        hallazgo_free:typeof hallazgoFree==="string"?hallazgoFree.slice(0,1000):""
+      };
       const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({
         usuario_id:usuarioId, origen:typeof origen==="string"?origen.slice(0,80):null,
         titulo:String(titulo).slice(0,160), variable:variableCanonica,
-        condicion_aplicada:condiciones, contexto_tarjeta:contexto,
         opcion_a:opcionACompat, opcion_b:opcionBCompat,
         regla_id:UUID_REGEX.test(String(reglaId||""))?reglaId:null, solucion_id:UUID_REGEX.test(String(solucionId||""))?solucionId:null,
-        hallazgo_free:typeof hallazgoFree==="string"?hallazgoFree.slice(0,1000):null,
+        hallazgo_free:"__PREMIUM_V02__"+JSON.stringify(sobreV02),
         hack_concreto:typeof hackConcreto==="string"?hackConcreto.slice(0,1000):null,
         cambio_composicional:typeof cambioComposicional==="string"?cambioComposicional.slice(0,1000):null,
         aprendizaje_comparativo:typeof aprendizajeComparativo==="string"?aprendizajeComparativo.slice(0,1000):null,
@@ -332,7 +345,8 @@ async function rutaExperimento(req, res) {
       const patch = ladoNormalizado==="a"
         ? {registro_a:valorEstructurado,updated_at:new Date().toISOString()}
         : {registro_b:valorEstructurado,updated_at:new Date().toISOString()};
-      const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(patch)});
+      const updated=await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,usuario_id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(patch)});
+      if (!updated.length) return res.status(500).json({error:"No se confirmó el guardado en la bitácora."});
       return res.status(200).json({ok:true,experimento:normalizarExperimento(updated[0])});
     }
     if (accion === "cerrar") {
