@@ -214,7 +214,7 @@ h3{font-size:18px!important;line-height:1.35}
 
 </style>
 </head>
-<body><div id="root"><div id="boot" style="padding:24px;font:14px Arial,sans-serif;color:#aab5af">Cargando Reseteo Propio…</div></div>
+<body><div id="root"><div id="boot" role="status" aria-live="polite" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font:15px/1.5 Arial,sans-serif;color:#d7e1da;background:#0f1715"><span aria-hidden="true" style="width:30px;height:30px;border:3px solid rgba(215,225,218,.2);border-top-color:#c5a059;border-radius:50%;animation:reseteo-spin .8s linear infinite"></span><b style="font-size:17px;color:#f2efe9">Preparando tu espacio</b><span>Estamos cargando Mi Día y tus datos.</span></div></div><style>@keyframes reseteo-spin{to{transform:rotate(360deg)}}</style>
 <script type="text/plain" id="app-source">
 const {useState,useEffect,useRef}=React;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -767,8 +767,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
     });
   }
   async function start(){
+    var etapa='dependencias';
     try{
-      status('Cargando…');
+      status('Cargando dependencias…');
       if(!window.React){
         try{await load('https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js')}
         catch(e){try{await load('https://unpkg.com/react@18.3.1/umd/react.production.min.js')}catch(e2){await load('https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js')}}
@@ -781,14 +782,23 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
         try{await load('https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js')}
         catch(e){try{await load('https://unpkg.com/@babel/standalone@7.24.7/babel.min.js')}catch(e2){await load('https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js')}}
       }
-      if(!window.React||!window.ReactDOM||!window.Babel)throw new Error('Dependencias de interfaz incompletas');
-      status('Iniciando…');
-      var source=document.getElementById('app-source').textContent;
-      var compiled=Babel.transform(source,{presets:['react']}).code;
+      if(!window.React||!window.ReactDOM||!window.Babel)throw new Error('React, ReactDOM o Babel no quedaron disponibles después de intentar los CDNs alternativos.');
+      etapa='compilación JSX';
+      status('Preparando la interfaz…');
+      var sourceNode=document.getElementById('app-source');
+      if(!sourceNode||!sourceNode.textContent.trim())throw new Error('No se encontró el código de la aplicación (#app-source).');
+      var compiled=Babel.transform(sourceNode.textContent,{presets:['react']}).code;
+      etapa='inicialización de Mi Día';
+      status('Abriendo tu espacio…');
       new Function(compiled)();
     }catch(e){
-      console.error(e);
-      if(boot)boot.innerHTML='<b>No pudimos cargar Reseteo Propio.</b><br><span style="display:block;margin-top:8px">Recargá esta página. Si el problema continúa, el navegador está bloqueando una dependencia necesaria para iniciar la app.</span>';
+      console.error('[Reseteo Propio] Fallo en '+etapa+':',e);
+      if(boot){
+        var titulo=etapa==='dependencias'?'No pudimos cargar las dependencias.':etapa==='compilación JSX'?'No pudimos compilar la interfaz.':'La interfaz falló al iniciar.';
+        var detalle=String(e&&e.message||e||'Error desconocido').slice(0,260);
+        boot.setAttribute('role','alert');
+        boot.innerHTML='<b style="font-size:18px;color:#f2efe9">'+titulo+'</b><span style="max-width:440px;margin-top:8px;color:#cbd4ce">El error ocurrió durante '+etapa+'.</span><code style="max-width:520px;margin-top:10px;padding:10px;border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#e4c878;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">'+detalle.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})+'</code><button type="button" onclick="window.location.reload()" style="margin-top:10px;padding:12px 16px;border:0;border-radius:10px;background:#c5a059;color:#2a1d08;font-weight:800;cursor:pointer">Reintentar</button>';
+      }
     }
   }
   start();
