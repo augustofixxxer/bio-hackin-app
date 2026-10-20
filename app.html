@@ -418,10 +418,11 @@ function App(){
  }
  function sugerenciaConceptual(contexto){
   const variable=tipoVariableAdaptativa(contexto||{});
-  const original=String(contexto?.original||contexto?.titulo||'esta comida');
   const texto=String(contexto?.accion||contexto?.adaptacion||contexto?.hackNombre||'').trim();
   if(variable==='tipo_pasta'){
-   return 'Probá cambiar únicamente el tipo de pasta —por ejemplo, por una integral si esa es la variante propuesta—. Usá una porción similar y mantené la misma salsa y los mismos acompañamientos para comparar una sola diferencia.';
+   const variante=String(contexto?.hackNombre||contexto?.accion||contexto?.adaptacion||'').toLowerCase();
+   const detalle=/legumbres/.test(variante)?'por una de legumbres':/integral/.test(variante)?'por una integral':'por la variante propuesta';
+   return 'Probá cambiar únicamente el tipo de pasta '+detalle+'. Usá una porción similar y mantené la misma salsa y los mismos acompañamientos para comparar una sola diferencia.';
   }
   const cantidades=(texto.match(/\b\d+(?:[.,]\d+)?\s?(?:g|gr|gramos)\b/gi)||[]).length;
   if(cantidades>=2||/\btotal\s*:/i.test(texto)){
