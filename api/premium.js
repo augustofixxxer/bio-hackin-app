@@ -263,8 +263,17 @@ async function rutaExperimento(req, res) {
       if (contexto && contexto.tarjeta != null && !["hallazgo", "sugerencia", "comparacion"].includes(contexto.tarjeta)) {
         return res.status(400).json({ error: "contextoTarjeta.tarjeta debe ser hallazgo, sugerencia o comparacion." });
       }
-      const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id&limit=1`);
-      if (activos.length) return res.status(409).json({ error: "Ya tenés una prueba abierta. Cerrala antes de crear otra." });
+      // Idempotencia: si el mismo alimento y variable ya tienen una prueba abierta,
+      // reutilizarla en vez de bloquear el guardado o crear duplicados por reintentos.
+      // Otras comidas pueden mantener su propio registro abierto.
+      const activos = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&estado=eq.abierto&select=id,titulo,variable,tipo_variable,condicion_aplicada,contexto_tarjeta,resultado_cualitativo,opcion_a,opcion_b,registro_a,registro_b,estado,created_at,updated_at&order=created_at.desc&limit=20`);
+      const alimentoNuevo = String(contexto?.alimento || opcionACompat || "").trim().toLowerCase();
+      const existente = activos.find((fila) => {
+        const alimentoPrevio = String(fila.contexto_tarjeta?.alimento || fila.opcion_a || "").trim().toLowerCase();
+        const variablePrevia = String(fila.tipo_variable || fila.variable || "").trim();
+        return alimentoNuevo && alimentoPrevio === alimentoNuevo && variablePrevia === variableCanonica;
+      });
+      if (existente) return res.status(200).json({ ok:true, experimento:existente, reutilizado:true });
       const filas = await supabaseFetch("premium_experimentos", { method:"POST", headers:{Prefer:"return=representation"}, body:JSON.stringify({
         usuario_id:usuarioId, origen:typeof origen==="string"?origen.slice(0,80):null,
         titulo:String(titulo).slice(0,160), variable:variableCanonica, tipo_variable:variableCanonica,
