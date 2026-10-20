@@ -392,12 +392,13 @@ function App(){
   const alimento=alimentoAdaptativo(contexto);
   const raw=[alimento,contexto?.categoria,contexto?.protocoloCulinario?.coccion,contexto?.protocoloCulinario?.timingOrden,contexto?.protocoloCulinario?.almidonResistente].filter(Boolean).join(' ').toLowerCase();
   if(/timing|horario|momento|orden|secuencia|ingesta/.test(principal)||/antes de|despues de|después de|orden de ingesta|secuencia/.test(raw))return 'timing';
-  if(/grasa|aceite|manteca|crema|queso añadido|adicion de grasa|adición de grasa/.test(principal+' '+raw))return 'grasa_anadida';
   if(/pasta|fideos|tallarines|espaguetis|spaghetti|macarrones|ravioles|ñoquis|noquis/.test(alimento)){
     if(/enfri|recalent|almidon resistente|almidón resistente/.test(principal+' '+raw))return 'enfriamiento_pasta';
-    if(/integral|legumbres|tipo de pasta/.test(principal+' '+raw))return 'tipo_pasta';
+    if(/integral|legumbres|tipo de pasta|cambiar el tipo|cambiar.*pasta|reemplaz.*pasta/.test(principal+' '+raw))return 'tipo_pasta';
+    if(/grasa|aceite|manteca|crema|queso añadido|adicion de grasa|adición de grasa/.test(principal+' '+raw))return 'grasa_anadida';
     return 'coccion_pasta';
   }
+  if(/grasa|aceite|manteca|crema|queso añadido|adicion de grasa|adición de grasa/.test(principal+' '+raw))return 'grasa_anadida';
   if(/papa|patata|batata|boniato|yuca|mandioca|tuberculo|tubérculo/.test(alimento)){
     if(/enfri|recalent|almidon resistente|almidón resistente/.test(principal+' '+raw))return 'enfriamiento_tuberculo';
     return /temperatura|frio|frío/.test(principal)?'temperatura_tuberculo':'coccion_tuberculo';
@@ -414,6 +415,19 @@ function App(){
  }
  function etiquetaVariable(tipo){
   return ({coccion:'Técnica de cocción',temperatura:'Temperatura',grasa_anadida:'Grasa añadida',timing:'Momento u orden',coccion_pasta:'Punto de cocción de la pasta',tipo_pasta:'Tipo de pasta',enfriamiento_pasta:'Enfriamiento de pasta',coccion_tuberculo:'Cocción del tubérculo',temperatura_tuberculo:'Temperatura del tubérculo',enfriamiento_tuberculo:'Enfriamiento del tubérculo',coccion_cereal:'Cocción del cereal',temperatura_cereal:'Temperatura del cereal',enfriamiento_cereal:'Enfriamiento del cereal',variable_por_confirmar:'Variable por confirmar',general:'Variable por confirmar'})[tipo]||tipo.replace(/_/g,' ');
+ }
+ function sugerenciaConceptual(contexto){
+  const variable=tipoVariableAdaptativa(contexto||{});
+  const original=String(contexto?.original||contexto?.titulo||'esta comida');
+  const texto=String(contexto?.accion||contexto?.adaptacion||contexto?.hackNombre||'').trim();
+  if(variable==='tipo_pasta'){
+   return 'Probá cambiar únicamente el tipo de pasta —por ejemplo, por una integral si esa es la variante propuesta—. Usá una porción similar y mantené la misma salsa y los mismos acompañamientos para comparar una sola diferencia.';
+  }
+  const cantidades=(texto.match(/\b\d+(?:[.,]\d+)?\s?(?:g|gr|gramos)\b/gi)||[]).length;
+  if(cantidades>=2||/\btotal\s*:/i.test(texto)){
+   return 'Probá modificar únicamente '+etiquetaVariable(variable).toLowerCase()+' y mantené tu porción habitual y el resto de la preparación lo más parecido posible. La idea es comparar una sola variable, sin medir cada ingrediente.';
+  }
+  return texto||('Probá modificar únicamente '+etiquetaVariable(variable).toLowerCase()+' y mantené el resto de la preparación lo más parecido posible.');
  }
  function protocoloAlmidonEspecifico(contexto){
   const texto=String(contexto?.protocoloCulinario?.almidonResistente||'').toLowerCase();
@@ -706,7 +720,7 @@ function App(){
   <div className="premium-feature">
     <div className="feature-kicker">2 · LA SUGERENCIA</div>
     <h3>{premiumContexto?.hackNombre||'Una modificación concreta para esta comida.'}</h3>
-    <p>{premiumContexto?.accion||premiumContexto?.adaptacion||'Acá aparece una modificación concreta para probar. La idea es cambiar una sola variable y mantener el resto lo más parecido posible.'}</p>
+    <p>{premiumContexto?sugerenciaConceptual(premiumContexto):'Acá aparece una modificación concreta para probar. La idea es cambiar una sola variable y mantener el resto lo más parecido posible.'}</p>
     {premiumContexto?.variable&&premiumContexto.variable!=='protocolo_culinario'&&<p className="premium-variable-note">Variable en foco: {etiquetaVariable(tipoVariableAdaptativa(premiumContexto))}.</p>}
     {premiumContexto?.protocoloCulinario&&<div className="premium-culinary-protocol">
       <div className="label">PROTOCOLO CULINARIO ADAPTATIVO</div>
@@ -739,11 +753,9 @@ function App(){
   {premiumContexto&&<button className="secondary" onClick={()=>{setPremiumContexto(null);setPremiumOrigen('basica');setPremiumVista('home');setTab('descubrir');setResultadoAntesDeComer(null);setResultado(null);}}>↺ Borrar esta consulta y volver a Descubrir</button>}
 
   <details className="premium-how"><summary>¿Qué hace Premium con esto?</summary><p>Parte de la comida que exploraste, conserva el hallazgo Free, propone una modificación concreta y te muestra qué vamos a comparar. Después podés registrar tu experiencia.</p></details>
-  {premiumExpMsg&&<div className="saved">{premiumExpMsg}</div>}
   {premiumEstadoMsg&&<div className="saved">{premiumEstadoMsg}</div>}
   {!premiumEstado?.premium&&premiumEstado?.origen===null&&<button className="primary" onClick={async()=>{setPremiumEstadoMsg('');setBusy(true);try{const r=await fetch('/api/premium?ruta=activar-fundador',{method:'POST',headers:{Authorization:'Bearer '+pase()}});const d=await r.json();if(!r.ok)throw Error(d.error||'No se pudo activar el modo prueba.');const sr=await fetch('/api/premium?ruta=estado',{headers:{Authorization:'Bearer '+pase()}});const sd=await sr.json();if(!sr.ok)throw Error(sd.error||'No pudimos actualizar el estado Premium.');setPremiumEstado(sd)}catch(e){setPremiumEstadoMsg(e.message||'No pudimos activar el modo prueba.')}finally{setBusy(false)}}} disabled={busy}>✦ Activar modo prueba fundador</button>}
   
-  {premiumExpMsg&&<div className="saved" role="status" aria-live="polite">{premiumExpMsg}</div>}
 </div>}
 
 <div className="premium-legal">
