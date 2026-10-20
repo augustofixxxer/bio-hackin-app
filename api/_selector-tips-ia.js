@@ -194,7 +194,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
     const clave = normalizarProtocolo(termino).trim();
     if (!clave) return false;
     const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\\s+");
-    return new RegExp("\b" + patron + "\b", "i").test(t);
+    return new RegExp("\\b" + patron + "\\b", "i").test(t);
   });
   const validarGrupo = (grupo) => grupo && grupo.activo !== false &&
     Array.isArray(grupo.terminos) && grupo.reglas && typeof grupo.reglas === "object";
