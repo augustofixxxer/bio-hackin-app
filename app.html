@@ -341,6 +341,7 @@ function construirContenidoJornada(objetivo,tipo,hora,energiaBaja,catalogoAlimen
  return {momento,principal,alimentos:conectado?(alimentosDinamicos.length?alimentosDinamicos:alimentos||[]):alimentos||[],alimentosCena:conectado?(cenaDinamica.length?cenaDinamica:base.alimentosCena||[]):base.alimentosCena||[],alimentosDesayuno:conectado?(desayunoDinamico.length?desayunoDinamico:base.alimentosDesayuno||[]):base.alimentosDesayuno||[],cena,alternativas:esEntreno?alternativaPost:alternativaDesayuno,alternativaDesayuno,alternativaCena,ajusteEnergia,fuenteCatalogo:'catalogo_nutricional_75',estadoCatalogo:conectado?'supabase':'fallback_curado',notaCatalogo:conectado?'Alimentos y alternativas seleccionados del catálogo nutricional conectado.':'No se pudo consultar el catálogo; se muestran ejemplos de respaldo.'};
 }
 function App(){
+ const [sesionLista,setSesionLista]=useState(false);
  const [planEnergiaAyer,setPlanEnergiaAyer]=useState(()=>{try{return localStorage.getItem('reseteo_energia_ayer')||'sin_dato'}catch(e){return 'sin_dato'}});
  const fechaPlanLocal=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
  const [planDia,setPlanDia]=useState({fecha:fechaPlanLocal(),tipo:'descanso',hora:'07:00'});
@@ -374,7 +375,7 @@ function App(){
    tabRef.current=tab;
    window.history.pushState({reseteoApp:true,tab},'',window.location.pathname+window.location.search);
  },[tab]);
- useEffect(()=>{if(!pase()){window.location.replace('/index.html');return}fetch('/api/data').then(r=>r.ok?r.json():Promise.reject()).then(d=>setEntradas(d.entradas||[])).catch(()=>setEntradas([]))},[]);
+ useEffect(()=>{if(!pase()){window.location.replace('/index.html');return}setSesionLista(true);fetch('/api/data').then(r=>r.ok?r.json():Promise.reject()).then(d=>setEntradas(d.entradas||[])).catch(()=>setEntradas([]))},[]);
  useEffect(()=>{if(!pase())return;fetch('/api/data?vista=jornada&fecha='+encodeURIComponent(fechaPlanLocal()),{headers:{Authorization:'Bearer '+pase()}}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar tu jornada.');setPlanDia(d.plan);setPlanPerfil(d.perfil)}).catch(e=>setPlanDiaError(e.message||'No pudimos cargar tu jornada.')).finally(()=>setPlanDiaCargando(false))},[]);
  useEffect(()=>{if(!pase())return;let vigente=true;const cargar=async()=>{let ultimoError=null;console.info('[Mi Día] Iniciando carga del catálogo nutricional al montar la app.');for(let intento=0;intento<3&&vigente;intento++){try{const r=await fetch('/api/data?vista=catalogo-alimentos',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar el catálogo nutricional.');if(!Array.isArray(d.alimentos)||!d.alimentos.length)throw Error('El catálogo no devolvió alimentos validados.');if(vigente){setCatalogoAlimentos(d.alimentos);console.info('[Mi Día] Catálogo nutricional cargado:',d.alimentos.length,'alimentos.')}return}catch(e){ultimoError=e;if(intento<2)await new Promise(resolve=>setTimeout(resolve,350*(intento+1)))}}if(vigente){console.error('[Mi Día] No se pudo cargar el catálogo tras reintentos:',ultimoError?.message||ultimoError);setCatalogoAlimentos([])}};cargar();return()=>{vigente=false}},[]);
  useEffect(()=>{if(tab==='mi-dia'&&pase()){setHistorialExpandido(false);cargarHistorialMiDia();cargarProgresoPatrones()}},[tab]);
@@ -525,6 +526,7 @@ function App(){
  const premiumEstadoTexto=premiumAbiertas.length>0?'Tenés una prueba en curso':premiumTienePatrones?'Ya tenés aprendizajes para revisar':'Podés crear tu primera prueba';
  const planContenido=construirContenidoJornada(planPerfil?.objetivoGrupo,planDia.tipo,planDia.hora,planEnergiaAyer==='baja',catalogoAlimentos);
  useEffect(()=>{if(tab==='descubrir')setDiscoverView('home')},[tab]);
+ if(!sesionLista)return <div role="status" aria-live="polite" style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:24,textAlign:'center',background:'#0f1715',color:'#d7e1da'}}><span aria-hidden="true" style={{width:30,height:30,border:'3px solid rgba(215,225,218,.2)',borderTopColor:'#c5a059',borderRadius:'50%',animation:'reseteo-spin .8s linear infinite'}}/><b style={{fontSize:18,color:'#f2efe9'}}>Preparando tu espacio</b><span>Estamos verificando tu sesión para abrir Mi Día.</span></div>;
  return <><main className={'wrap '+(tab==='descubrir'?'discover-screen':'')}><div className="top"><div className="brand">RESETEO PROPIO</div><div className="status">Tu espacio personal</div></div>
  {tab==='descubrir'&&<>
  <section className="hero discover-hero"><div className="eyebrow">DESCUBRIR</div><h1>Entiende mejor lo que comes y cómo te sientes.</h1><p>Elige una situación o revisa tu plato antes de comer.</p></section>
