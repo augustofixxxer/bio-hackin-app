@@ -466,7 +466,7 @@ function App(){
    const tipoVariable=experimentoActual?.tipo_variable||tipoVariableAdaptativa(premiumContexto||{});
    const r=await fetch('/api/premium?ruta=experimento',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+pase()},body:JSON.stringify({accion:'registrar',experimentoId:id,lado,resultadoCualitativo:{observacion:observacion.slice(0,500),tipo_variable:tipoVariable,registrado_en:new Date().toISOString()}})});
    const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos guardar lo que observaste.');
-   setPremiumExperimentos(premiumExperimentos.map(x=>x.id===id?d.experimento:x));setPremiumRegistroTexto('');setPremiumRegistroLado(lado==='a'?'b':'a');setPremiumExpMsg('✓ Guardado en tu bitácora. Esta observación ya forma parte de tu registro.');
+   setPremiumExperimentos(prev=>prev.map(x=>x.id===id?d.experimento:x));setPremiumRegistroTexto('');setPremiumRegistroLado(lado==='a'?'b':'a');setPremiumExpMsg('✓ Guardado en tu bitácora. Esta observación ya forma parte de tu registro.');
   }catch(e){setPremiumExpMsg(e.message||'No pudimos guardar tu experiencia.')}finally{setPremiumExpBusy(false)}
  }
  async function cerrarExperimento(id){
