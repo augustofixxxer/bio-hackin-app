@@ -448,7 +448,7 @@ function App(){
    setPremiumExperimentos(prev=>[d.experimento,...prev.filter(x=>x.id!==d.experimento.id)]);setPremiumRegistroLado('b');return d.experimento;
   }catch(e){setPremiumExpMsg(e.message||'No pudimos preparar la comparación.');return null}finally{setPremiumExpBusy(false)}
  }
- async async function guardarBitacoraVariante(e){
+ async function guardarBitacoraVariante(e){
   e.preventDefault();
   if(premiumExpBusy)return;
   const observacion=premiumRegistroTexto.trim();
