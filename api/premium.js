@@ -325,9 +325,6 @@ async function rutaExperimento(req, res) {
       if (resultado == null && typeof legacyValor === "string") resultado = { observacion: legacyValor.trim().slice(0, 500) };
       if (typeof resultado === "string") resultado = { observacion: resultado.trim().slice(0, 500) };
       if (!resultado || typeof resultado !== "object" || Array.isArray(resultado) || !Object.keys(resultado).length) return res.status(400).json({error:"Falta resultadoCualitativo: enviá una observación estructurada."});
-      const valorCompat = typeof legacyValor === "string" && legacyValor.trim()
-        ? legacyValor.trim().slice(0, 500)
-        : (typeof resultado.observacion === "string" ? resultado.observacion.slice(0, 500) : JSON.stringify(resultado).slice(0, 500));
       const filas = await supabaseFetch(`premium_experimentos?id=eq.${experimentoId}&usuario_id=eq.${usuarioId}&select=id,estado,registro_a,registro_b`);
       if (!filas.length) return res.status(404).json({error:"Experimento no encontrado."});
       if (filas[0].estado !== "abierto") return res.status(409).json({error:"Esta prueba ya está cerrada."});
