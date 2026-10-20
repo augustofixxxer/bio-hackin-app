@@ -444,7 +444,7 @@ function App(){
   try{
    const r=await fetch('/api/premium?ruta=experimento',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+pase()},body:JSON.stringify({accion:'crear',origen:premiumOrigen,titulo,variable:tipoVariable,tipoVariable,condicionAplicada,contextoTarjeta,opcionA:original,opcionB:hack,reglaId,solucionId,hallazgoFree:premiumContexto?.texto||'',hackConcreto:hack,cambioComposicional:premiumContexto?.cambioComposicional||'',aprendizajeComparativo:premiumContexto?.aprendizajeComparativo||'',queSeMantiene:premiumContexto?.queSeMantiene||''})});
    const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos preparar la comparación.');
-   setPremiumExperimentos([d.experimento,...premiumExperimentos]);setPremiumRegistroLado('b');return d.experimento;
+   setPremiumExperimentos(prev=>[d.experimento,...prev.filter(x=>x.id!==d.experimento.id)]);setPremiumRegistroLado('b');return d.experimento;
   }catch(e){setPremiumExpMsg(e.message||'No pudimos preparar la comparación.');return null}finally{setPremiumExpBusy(false)}
  }
  async async function guardarBitacoraVariante(e){
@@ -483,7 +483,7 @@ function App(){
    const tipoVariable=experimentoActual?.tipo_variable||tipoVariableAdaptativa(premiumContexto||{});
    const r=await fetch('/api/premium?ruta=experimento',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+pase()},body:JSON.stringify({accion:'registrar',experimentoId:id,lado,resultadoCualitativo:{observacion:observacion.slice(0,500),tipo_variable:tipoVariable,registrado_en:new Date().toISOString()}})});
    const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos guardar lo que observaste.');
-   setPremiumExperimentos(prev=>prev.map(x=>x.id===id?d.experimento:x));setPremiumRegistroTexto('');setPremiumRegistroLado(lado==='a'?'b':'a');setPremiumExpMsg('✓ Guardado en tu bitácora. Esta observación ya forma parte de tu registro.');
+   setPremiumExperimentos(prev=>prev.some(x=>x.id===id)?prev.map(x=>x.id===id?d.experimento:x):[d.experimento,...prev]);setPremiumRegistroTexto('');setPremiumRegistroLado(lado==='a'?'b':'a');setPremiumExpMsg('✓ Guardado en tu bitácora. Esta observación ya forma parte de tu registro.');
   }catch(e){setPremiumExpMsg(e.message||'No pudimos guardar tu experiencia.')}finally{setPremiumExpBusy(false)}
  }
  async function cerrarExperimento(id){
