@@ -466,7 +466,7 @@ function App(){
    const tipoVariable=experimentoActual?.tipo_variable||tipoVariableAdaptativa(premiumContexto||{});
    const r=await fetch('/api/premium?ruta=experimento',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+pase()},body:JSON.stringify({accion:'registrar',experimentoId:id,lado,resultadoCualitativo:{observacion:observacion.slice(0,500),tipo_variable:tipoVariable,registrado_en:new Date().toISOString()}})});
    const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos guardar lo que observaste.');
-   setPremiumExperimentos(premiumExperimentos.map(x=>x.id===id?d.experimento:x));setPremiumRegistroTexto('');setPremiumRegistroLado(lado==='a'?'b':'a');
+   setPremiumExperimentos(premiumExperimentos.map(x=>x.id===id?d.experimento:x));setPremiumRegistroTexto('');setPremiumRegistroLado(lado==='a'?'b':'a');setPremiumExpMsg('✓ Guardado en tu bitácora. Esta observación ya forma parte de tu registro.');
   }catch(e){setPremiumExpMsg(e.message||'No pudimos guardar tu experiencia.')}finally{setPremiumExpBusy(false)}
  }
  async function cerrarExperimento(id){
@@ -703,9 +703,9 @@ function App(){
     <h3>Antes y después, con una sola variable en foco.</h3>
     {premiumContexto ? <>
       <div className="adaptive-before-after" aria-label="Comparación visual entre comida de referencia y variante">
-        <div><span>ANTES · REFERENCIA</span><b>{premiumContexto.original||premiumContexto.titulo||'Tu comida de origen'}</b><small>{premiumContexto.texto||'Punto de partida registrado.'}</small></div>
+        <div><span>ANTES · REFERENCIA</span><b>{premiumContexto.original||premiumContexto.titulo||'Tu comida de origen'}</b></div>
         <div className="adaptive-arrow" aria-hidden="true">→</div>
-        <div><span>DESPUÉS · VARIANTE</span><b>{premiumContexto.hackNombre||premiumContexto.accion||premiumContexto.adaptacion||'La alternativa propuesta'}</b><small>{premiumContexto.cambioComposicional||premiumContexto.queSeMantiene||'El resto se mantiene lo más parecido posible.'}</small></div>
+        <div><span>DESPUÉS · VARIANTE</span><b>{premiumContexto.hackNombre||premiumContexto.accion||premiumContexto.adaptacion||'La alternativa propuesta'}</b></div>
       </div>
       <p className="comparison-unique">{premiumContexto.cambioComposicional||premiumContexto.queSeMantiene||'La comparación se centra en la variante indicada; mantené el resto de la preparación lo más parecido posible.'}</p>
       <form className="adaptive-log-form" onSubmit={guardarBitacoraVariante}>
