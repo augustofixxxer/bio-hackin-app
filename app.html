@@ -738,7 +738,7 @@ function App(){
   <button className="secondary" onClick={volverDesdePremium}>← Volver a Mi Día</button>
 </div>}
 {premiumOrigen!=='patrones'&&premiumVista==='home'&&<div className="premium-home">
-{!premiumEstado?.premium&&<section className="founder-offer">
+<section className="founder-offer">
   <div className="feature-kicker">ACCESO PRO · FOUNDER</div>
   <h2>Convertí tus registros en patrones propios.</h2>
   <p>Accedé a la bitácora de patrones y a sugerencias regionales para profundizar en lo que registrás.</p>
@@ -757,7 +757,7 @@ function App(){
    {premiumPagoMsg&&<div className="saved" role="alert">{premiumPagoMsg}</div>}
    <div className="founder-actions"><button className="founder-close" disabled={premiumPagoBusy} onClick={()=>setPremiumModalAbierto(false)}>CANCELAR</button><button className="founder-send" disabled={premiumPagoBusy||!premiumComprobante||!premiumPlanesConfig.medios?.alias||!premiumPlanesConfig.medios?.titular} onClick={enviarComprobanteFounder}>{premiumPagoBusy?"ENVIANDO…":"ENVIAR COMPROBANTE"}</button></div>
   </section></div>}
-</section>}
+</section>
   {premiumContexto?<div className="premium-context"><b>Venís de Descubrir</b><span>{premiumContexto.original||premiumContexto.titulo||'La comida que acabás de explorar'}</span></div>:<div className="premium-context"><b>Premium empieza con una comida concreta.</b><span>Entrá desde una comida que acabás de explorar para recibir el hallazgo, la sugerencia y qué vamos a comparar.</span></div>}
 
   <div className="premium-feature">
