@@ -95,7 +95,7 @@ async function rutaActivarAlias(req, res) {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        user_id: usuarioId, metodo: "transferencia", monto: planConfig.monto,
+        user_id: usuarioId, metodo: "alias", monto: planConfig.monto,
         plan, duracion_dias: planConfig.duracionDias,
         comprobante_url: rutaArchivo, estado: "pendiente",
       }),
