@@ -65,6 +65,14 @@ const TOKENS = {
   alto: "#2F6F62", medio: "#9C7A2E", especulativo: "#7D8590",
 };
 
+// Tokens específicos del onboarding: alineados con Descubrir / Mi Día de app.html.
+// Se mantienen aislados para no alterar pantallas del Explorador legado.
+const ONBOARDING_UI = {
+  bg: "#0D1110", surface: "#111A17", surfaceRaised: "#17211E",
+  border: "rgba(197,160,89,0.28)", borderSubtle: "rgba(255,255,255,0.12)",
+  accent: "#D8AD4C", text: "#F2EFE9", muted: "#AAB5AF", font: "Arial, sans-serif",
+};
+
 const GOOGLE_CLIENT_ID = "521828227436-s3qcdgb7ivd9aaaqifm1c20nat8ntcj1.apps.googleusercontent.com";
 
 // Helpers de localStorage (03/08/2026 — corrección de hallazgo real): varios accesos
@@ -1802,30 +1810,29 @@ function TerminosGate({ pase, onAceptar }) {
   return (
     <div style={{
       position: "relative", overflowX: "hidden", overflowY: "auto", minHeight: "100vh", minHeight: "100dvh", display: "flex",
-      alignItems: "center", justifyContent: "center", padding: "12px", background: EXPLORADOR_TOKENS.bg,
+      alignItems: "center", justifyContent: "center", padding: "12px", background: ONBOARDING_UI.bg,
     }}>
       <HojasDecorativas zIndex={0} />
       <div style={{
         position: "relative", zIndex: 1, maxWidth: 440, width: "100%",
-        background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
-        backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
-        borderRadius: 26, padding: "18px 20px", boxShadow: EXPLORADOR_TOKENS.cardShadow,
+        background: ONBOARDING_UI.surface, border: `1px solid ${ONBOARDING_UI.border}`,
+        borderRadius: 16, padding: "18px 18px", boxShadow: "0 12px 28px rgba(0,0,0,0.28)",
       }}>
-        <h1 style={{ fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 10, letterSpacing: "-0.01em" }}>
+        <h1 style={{ fontFamily: ONBOARDING_UI.font, fontWeight: 800, fontSize: 22, color: ONBOARDING_UI.text, marginBottom: 10, letterSpacing: "-0.01em" }}>
           Antes de arrancar
         </h1>
-        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "rgba(242,239,233,0.85)", fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 }}>
+        <p style={{ fontFamily: ONBOARDING_UI.font, color: ONBOARDING_UI.muted, fontSize: 13, lineHeight: 1.55, marginBottom: 18 }}>
           Reseteo Propio es una herramienta de auto-observación de patrones alimentarios. <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>No diagnostica ni trata condiciones médicas</b>, y no reemplaza la consulta con un profesional de la salud.
         </p>
 
         <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 18, cursor: "pointer" }}>
-          <input type="checkbox" checked={checkTerminos} onChange={(e) => setCheckTerminos(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0, accentColor: EXPLORADOR_TOKENS.accent }} />
-          <span style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.5 }}>
-            Leí y acepto los <a href="/privacidad.html" target="_blank" style={{ color: EXPLORADOR_TOKENS.accent }}>Términos y la Política de Privacidad</a>. Entiendo que las sugerencias de la app son informativas, no médicas.
+          <input type="checkbox" checked={checkTerminos} onChange={(e) => setCheckTerminos(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0, accentColor: ONBOARDING_UI.accent }} />
+          <span style={{ fontFamily: ONBOARDING_UI.font, fontSize: 13, color: ONBOARDING_UI.text, lineHeight: 1.5 }}>
+            Leí y acepto los <a href="/privacidad.html" target="_blank" style={{ color: ONBOARDING_UI.accent }}>Términos y la Política de Privacidad</a>. Entiendo que las sugerencias de la app son informativas, no médicas.
           </span>
         </label>
 
-        <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 8, fontWeight: 700 }}>
+        <p style={{ fontFamily: ONBOARDING_UI.font, fontSize: 13, color: ONBOARDING_UI.text, marginBottom: 8, fontWeight: 700 }}>
           ¿Tenés algún diagnóstico médico preexistente (ej. diabetes, hipotiroidismo, patologías cardíacas, renales, etc.)?
         </p>
         <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -1833,12 +1840,11 @@ function TerminosGate({ pase, onAceptar }) {
             const activo = condicionMedica === op.val;
             return (
               <button key={op.label} onClick={() => setCondicionMedica(op.val)} className="glass-press" style={{
-                flex: 1, padding: "12px", borderRadius: 16, cursor: "pointer",
-                background: activo ? "linear-gradient(180deg, rgba(143,168,155,0.55) 0%, rgba(143,168,155,0.25) 100%)" : "rgba(255,255,255,0.05)",
-                border: `1.5px solid ${activo ? EXPLORADOR_TOKENS.menta : "rgba(255,255,255,0.15)"}`,
-                boxShadow: activo ? "inset 0 1px 1px 0 rgba(255,255,255,0.4), 0 0 14px 1px rgba(143,168,155,0.55)" : "none",
-                color: activo ? "#0F1A16" : EXPLORADOR_TOKENS.textPrimary,
-                fontFamily: EXPLORADOR_TOKENS.font, fontWeight: activo ? 800 : 700, fontSize: 14,
+                flex: 1, padding: "12px", borderRadius: 12, cursor: "pointer",
+                background: activo ? "rgba(197,160,89,0.16)" : ONBOARDING_UI.surface,
+                border: `1px solid ${activo ? ONBOARDING_UI.accent : ONBOARDING_UI.borderSubtle}`,
+                boxShadow: "none", color: activo ? "#F8E5B3" : ONBOARDING_UI.text,
+                fontFamily: ONBOARDING_UI.font, fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.02em",
               }}>
                 {op.label}
               </button>
@@ -1847,26 +1853,23 @@ function TerminosGate({ pase, onAceptar }) {
         </div>
 
         {condicionMedica === true && (
-          <div style={{ background: "rgba(197,160,89,0.12)", border: `1px solid rgba(197,160,89,0.3)`, borderRadius: 14, padding: "10px 12px", marginBottom: 10 }}>
-            <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12.5, color: EXPLORADOR_TOKENS.textPrimary, lineHeight: 1.4, margin: 0 }}>
+          <div style={{ background: "rgba(197,160,89,0.08)", border: `1px solid ${ONBOARDING_UI.border}`, borderRadius: 12, padding: "10px 12px", marginBottom: 10 }}>
+            <p style={{ fontFamily: ONBOARDING_UI.font, fontSize: 12, color: ONBOARDING_UI.text, lineHeight: 1.45, margin: 0 }}>
               Para tu tranquilidad, la app activará avisos de precaución contextuales en sugerencias que requieran mayor auto-observación. Consultá siempre con tu profesional de confianza.
             </p>
           </div>
         )}
 
-        {error && <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: "#F0958A", fontSize: 13, marginBottom: 12 }}>{error}</p>}
+        {error && <p style={{ fontFamily: ONBOARDING_UI.font, color: "#F0958A", fontSize: 12, marginBottom: 12 }}>{error}</p>}
 
         <button onClick={confirmar} disabled={!puedeContinuar || enviando} className={puedeContinuar && !enviando ? "glass-press" : ""} style={{
-          width: "100%", borderRadius: 18, padding: "14px", fontWeight: 800, fontSize: 14, fontFamily: EXPLORADOR_TOKENS.font,
-          textTransform: "uppercase", letterSpacing: "0.03em",
-          color: puedeContinuar && !enviando ? "#2A1D08" : "rgba(242,239,233,0.4)",
+          width: "100%", borderRadius: 12, padding: "13px 15px", fontWeight: 800, fontSize: 13, fontFamily: ONBOARDING_UI.font,
+          textTransform: "uppercase", letterSpacing: "0.02em",
+          color: puedeContinuar && !enviando ? "#19170F" : "rgba(242,239,233,0.4)",
           cursor: puedeContinuar && !enviando ? "pointer" : "not-allowed",
-          background: puedeContinuar && !enviando ? `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)` : "rgba(255,255,255,0.08)",
-          borderTop: puedeContinuar && !enviando ? "1.5px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.1)",
-          borderLeft: puedeContinuar && !enviando ? "1.5px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
-          borderRight: puedeContinuar && !enviando ? "1.5px solid rgba(120,85,20,0.5)" : "1px solid rgba(255,255,255,0.1)",
-          borderBottom: puedeContinuar && !enviando ? "2.5px solid rgba(90,60,10,0.6)" : "1px solid rgba(255,255,255,0.1)",
-          boxShadow: puedeContinuar && !enviando ? "0 10px 22px -6px rgba(0,0,0,0.6)" : "none",
+          background: puedeContinuar && !enviando ? ONBOARDING_UI.accent : "rgba(255,255,255,0.06)",
+          border: puedeContinuar && !enviando ? "1px solid rgba(197,160,89,0.48)" : "1px solid rgba(255,255,255,0.10)",
+          boxShadow: "none",
         }}>
           {enviando ? "Guardando..." : "ENTENDIDO, INGRESAR"}
         </button>
@@ -2908,8 +2911,8 @@ function OnboardingProgreso({ paso }) {
 function OnboardingEyebrow({ children }) {
   return (
     <p style={{
-      fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, color: EXPLORADOR_TOKENS.accent,
-      letterSpacing: "0.08em", marginBottom: 10, marginTop: 0, textTransform: "uppercase", fontWeight: 700,
+      fontFamily: ONBOARDING_UI.font, fontSize: 10, color: ONBOARDING_UI.accent,
+      letterSpacing: "0.08em", marginBottom: 10, marginTop: 0, textTransform: "uppercase", fontWeight: 800,
     }}>{children}</p>
   );
 }
@@ -2918,15 +2921,12 @@ function OnboardingBotonPrimario({ children, onClick, disabled }) {
   function vibrar() { if (navigator.vibrate) navigator.vibrate(12); }
   return (
     <button onClick={() => { if (!disabled) { vibrar(); onClick(); } }} disabled={disabled} className={disabled ? "" : "glass-press"} style={{
-      width: "100%", borderRadius: 18, padding: "14px", fontWeight: 800, fontSize: 14,
-      color: disabled ? "rgba(242,239,233,0.4)" : "#2A1D08", cursor: disabled ? "not-allowed" : "pointer", marginBottom: 10,
-      background: disabled ? "rgba(255,255,255,0.08)" : `radial-gradient(circle at 30% 20%, rgba(255,240,210,0.95), rgba(197,160,89,0.85) 60%)`,
-      borderTop: disabled ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(255,255,255,0.6)",
-      borderLeft: disabled ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(255,255,255,0.35)",
-      borderRight: disabled ? "1px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(120,85,20,0.5)",
-      borderBottom: disabled ? "1px solid rgba(255,255,255,0.1)" : "2.5px solid rgba(90,60,10,0.6)",
-      boxShadow: disabled ? "none" : "0 10px 22px -6px rgba(0,0,0,0.6)",
-      fontFamily: EXPLORADOR_TOKENS.font, textTransform: "uppercase", letterSpacing: "0.02em",
+      width: "100%", borderRadius: 12, padding: "13px 15px", fontWeight: 800, fontSize: 13,
+      color: disabled ? "rgba(242,239,233,0.4)" : "#19170F", cursor: disabled ? "not-allowed" : "pointer", marginBottom: 10,
+      background: disabled ? "rgba(255,255,255,0.06)" : ONBOARDING_UI.accent,
+      border: disabled ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(197,160,89,0.48)",
+      boxShadow: "none",
+      fontFamily: ONBOARDING_UI.font, textTransform: "uppercase", letterSpacing: "0.02em",
     }}>{children}</button>
   );
 }
@@ -2934,8 +2934,10 @@ function OnboardingBotonPrimario({ children, onClick, disabled }) {
 function OnboardingBotonFantasma({ children, onClick }) {
   return (
     <button onClick={onClick} style={{
-      width: "100%", background: "none", border: "none", color: EXPLORADOR_TOKENS.textSecondary,
-      fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, cursor: "pointer", padding: "6px", textAlign: "center",
+      width: "100%", background: "transparent", border: `1px solid ${ONBOARDING_UI.borderSubtle}`,
+      borderRadius: 12, color: ONBOARDING_UI.muted, fontFamily: ONBOARDING_UI.font,
+      fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.02em",
+      cursor: "pointer", padding: "11px 12px", textAlign: "center",
     }}>{children}</button>
   );
 }
@@ -2979,23 +2981,22 @@ function OnboardingFlow({ pase, onCompletar, onVolver }) {
 
   const cardStyle = {
     position: "relative", zIndex: 1, maxWidth: 440, width: "100%",
-    background: EXPLORADOR_TOKENS.cardBg, ...EXPLORADOR_TOKENS.cardBevel,
-    backdropFilter: EXPLORADOR_TOKENS.cardBlur, WebkitBackdropFilter: EXPLORADOR_TOKENS.cardBlur,
-    borderRadius: 26, padding: "22px 24px", boxShadow: EXPLORADOR_TOKENS.cardShadow,
+    background: ONBOARDING_UI.surface, border: `1px solid ${ONBOARDING_UI.border}`,
+    borderRadius: 16, padding: "18px 18px", boxShadow: "0 12px 28px rgba(0,0,0,0.28)",
   };
   const wrapStyle = {
     position: "relative", overflowX: "hidden", overflowY: "auto", minHeight: "100vh", minHeight: "100dvh", display: "flex",
-    alignItems: "center", justifyContent: "center", padding: 12, background: EXPLORADOR_TOKENS.bg,
+    alignItems: "center", justifyContent: "center", padding: 12, background: ONBOARDING_UI.bg,
   };
   const h1Style = {
-    fontFamily: EXPLORADOR_TOKENS.font, fontWeight: 800, fontSize: 22,
-    color: EXPLORADOR_TOKENS.textPrimary, marginBottom: 10, letterSpacing: "-0.01em",
+    fontFamily: ONBOARDING_UI.font, fontWeight: 800, fontSize: 22,
+    color: ONBOARDING_UI.text, marginBottom: 10, letterSpacing: "-0.01em",
   };
-  const pStyle = { color: EXPLORADOR_TOKENS.textSecondary, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13.5, lineHeight: 1.6, marginBottom: 20 };
+  const pStyle = { color: ONBOARDING_UI.muted, fontFamily: ONBOARDING_UI.font, fontSize: 13, lineHeight: 1.55, marginBottom: 18 };
   const inputStyle = {
-    width: "100%", padding: "13px 14px", borderRadius: 16, marginBottom: 18,
-    border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, background: "rgba(255,255,255,0.06)",
-    fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, color: EXPLORADOR_TOKENS.textPrimary, outline: "none",
+    width: "100%", padding: "12px 13px", borderRadius: 12, marginBottom: 16,
+    border: `1px solid ${ONBOARDING_UI.borderSubtle}`, background: ONBOARDING_UI.surfaceRaised,
+    fontFamily: ONBOARDING_UI.font, fontSize: 13, color: ONBOARDING_UI.text, outline: "none",
   };
 
   if (paso === 1) {
@@ -3037,23 +3038,23 @@ function OnboardingFlow({ pase, onCompletar, onVolver }) {
           <OnboardingEyebrow>PASO 3 DE 3</OnboardingEyebrow>
           <h1 style={h1Style}>EJEMPLO PRÁCTICO</h1>
           <div style={{
-            background: "rgba(197,160,89,0.10)", border: `1px solid rgba(197,160,89,0.3)`,
-            borderRadius: 18, padding: 14, marginBottom: 16,
+            background: "rgba(197,160,89,0.08)", border: `1px solid ${ONBOARDING_UI.border}`,
+            borderRadius: 12, padding: 12, marginBottom: 14,
           }}>
-            <p style={{ margin: "0 0 8px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", color: EXPLORADOR_TOKENS.accent, textTransform: "uppercase" }}>PLATO BASE</p>
-            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 16, fontWeight: 800, lineHeight: 1.35, color: EXPLORADOR_TOKENS.textPrimary }}>Milanesa con papas fritas</p>
+            <p style={{ margin: "0 0 8px", fontFamily: ONBOARDING_UI.font, fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", color: ONBOARDING_UI.accent, textTransform: "uppercase" }}>PLATO BASE</p>
+            <p style={{ margin: 0, fontFamily: ONBOARDING_UI.font, fontSize: 15, fontWeight: 800, lineHeight: 1.35, color: ONBOARDING_UI.text }}>Milanesa con papas fritas</p>
           </div>
           <div style={{
-            background: "rgba(255,255,255,0.04)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`,
-            borderRadius: 18, padding: 14, marginBottom: 14,
+            background: ONBOARDING_UI.surfaceRaised, border: `1px solid ${ONBOARDING_UI.borderSubtle}`,
+            borderRadius: 12, padding: 12, marginBottom: 14,
           }}>
-            <p style={{ margin: "0 0 8px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", color: EXPLORADOR_TOKENS.accent, textTransform: "uppercase" }}>OPCIÓN DE BIOHACKING</p>
-            <p style={{ margin: "0 0 8px", fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, lineHeight: 1.45, color: EXPLORADOR_TOKENS.textPrimary }}>- Rebozado: Avena molida en lugar de pan rallado (Fibra &amp; Crocancia)</p>
-            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 13, lineHeight: 1.45, color: EXPLORADOR_TOKENS.textPrimary }}>- Cocción: Versión al horno para optimizar digestión</p>
+            <p style={{ margin: "0 0 8px", fontFamily: ONBOARDING_UI.font, fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", color: ONBOARDING_UI.accent, textTransform: "uppercase" }}>OPCIÓN DE BIOHACKING</p>
+            <p style={{ margin: "0 0 8px", fontFamily: ONBOARDING_UI.font, fontSize: 12, lineHeight: 1.45, color: ONBOARDING_UI.text }}>- Rebozado: Avena molida en lugar de pan rallado (Fibra &amp; Crocancia)</p>
+            <p style={{ margin: 0, fontFamily: ONBOARDING_UI.font, fontSize: 12, lineHeight: 1.45, color: ONBOARDING_UI.text }}>- Cocción: Versión al horno para optimizar digestión</p>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
             <span style={{ fontSize: 20, flexShrink: 0 }}>↗</span>
-            <p style={{ margin: 0, fontFamily: EXPLORADOR_TOKENS.font, fontSize: 14, fontWeight: 800, lineHeight: 1.4, color: EXPLORADOR_TOKENS.menta }}>Misma comida, menor impacto, más energía.</p>
+            <p style={{ margin: 0, fontFamily: ONBOARDING_UI.font, fontSize: 13, fontWeight: 800, lineHeight: 1.4, color: ONBOARDING_UI.accent }}>Misma comida, menor impacto, más energía.</p>
           </div>
           <OnboardingBotonPrimario onClick={completarOnboarding}>COMENZAR MI RESETEO 🚀</OnboardingBotonPrimario>
         </div>
