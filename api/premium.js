@@ -27,7 +27,8 @@ const DIAS_PREMIUM = 30;
 const PLANES_FOUNDER = Object.freeze({ mensual: { monto: 9999, duracionDias: 30 }, anual: { monto: 99999, duracionDias: 365 } });
 const TRANSFER_ALIAS = process.env.PREMIUM_TRANSFER_ALIAS?.trim() || "";
 const TRANSFER_TITULAR = process.env.PREMIUM_TRANSFER_HOLDER?.trim() || "";
-const MERCADOPAGO_URL = process.env.PREMIUM_MERCADOPAGO_URL?.trim() || "";
+const MERCADOPAGO_MENSUAL_URL = process.env.PREMIUM_MERCADOPAGO_MENSUAL_URL?.trim() || process.env.PREMIUM_MERCADOPAGO_URL?.trim() || "";
+const MERCADOPAGO_ANUAL_URL = process.env.PREMIUM_MERCADOPAGO_ANUAL_URL?.trim() || process.env.PREMIUM_MERCADOPAGO_URL?.trim() || "";
 const NARANJAX_URL = process.env.PREMIUM_NARANJAX_URL?.trim() || "";
 const MONTO_ALIAS = 10000;
 const MONTO_MINIMO_MP = 13990;
@@ -114,7 +115,7 @@ async function rutaConfig(req, res) {
       mensual: { monto: PLANES_FOUNDER.mensual.monto, duracionDias: PLANES_FOUNDER.mensual.duracionDias, etiqueta: "Founder mensual" },
       anual: { monto: PLANES_FOUNDER.anual.monto, duracionDias: PLANES_FOUNDER.anual.duracionDias, etiqueta: "Founder anual" },
     },
-    medios: { alias: TRANSFER_ALIAS, titular: TRANSFER_TITULAR, mercadoPagoUrl: MERCADOPAGO_URL, naranjaXUrl: NARANJAX_URL },
+    medios: { alias: TRANSFER_ALIAS, titular: TRANSFER_TITULAR, mercadoPagoUrl: MERCADOPAGO_MENSUAL_URL, mercadoPagoMensualUrl: MERCADOPAGO_MENSUAL_URL, mercadoPagoAnualUrl: MERCADOPAGO_ANUAL_URL, naranjaXUrl: NARANJAX_URL },
   });
 }
 // ===== ruta=estado (lectura del contrato Premium) =====
