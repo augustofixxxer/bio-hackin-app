@@ -24,11 +24,16 @@ const ADMIN_USER_ID = process.env.ADMIN_USER_ID?.trim();
 const ADMIN_USER_EMAIL = process.env.ADMIN_USER_EMAIL?.trim().toLowerCase();
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 const DIAS_PREMIUM = 30;
+const PLANES_FOUNDER = Object.freeze({ mensual: { monto: 9999, duracionDias: 30 }, anual: { monto: 99999, duracionDias: 365 } });
+const TRANSFER_ALIAS = process.env.PREMIUM_TRANSFER_ALIAS?.trim() || "";
+const TRANSFER_TITULAR = process.env.PREMIUM_TRANSFER_HOLDER?.trim() || "";
+const MERCADOPAGO_URL = process.env.PREMIUM_MERCADOPAGO_URL?.trim() || "";
+const NARANJAX_URL = process.env.PREMIUM_NARANJAX_URL?.trim() || "";
 const MONTO_ALIAS = 10000;
 const MONTO_MINIMO_MP = 13990;
 const PRECIO_MP = 13990;
 const MIME_PERMITIDOS = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf" };
-const TAMANO_MAXIMO_BYTES = 8 * 1024 * 1024;
+const TAMANO_MAXIMO_BYTES = 3 * 1024 * 1024;
 
 function emailValido(email) {
   return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -42,7 +47,9 @@ async function rutaActivarAlias(req, res) {
   if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
   if (!UUID_REGEX.test(usuarioId)) return res.status(400).json({ error: "usuarioId inválido." });
 
-  const { archivoBase64, mimeType } = req.body || {};
+  const { archivoBase64, mimeType, plan = "mensual" } = req.body || {};
+  const planConfig = PLANES_FOUNDER[plan];
+  if (!planConfig) return res.status(400).json({ error: "Plan inválido. Elegí mensual o anual." });
   if (!archivoBase64 || typeof archivoBase64 !== "string") {
     return res.status(400).json({ error: "Falta el comprobante (archivoBase64)." });
   }
@@ -58,7 +65,7 @@ async function rutaActivarAlias(req, res) {
     return res.status(400).json({ error: "El archivo recibido no es un base64 válido." });
   }
   if (buffer.length === 0 || buffer.length > TAMANO_MAXIMO_BYTES) {
-    return res.status(400).json({ error: "El archivo está vacío o supera los 8MB permitidos." });
+    return res.status(400).json({ error: "El archivo está vacío o supera los 3MB permitidos." });
   }
 
   try {
@@ -87,7 +94,8 @@ async function rutaActivarAlias(req, res) {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        user_id: usuarioId, metodo: "alias", monto: MONTO_ALIAS,
+        user_id: usuarioId, metodo: "transferencia", monto: planConfig.monto,
+        plan, duracion_dias: planConfig.duracionDias,
         comprobante_url: rutaArchivo, estado: "pendiente",
       }),
     });
@@ -98,6 +106,17 @@ async function rutaActivarAlias(req, res) {
   }
 }
 
+// ===== ruta=config (datos públicos de cobro; los secretos nunca salen al cliente) =====
+async function rutaConfig(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ error: "Método no permitido, usar GET." });
+  return res.status(200).json({
+    planes: {
+      mensual: { monto: PLANES_FOUNDER.mensual.monto, duracionDias: PLANES_FOUNDER.mensual.duracionDias, etiqueta: "Founder mensual" },
+      anual: { monto: PLANES_FOUNDER.anual.monto, duracionDias: PLANES_FOUNDER.anual.duracionDias, etiqueta: "Founder anual" },
+    },
+    medios: { alias: TRANSFER_ALIAS, titular: TRANSFER_TITULAR, mercadoPagoUrl: MERCADOPAGO_URL, naranjaXUrl: NARANJAX_URL },
+  });
+}
 // ===== ruta=estado (lectura del contrato Premium) =====
 async function rutaEstado(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Método no permitido, usar GET." });
@@ -119,12 +138,16 @@ async function rutaEstado(req, res) {
     const origen = await supabaseFetch(
       `premium_subscriptions?user_id=eq.${usuarioId}&estado=eq.aprobado&select=metodo,created_at&order=created_at.desc&limit=1`
     );
+    const pendientes = await supabaseFetch(
+      `premium_subscriptions?user_id=eq.${usuarioId}&estado=eq.pendiente&select=id,plan,created_at&order=created_at.desc&limit=1`
+    );
 
     return res.status(200).json({
       ok: true,
       premium: premiumVigente,
       nivelAcceso: premiumVigente ? "Premium" : "gratuito",
       premiumUntil: u.premium_until || null,
+      solicitudPendiente: pendientes[0] ? { id: pendientes[0].id, plan: pendientes[0].plan || "mensual", createdAt: pendientes[0].created_at } : null,
       origen: origen[0]?.metodo || null,
       modoPruebaFundador: origen[0]?.metodo === "fundador",
     });
@@ -366,17 +389,23 @@ async function rutaExperimento(req, res) {
 
 // ===== ruta=admin (idéntico a premium-admin.js) =====
 async function rutaAdmin(req, res) {
-  if (!ADMIN_USER_ID) return res.status(500).json({ error: "Falta configurar ADMIN_USER_ID en Vercel." });
-
   const usuarioId = usuarioIdDesdeRequest(req);
-  if (!usuarioId || usuarioId !== ADMIN_USER_ID) {
-    return res.status(401).json({ error: "No autorizado." });
+  if (!usuarioId) return res.status(401).json({ error: "No autorizado." });
+  let adminAutorizado = Boolean(ADMIN_USER_ID && usuarioId === ADMIN_USER_ID);
+  if (!adminAutorizado && ADMIN_USER_EMAIL) {
+    try {
+      const identidad = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=id,email&limit=1`);
+      adminAutorizado = identidad.length === 1 && String(identidad[0].email || "").trim().toLowerCase() === ADMIN_USER_EMAIL;
+    } catch (_) {
+      return res.status(503).json({ error: "No se pudo validar la identidad administrativa." });
+    }
   }
+  if (!adminAutorizado) return res.status(401).json({ error: "No autorizado." });
 
   if (req.method === "GET") {
     try {
       const pendientes = await supabaseFetch(
-        `premium_subscriptions?estado=eq.pendiente&select=id,user_id,metodo,monto,comprobante_url,created_at,usuarios(email,nombre_alias)&order=created_at.asc`
+        `premium_subscriptions?estado=eq.pendiente&select=id,user_id,metodo,monto,plan,duracion_dias,comprobante_url,created_at,usuarios(email,nombre_alias)&order=created_at.asc`
       );
       const conVistaPrevia = await Promise.all(
         pendientes.map(async (s) => {
@@ -407,7 +436,7 @@ async function rutaAdmin(req, res) {
       return res.status(400).json({ error: "Faltan solicitudId y accion ('aprobar' | 'rechazar')." });
     }
     try {
-      const filas = await supabaseFetch(`premium_subscriptions?id=eq.${solicitudId}&select=id,user_id,estado`);
+      const filas = await supabaseFetch(`premium_subscriptions?id=eq.${solicitudId}&select=id,user_id,estado,plan,duracion_dias`);
       if (!filas.length) return res.status(404).json({ error: "Solicitud no encontrada." });
       if (filas[0].estado !== "pendiente") return res.status(409).json({ error: "Esta solicitud ya fue procesada." });
 
@@ -418,7 +447,8 @@ async function rutaAdmin(req, res) {
       });
 
       if (accion === "aprobar") {
-        const premiumUntil = new Date(Date.now() + DIAS_PREMIUM * 24 * 60 * 60 * 1000).toISOString();
+        const duracionDias = Number(filas[0].duracion_dias) === 365 || filas[0].plan === "anual" ? 365 : DIAS_PREMIUM;
+        const premiumUntil = new Date(Date.now() + duracionDias * 24 * 60 * 60 * 1000).toISOString();
         await supabaseFetch(`usuarios?id=eq.${filas[0].user_id}`, {
           method: "PATCH",
           body: JSON.stringify({ nivel_acceso: "Premium", premium_until: premiumUntil }),
@@ -559,6 +589,7 @@ export default async function handler(req, res) {
   const ruta = req.query?.ruta;
   switch (ruta) {
     case "activar-alias": return rutaActivarAlias(req, res);
+    case "config": return rutaConfig(req, res);
     case "estado": return rutaEstado(req, res);
     case "experimento": return rutaExperimento(req, res);
     case "activar-fundador": return rutaActivarFundador(req, res);
@@ -566,7 +597,7 @@ export default async function handler(req, res) {
     case "confirmar-mp": return rutaConfirmarMP(req, res);
     case "crear-preferencia": return rutaCrearPreferencia(req, res);
     case "lista-espera": return rutaListaEspera(req, res);
-    default: return res.status(400).json({ error: "Falta ?ruta= válida (estado | experimento | activar-alias | activar-fundador | admin | confirmar-mp | crear-preferencia | lista-espera)." });
+    default: return res.status(400).json({ error: "Falta ?ruta= válida (config | estado | experimento | activar-alias | activar-fundador | admin | confirmar-mp | crear-preferencia | lista-espera)." });
   }
 }
 // END: /api/premium.js
