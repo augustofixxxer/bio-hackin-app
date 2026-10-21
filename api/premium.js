@@ -392,6 +392,7 @@ async function rutaExperimento(req, res) {
 async function rutaAdmin(req, res) {
   const usuarioId = usuarioIdDesdeRequest(req);
   if (!usuarioId) return res.status(401).json({ error: "No autorizado." });
+  if (!ADMIN_USER_ID && !ADMIN_USER_EMAIL) return res.status(503).json({ error: "Configuración administrativa incompleta en este entorno: falta ADMIN_USER_ID o ADMIN_USER_EMAIL en Vercel." });
   let adminAutorizado = Boolean(ADMIN_USER_ID && usuarioId === ADMIN_USER_ID);
   if (!adminAutorizado && ADMIN_USER_EMAIL) {
     try {
