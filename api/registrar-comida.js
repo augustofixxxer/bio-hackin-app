@@ -461,7 +461,7 @@ export default async function handler(req, res) {
       const copyPreview = copyPlatoPreview(reglaId);
       if (!soluciones && !copyPreview) return null;
       return {
-        id: soluciones.id || null,
+        id: soluciones?.id || null,
         nombre: soluciones?.nombre_hackeo || copyPreview?.resumen || "",
         resumen: copyPreview?.resumen || null,
         hackMitigador: copyPreview?.hack || null,
