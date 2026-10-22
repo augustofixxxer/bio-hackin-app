@@ -149,7 +149,7 @@ function normalizarProtocolo(texto) {
 
 function resolverPlatoCompuestoArgentino(t) {
   const has = (re) => re.test(t);
-  const milanesa = has(/\b(milanesa|milanesas|napolitana|napolitanas)\b/);
+  const milanesa = has(/\b(milanesa|milanesas)\b/);
   const guarniciones = [
     {id:"pure", re:/\b(pure|pure de papa)\b/, nombre:"puré", hack:"Si es puré, podés prepararlo con papa hervida y porción definida. Como experimento, compará otra vez con papa cocida, enfriada rápidamente en heladera y recalentada bien antes de triturar; no es obligatorio ni garantiza una respuesta glucémica menor."},
     {id:"papas_fritas", re:/\b(papas fritas|papas al horno|papas doradas|papas noisette)\b/, nombre:"papas", hack:"Mantené una porción decidida. Para cambiar una variable, compará papas fritas con papas al horno y conservá similar la cantidad; el horno puede reducir la grasa añadida, pero no elimina el almidón."},
