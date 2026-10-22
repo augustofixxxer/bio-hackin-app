@@ -142,6 +142,81 @@ function normalizarProtocolo(texto) {
 
 // Construye solo los apartados que justifican los ingredientes descritos.
 // No genera una receta ni altera la ficha curada que ya devuelve el motor.
+
+function resolverPlatoCompuestoArgentino(t) {
+  const has = (re) => re.test(t);
+  const milanesa = has(/\b(milanesa|milanesas|napolitana|napolitanas)\b/);
+  const guarniciones = [
+    {id:"pure", re:/\b(pure|pure de papa)\b/, nombre:"puré", hack:"Si es puré, podés prepararlo con papa hervida y porción definida. Como experimento, compará otra vez con papa cocida, enfriada rápidamente en heladera y recalentada bien antes de triturar; no es obligatorio ni garantiza una respuesta glucémica menor."},
+    {id:"papas_fritas", re:/\b(papas fritas|papas al horno|papas doradas|papas noisette)\b/, nombre:"papas", hack:"Mantené una porción decidida. Para cambiar una variable, compará papas fritas con papas al horno y conservá similar la cantidad; el horno puede reducir la grasa añadida, pero no elimina el almidón."},
+    {id:"arroz", re:/\b(arroz|arroz blanco|arroz integral)\b/, nombre:"arroz", hack:"Serví una porción definida y sumá vegetales. Si preparás el arroz con antelación, enfriá rápido, refrigerá dentro de 1–2 horas y recalentá bien: puede aumentar el almidón resistente, con efecto variable."},
+    {id:"pasta", re:/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/, nombre:"pasta", hack:"Cociná la pasta al dente y mantené estable la porción. La milanesa suma proteína y, si tiene rebozado, carbohidratos también: ninguno de los componentes anula al otro."},
+    {id:"ensalada", re:/\b(ensalada|lechuga|rucula|tomate|verduras|vegetales|brocoli|zanahoria)\b/, nombre:"vegetales", hack:"Incluí los vegetales como parte real de la comida. Si te resulta cómodo, empezá por ellos y después seguí con la milanesa y la guarnición; es una prueba opcional, no una garantía glucémica."}
+  ];
+  const guarnicion = guarniciones.find(g => g.re.test(t));
+  if (milanesa && guarnicion) {
+    const frita = has(/\b(frita|fritas|frito|fritos)\b/);
+    const horno = has(/\b(al horno|horno|air fryer|freidora de aire)\b/);
+    const coccion = frita ? "frita" : horno ? "al horno/aire" : "de cocción no especificada";
+    const napo = has(/\b(napolitana|napolitanas)\b/);
+    const principal = napo ? "La milanesa napolitana suma rebozado, tomate y queso." : "La milanesa aporta proteína y, si lleva rebozado, también carbohidratos.";
+    return {
+      familiaDetectada:"milanesa + " + guarnicion.id,
+      gruposDetectados:["plato_compuesto_argentino","milanesa",guarnicion.id],
+      componentesDetectados:["milanesa ("+coccion+")",guarnicion.nombre],
+      resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" aporta su propio perfil: hay que considerar los dos componentes.",
+      hackIntegrado:"COMBO INTEGRADO: "+(frita?"si querés comparar la cocción, probá milanesa al horno manteniendo la misma guarnición y una porción parecida.":"conservá la preparación de la milanesa y cambiá una sola variable de la guarnición.")+" "+guarnicion.hack,
+      queObservar:"Compará saciedad, energía y comodidad digestiva. Cambiá una sola variable por vez; si medís glucosa, contrastá porciones y condiciones similares. Ningún cambio garantiza el mismo efecto en todas las personas.",
+      coccion:"PLATO COMPUESTO: milanesa "+coccion+" + "+guarnicion.nombre+". "+principal+" La recomendación incluye ambos componentes.",
+      sinergia:"HACK INTEGRADO: "+guarnicion.hack,
+      timingOrden:"Si el plato incluye vegetales, podés empezar por ellos y después seguir con la milanesa y "+guarnicion.nombre+"; es opcional.",
+      variableModificada:"plato_compuesto_milanesa_"+guarnicion.id
+    };
+  }
+
+  const pasta = has(/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/);
+  const salsas = [
+    {re:/\b(bolognesa|boloñesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"La salsa ya suma proteína; incorporá vegetales si te gustan y cociná la pasta al dente. La proteína no anula el almidón de la pasta."},
+    {re:/\b(salsa blanca|crema|cremosa)\b/,nombre:"salsa cremosa",hack:"Conservá la salsa que disfrutás, definí la porción y sumá vegetales en la salsa o al costado. No hace falta eliminarla para ajustar la composición del plato."},
+    {re:/\b(pesto)\b/,nombre:"pesto",hack:"El pesto concentra sabor y grasa: usá la cantidad que cubra la pasta y sumá vegetales. Cociná la pasta al dente y mantené estable la porción para comparar."},
+    {re:/\b(tomate|tuco|fileto|pomodoro|salsa roja)\b/,nombre:"salsa de tomate",hack:"Podés enriquecer la salsa con cebolla, zucchini, berenjena u otros vegetales. Cociná la pasta al dente y mantené estable la porción para comparar."}
+  ].find(s=>s.re.test(t));
+  if (pasta && salsas) {
+    const acomp = has(/\b(ensalada|verduras|vegetales|pollo|carne|albondigas|albóndigas|milanesa)\b/);
+    return {
+      familiaDetectada:"pasta + "+salsas.nombre.replace(/\s+/g,"_"),
+      gruposDetectados:["plato_compuesto_argentino","pasta","salsa"],
+      componentesDetectados:["pasta",salsas.nombre],
+      resumenIntegrado:"La pasta aporta almidón y la salsa ("+salsas.nombre+") modifica la composición del plato. "+(acomp?"El acompañamiento/proteína también cuenta como parte del conjunto.":"No se asume un acompañamiento que no fue mencionado."),
+      hackIntegrado:"COMBO INTEGRADO: cociná la pasta al dente y aplicá este ajuste a la salsa: "+salsas.hack,
+      queObservar:"Compará saciedad, energía, disfrute y comodidad digestiva con una porción similar. Cambiá solo el punto de cocción o la composición de la salsa en cada prueba.",
+      coccion:"PLATO COMPUESTO: pasta al dente + "+salsas.nombre+". Ajustá la cocción y la salsa como partes de una misma comida.",
+      sinergia:salsas.hack,
+      timingOrden:acomp?"Si hay vegetales, podés empezar por ellos y seguir con la pasta y su salsa; no es obligatorio.":"No se indicó una guarnición vegetal; no la damos por presente.",
+      variableModificada:"plato_compuesto_pasta_salsa"
+    };
+  }
+
+  const tarta = has(/\b(tarta|tartas)\b/);
+  const relleno = has(/\b(pollo)\b/) ? "pollo" : has(/\b(choclo)\b/) ? "choclo" : has(/\b(jamon|queso)\b/) ? "jamón y queso" : has(/\b(acelga|espinaca|verdura|verduras|zapallito)\b/) ? "verduras" : null;
+  if (tarta && relleno) {
+    const ensalada = has(/\b(ensalada|lechuga|rucula|tomate|vegetales)\b/);
+    return {
+      familiaDetectada:"tarta + "+(ensalada?"ensalada":"relleno"),
+      gruposDetectados:["plato_compuesto_argentino","tarta","relleno"],
+      componentesDetectados:["masa de tarta","relleno de "+relleno,...(ensalada?["ensalada/vegetales"]:[])],
+      resumenIntegrado:"La masa aporta harina y el relleno de "+relleno+" define parte de la proteína, fibra y grasa. "+(ensalada?"La ensalada también forma parte del plato.":"No se informó una guarnición adicional."),
+      hackIntegrado:"COMBO INTEGRADO: mantené el relleno que te gusta y sumá una porción visible de vegetales; "+(ensalada?"podés empezar por la ensalada si te resulta cómodo.":"si querés completar el plato, acompañá la tarta con ensalada o vegetales.")+" No hace falta retirar toda la masa.",
+      queObservar:"Compará saciedad, energía y comodidad digestiva. En otra prueba cambiá solo la guarnición o la proporción de vegetales.",
+      coccion:"PLATO COMPUESTO: masa + relleno de "+relleno+(ensalada+" + ensalada/vegetales." : ".")+" La recomendación considera la tarta completa.",
+      sinergia:"Priorizá que el relleno tenga una proporción clara de su ingrediente principal y, si elegís ensalada, que sea una guarnición real.",
+      timingOrden:ensalada?"Podés empezar por la ensalada y después comer la tarta; es una prueba opcional.":"No se informó ensalada; no se asume que esté presente.",
+      variableModificada:"plato_compuesto_tarta"
+    };
+  }
+  return null;
+}
+
 function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas = []) {
   const t = normalizarProtocolo(textoComida).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
   if (!t) return null;
@@ -269,6 +344,10 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   }
 
   // Respuesta útil de base: no inventar propiedades del plato, pero tampoco devolver campos vacíos.
+  // Prioridad máxima: si el usuario escribió un plato compuesto, la salida debe cruzar sus componentes.
+  const protocoloCompuesto = resolverPlatoCompuestoArgentino(t);
+  if (protocoloCompuesto) Object.assign(protocolo, protocoloCompuesto);
+
   if (!protocolo.coccion) protocolo.coccion = "Elegí una cocción pareja y ajustá el tiempo al alimento, al grosor y a la textura buscada. Evitá quemar la superficie; si es una preparación húmeda, cociná a fuego moderado y revisá el punto antes de agregar más tiempo.";
   if (!protocolo.sinergia) protocolo.sinergia = "Elegí uno o dos condimentos según la base: orégano o albahaca para tomate y pastas; comino y laurel para legumbres; ajo y pimienta para carnes; limón y hierbas para vegetales. Ajustá al gusto, sin tapar el sabor del ingrediente."
   protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
