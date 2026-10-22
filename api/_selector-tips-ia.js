@@ -48,7 +48,7 @@ async function elegirTipRelevanteIA(texto, fichas) {
   if (!fichas || fichas.length === 0) return null;
   // Un plato compuesto no debe resolverse con una ficha aislada por ingrediente.
   // Su recomendación integrada se construye en construirProtocoloCulinarioAdaptativo.
-  const textoNormalizado = normalizarProtocolo(texto).replace(/[^a-z0-9ñ\\s-]/g, " ").replace(/\\s+/g, " ").trim();
+  const textoNormalizado = normalizarProtocolo(texto).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
   if (resolverPlatoCompuestoArgentino(textoNormalizado)) return null;
 
   const idsValidos = fichas.map((f) => f.id);
