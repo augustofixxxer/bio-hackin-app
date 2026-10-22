@@ -39,7 +39,7 @@ export async function resolverFichaPlato(textoUsuario) {
   if (!texto) return { ...FALLBACK_PLATO };
   try {
     const filas = await supabaseFetch(
-      "catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar&activo=eq.true"
+      "preview_catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar&activo=eq.true"
     );
     if (!Array.isArray(filas)) return { ...FALLBACK_PLATO };
     let mejor = null;
