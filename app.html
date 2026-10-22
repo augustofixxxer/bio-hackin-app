@@ -789,7 +789,7 @@ function App(){
       <div className="adaptive-before-after" aria-label="Comparación visual entre comida de referencia y variante">
         <div><span>ANTES · REFERENCIA</span><b>{premiumContexto.original||premiumContexto.titulo||'Tu comida de origen'}</b></div>
         <div className="adaptive-arrow" aria-hidden="true">→</div>
-        <div><span>DESPUÉS · VARIANTE</span><b>{premiumContexto.hackNombre||premiumContexto.accion||premiumContexto.adaptacion||'La alternativa propuesta'}</b></div>
+        <div><span>DESPUÉS · VARIANTE</span><b>{premiumContexto.fichaPlato?.hack||premiumContexto.hack||premiumContexto.accion||premiumContexto.adaptacion||premiumContexto.hackNombre||'La alternativa propuesta'}</b></div>
       </div>
       <p className="comparison-unique">Variable en foco: <strong>{etiquetaVariable(tipoVariableAdaptativa(premiumContexto))}</strong>. Probá la variante con tu porción habitual y mantené el resto de la preparación lo más parecido posible.</p>
       <form className="adaptive-log-form" onSubmit={guardarBitacoraVariante}>
