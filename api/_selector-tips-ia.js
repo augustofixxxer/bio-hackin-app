@@ -23,97 +23,17 @@
 //
 // Mismo patrón de archivo único que el resto de api/_*.js — no separar en lib/ (Sprint 16).
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-const SYSTEM_PROMPT = `Sos un selector, no un asistente conversacional ni un nutricionista.
-Se te da el texto de una comida y una lista numerada de fichas (nombre corto de cada una).
-Tu única tarea: elegir el ID de la ficha más relevante para esa comida específica, solo si
-la relación es clara y directa — no por compartir un ingrediente suelto o común.
-Reglas estrictas:
-- SOLO podés devolver uno de los IDs de la lista que se te da, o "ninguna".
-- Si ninguna ficha tiene relación clara y específica con la comida, devolvé "ninguna".
-  Ante la duda, elegí "ninguna" — preferimos no mostrar nada antes que mostrar algo forzado.
-- Un ingrediente común compartido (ej. "queso", "leche", "carne") NO alcanza por sí solo
-  para considerar que hay relación — tiene que ser el plato/concepto central el que coincida.
-- NUNCA agregues texto, consejos ni explicaciones fuera del JSON pedido.`;
+// Selección de fichas del catálogo maestro: determinista y sin proveedor de IA.
 
 /**
  * @param {string} texto - el texto de la comida que escribió el usuario
  * @param {Array<{id: string, mecanismo: string}>} fichas - candidatas reales de Supabase
  * @returns {Promise<string|null>} el id elegido, o null (sin IA / sin relación clara / error)
  */
-async function elegirTipRelevanteIA(texto, fichas) {
-  if (!GROQ_API_KEY) return null; // mismo criterio que _clasificador-ia.js: dormido sin key
-  if (!fichas || fichas.length === 0) return null;
-  // Un plato compuesto no debe resolverse con una ficha aislada por ingrediente.
-  // Su recomendación integrada se construye en construirProtocoloCulinarioAdaptativo.
-  const textoNormalizado = normalizarProtocolo(texto).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
-  if (resolverPlatoCompuestoArgentino(textoNormalizado)) return null;
-
-  const idsValidos = fichas.map((f) => f.id);
-  const listaParaPrompt = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
-
-  const jsonSchema = {
-    type: "object",
-    properties: {
-      id_elegido: { type: "string", enum: [...idsValidos, "ninguna"] },
-    },
-    required: ["id_elegido"],
-    additionalProperties: false,
-  };
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000); // no bloquea más de 3s
-
-  try {
-    const resp = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Comida: "${texto}"\n\nFichas disponibles:\n${listaParaPrompt}` },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "seleccion_tip", strict: true, schema: jsonSchema },
-        },
-        // Mismo fix que _clasificador-ia.js (29/07/2026): gpt-oss-20b necesita
-        // reasoning_effort bajo y margen de tokens, o devuelve 400 sin llegar a
-        // escribir el JSON final.
-        reasoning_effort: "low",
-        max_completion_tokens: 300,
-        temperature: 0,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!resp.ok) {
-      console.error("[selector-tips-ia] Groq respondió", resp.status);
-      return null;
-    }
-
-    const data = await resp.json();
-    const contenido = data.choices?.[0]?.message?.content;
-    if (!contenido) return null;
-
-    const parsed = JSON.parse(contenido);
-    const elegido = parsed.id_elegido;
-
-    // Cinturón de seguridad extra: aunque el schema ya lo restringe, nunca confiamos
-    // ciegamente en la respuesta de una IA — se revalida contra la lista real.
-    return idsValidos.includes(elegido) ? elegido : null;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    console.error("[selector-tips-ia] fallo no bloqueante:", err);
-    return null;
-  }
+async function elegirTipRelevanteIA() {
+  // Compatibilidad temporal con llamadas antiguas: las fichas libres ya no se seleccionan
+  // por matching genérico. El flujo principal usa resolverFichaPlato y el catálogo maestro.
+  return null;
 }
 
 // CÓMO APAGAR ESTO si algo sale mal en producción (recuperable en minutos, sin tocar
@@ -129,16 +49,6 @@ const PROTOCOLO_CULINARIO_CANONICO = {
   fibra: "Si la preparación contiene almidones (arroz, papas, fideos) u otros carbohidratos, iniciar la ingesta con una porción de fibra o vegetales verdes/crujientes.",
   almidonResistente: "Si el usuario consulta por almidón resistente o preparación anticipada de arroz, papa o legumbres: enfriar rápidamente, refrigerar dentro de 1–2 horas y, tras 12–24 horas, recalentar bien. El enfriado puede aumentar el almidón resistente, pero el efecto glucémico varía; no presentarlo como obligación ni prometer una reducción fija."
 };
-
-const HELADERA_SYSTEM_PROMPT = `Sos un selector de fichas existentes para una consulta de cocina.
-Recibís ingredientes disponibles y fichas ya curadas en la base.
-Elegí una ficha SOLO si coincide de forma clara con los ingredientes y aporta una preparación útil.
-No inventes recetas, ingredientes, cantidades ni atribuciones a una ficha.
-El siguiente protocolo es contexto canónico del producto para reconocer pertinencia culinaria; no lo redactes ni lo devuelvas como si proviniera de una ficha seleccionada:
-${JSON.stringify(PROTOCOLO_CULINARIO_CANONICO)}
-Tu única tarea es elegir un ID real de la lista o "ninguna". No escribas explicaciones. Devolvé únicamente el JSON pedido.
-Si no hay una ficha suficientemente pertinente, devolvé "ninguna".`;
-
 
 function normalizarProtocolo(texto) {
   return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -359,39 +269,26 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   return protocolo;
 }
 async function elegirFichaHeladeraIA(ingredientes, fichas) {
-  if (!GROQ_API_KEY || !Array.isArray(fichas) || fichas.length === 0) return null;
-  const idsValidos = fichas.map((f) => f.id);
-  const lista = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
-  const schema = { type:"object", properties:{ id_elegido:{type:"string",enum:[...idsValidos,"ninguna"]} }, required:["id_elegido"], additionalProperties:false };
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
-  try {
-    const resp = await fetch(GROQ_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json",Authorization:`Bearer ${GROQ_API_KEY}`},
-      body:JSON.stringify({
-        model:"openai/gpt-oss-20b",
-        messages:[
-          {role:"system",content:HELADERA_SYSTEM_PROMPT},
-          {role:"user",content:`Ingredientes disponibles: "${ingredientes}"\n\nFichas reales disponibles:\n${lista}`}
-        ],
-        response_format:{type:"json_schema",json_schema:{name:"seleccion_heladera",strict:true,schema}},
-        reasoning_effort:"low",max_completion_tokens:300,temperature:0
-      }),
-      signal:controller.signal
-    });
-    clearTimeout(timeoutId);
-    if(!resp.ok){console.error("[selector-heladera-ia] Groq respondió",resp.status);return null}
-    const data=await resp.json();
-    const contenido=data.choices?.[0]?.message?.content;
-    if(!contenido)return null;
-    const parsed=JSON.parse(contenido);
-    return idsValidos.includes(parsed.id_elegido)?parsed.id_elegido:null;
-  } catch(err) {
-    clearTimeout(timeoutId);
-    console.error("[selector-heladera-ia] fallo no bloqueante:",err);
-    return null;
+  const texto = normalizarProtocolo(ingredientes).replace(/[^a-z0-9ñ\\s-]/g, " ").replace(/\\s+/g, " ").trim();
+  if (!texto || !Array.isArray(fichas) || fichas.length === 0) return null;
+  const ignoradas = new Set(["para","con","sin","del","las","los","una","uno","que","como","esto","esta","este","tengo","hay","usar"]);
+  const tokens = [...new Set(texto.split(/[^a-z0-9ñ]+/).filter(t => t.length >= 4 && !ignoradas.has(t)))];
+  if (!tokens.length) return null;
+  let mejor = null;
+  let mejorPuntaje = 0;
+  for (const ficha of fichas) {
+    const textoFicha = normalizarProtocolo([
+      ficha.mecanismo, ficha.descripcion_mecanismo, ficha.recomendacion
+    ].filter(Boolean).join(" ")).replace(/[^a-z0-9ñ\\s-]/g, " ").replace(/\\s+/g, " ").trim();
+    const coincidencias = tokens.filter(token => (" " + textoFicha + " ").includes(" " + token + " ")).length;
+    // Criterio conservador: exige al menos dos términos distintivos para evitar
+    // falsos positivos por ingredientes genéricos compartidos.
+    if (coincidencias >= 2 && coincidencias > mejorPuntaje) {
+      mejor = ficha.id;
+      mejorPuntaje = coincidencias;
+    }
   }
+  return mejor;
 }
 
 export { elegirTipRelevanteIA, elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO, construirProtocoloCulinarioAdaptativo };
