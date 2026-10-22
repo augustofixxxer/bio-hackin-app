@@ -169,10 +169,10 @@ function resolverPlatoCompuestoArgentino(t) {
       gruposDetectados:["plato_compuesto_argentino","milanesa",guarnicion.id],
       componentesDetectados:["milanesa ("+coccion+")",guarnicion.nombre],
       resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" aporta su propio perfil: hay que considerar los dos componentes.",
-      hackIntegrado:"COMBO INTEGRADO: "+(frita?"si querés comparar la cocción, probá milanesa al horno manteniendo la misma guarnición y una porción parecida.":"conservá la preparación de la milanesa y cambiá una sola variable de la guarnición.")+" "+guarnicion.hack,
+      hackIntegrado:""+(frita?"si querés comparar la cocción, probá milanesa al horno manteniendo la misma guarnición y una porción parecida.":"conservá la preparación de la milanesa y cambiá una sola variable de la guarnición.")+" "+guarnicion.hack,
       queObservar:"Compará saciedad, energía y comodidad digestiva. Cambiá una sola variable por vez; si medís glucosa, contrastá porciones y condiciones similares. Ningún cambio garantiza el mismo efecto en todas las personas.",
-      coccion:"PLATO COMPUESTO: milanesa "+coccion+" + "+guarnicion.nombre+". "+principal+" La recomendación incluye ambos componentes.",
-      sinergia:"HACK INTEGRADO: "+guarnicion.hack,
+      coccion:"milanesa "+coccion+" + "+guarnicion.nombre+". "+principal+" La recomendación incluye ambos componentes.",
+      sinergia:""+guarnicion.hack,
       timingOrden:"Si el plato incluye vegetales, podés empezar por ellos y después seguir con la milanesa y "+guarnicion.nombre+"; es opcional.",
       variableModificada:"plato_compuesto_milanesa_"+guarnicion.id
     };
@@ -192,9 +192,9 @@ function resolverPlatoCompuestoArgentino(t) {
       gruposDetectados:["plato_compuesto_argentino","pasta","salsa"],
       componentesDetectados:["pasta",salsas.nombre],
       resumenIntegrado:"La pasta aporta almidón y la salsa ("+salsas.nombre+") modifica la composición del plato. "+(acomp?"El acompañamiento/proteína también cuenta como parte del conjunto.":"No se asume un acompañamiento que no fue mencionado."),
-      hackIntegrado:"COMBO INTEGRADO: cociná la pasta al dente y aplicá este ajuste a la salsa: "+salsas.hack,
+      hackIntegrado:"cociná la pasta al dente y aplicá este ajuste a la salsa: "+salsas.hack,
       queObservar:"Compará saciedad, energía, disfrute y comodidad digestiva con una porción similar. Cambiá solo el punto de cocción o la composición de la salsa en cada prueba.",
-      coccion:"PLATO COMPUESTO: pasta al dente + "+salsas.nombre+". Ajustá la cocción y la salsa como partes de una misma comida.",
+      coccion:"pasta al dente + "+salsas.nombre+". Ajustá la cocción y la salsa como partes de una misma comida.",
       sinergia:salsas.hack,
       timingOrden:acomp?"Si hay vegetales, podés empezar por ellos y seguir con la pasta y su salsa; no es obligatorio.":"No se indicó una guarnición vegetal; no la damos por presente.",
       variableModificada:"plato_compuesto_pasta_salsa"
@@ -210,9 +210,9 @@ function resolverPlatoCompuestoArgentino(t) {
       gruposDetectados:["plato_compuesto_argentino","tarta","relleno"],
       componentesDetectados:["masa de tarta","relleno de "+relleno,...(ensalada?["ensalada/vegetales"]:[])],
       resumenIntegrado:"La masa aporta harina y el relleno de "+relleno+" define parte de la proteína, fibra y grasa. "+(ensalada?"La ensalada también forma parte del plato.":"No se informó una guarnición adicional."),
-      hackIntegrado:"COMBO INTEGRADO: mantené el relleno que te gusta y sumá una porción visible de vegetales; "+(ensalada?"podés empezar por la ensalada si te resulta cómodo.":"si querés completar el plato, acompañá la tarta con ensalada o vegetales.")+" No hace falta retirar toda la masa.",
+      hackIntegrado:"mantené el relleno que te gusta y sumá una porción visible de vegetales; "+(ensalada?"podés empezar por la ensalada si te resulta cómodo.":"si querés completar el plato, acompañá la tarta con ensalada o vegetales.")+" No hace falta retirar toda la masa.",
       queObservar:"Compará saciedad, energía y comodidad digestiva. En otra prueba cambiá solo la guarnición o la proporción de vegetales.",
-      coccion:"PLATO COMPUESTO: masa + relleno de "+relleno+(ensalada ? " + ensalada/vegetales." : ".")+" La recomendación considera la tarta completa.",
+      coccion:"masa + relleno de "+relleno+(ensalada ? " + ensalada/vegetales." : ".")+" La recomendación considera la tarta completa.",
       sinergia:"Priorizá que el relleno tenga una proporción clara de su ingrediente principal y, si elegís ensalada, que sea una guarnición real.",
       timingOrden:ensalada?"Podés empezar por la ensalada y después comer la tarta; es una prueba opcional.":"No se informó ensalada; no se asume que esté presente.",
       variableModificada:"plato_compuesto_tarta"
