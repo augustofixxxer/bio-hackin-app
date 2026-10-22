@@ -9,7 +9,7 @@
     ],
     "resumen": "Clásico innegable. La carne aporta proteína noble y el rebozado suma carbohidratos rápidos. Si se hace al horno con aceite medido, logras un balance excelente sin sacrificar sabor.",
     "hack": "Mantené el corte que te guste pero controlá el espesor del rebozado: a menor capa de pan, menor absorción de grasa en cocción. Tip extra: sumale una pizca de pimentón dulce u orégano al pan rallado; no solo realza el sabor, sino que ayuda a mitigar la pesadez estomacal.",
-    "que_observar": " Compara saciedad y pesadez digestiva frente a la versión frita tradicional. Nota la diferencia en tu energía a las 2 horas de comer."
+    "que_observar": "Compara saciedad y pesadez digestiva frente a la versión frita tradicional. Nota la diferencia en tu energía a las 2 horas de comer."
   },
   {
     "plato_id": "milanesa-pollo",
@@ -20,17 +20,18 @@
     ],
     "resumen": "Una excelente opción de proteína magra. El pollo es liviano, pero el rebozado y la técnica de cocción definen el impacto final en tu digestión.",
     "hack": "Prioriza la cocción al horno o plancha con rocío vegetal. Si la hacés frita, asegurate de que el aceite esté a temperatura alta para que no chupe grasa de más. Tip extra: un toque de provenzal (ajo y perejil deshidratado) en el rebozado potencia la digestión y le da un golpe de sabor bárbaro.",
-    "que_observar": " Evalúa cómo se siente tu estómago en comparación con carnes rojas pesadas; busca notar liviandad sin perder saciedad."
+    "que_observar": "Evalúa cómo se siente tu estómago en comparación con carnes rojas pesadas; busca notar liviandad sin perder saciedad."
   },
   {
     "plato_id": "milanesa-higado",
     "sinonimos": [
+      "milanesa de hígado",
       "milanesa de higado",
       "higado a la milanesa"
     ],
     "resumen": "¡Excelente elección! Estás metiendo una auténtica \"multivitamínica natural\": el hígado es una fuente brutal de hierro bio-disponible, vitamina A y complejo B. Un plato con una densidad nutricional altísima.",
     "hack": "Para contrarrestar el sabor metálico característico y potenciar la absorción del hierro, rociála con abundante jugo de limón fresco apenas sale del fuego. Tip extra: sumale una pizca de comino en la cocción, ayuda a que caiga mucho más liviano y evita gases.",
-    "que_observar": " Presta atención a tu nivel de energía y fatiga en las horas posteriores; este alimento suele dar un envión anímico y físico notable por su perfil de nutrientes."
+    "que_observar": "Presta atención a tu nivel de energía y fatiga en las horas posteriores; este alimento suele dar un envión anímico y físico notable por su perfil de nutrientes."
   },
   {
     "plato_id": "milanesa-berenjena",
@@ -40,7 +41,7 @@
     ],
     "resumen": "Una alternativa vegetal fantástica y liviana. La berenjena aporta volumen, fibra y baja densidad calórica, ideal para sumar saciedad sin sobrecargar el sistema digestivo.",
     "hack": "La berenjena actúa como una esponja de aceite. Antes de rebozar, salala unos minutos para que suelte el agua amarga y sécala bien; eso evita que absorba grasa de más en la cocción. Tip extra: un toque de pimienta negra recién molida activa las papilas y mejora la termogénesis.",
-    "que_observar": " Nota la ligereza post-comida; es un plato que otorga gran volumen gástrico con una digestión sumamente rápida y limpia."
+    "que_observar": "Nota la ligereza post-comida; es un plato que otorga gran volumen gástrico con una digestión sumamente rápida y limpia."
   },
   {
     "plato_id": "milanesa-napolitana",
@@ -51,7 +52,7 @@
     ],
     "resumen": "El plato supremo de los bodegones. Combina la proteína de la carne o pollo con el aporte fresco de la salsa de tomate y el toque graso del queso.",
     "hack": "Si la hacés en casa, prioriza una base de salsa de tomate natural y una capa moderada de muzarella. Tip extra: sumale hojas de albahaca fresca arriba post-cocción; los aceites esenciales de la albahaca mejoran notablemente la digestión de las grasas lácteas del queso.",
-    "que_observar": " Compara el nivel de pesadez o letargo comparado con una milanesa sola; el queso fundido más la salsa cambian el tiempo de vaciado gástrico."
+    "que_observar": "Compara el nivel de pesadez o letargo comparado con una milanesa sola; el queso fundido más la salsa cambian el tiempo de vaciado gástrico."
   },
   {
     "plato_id": "milanesa-caballo",
@@ -61,11 +62,12 @@
     ],
     "resumen": "Combinación de alto voltaje proteico y lipídico. La proteína de la carne se duplica con la alta calidad nutricional de la yema de huevo. Un plato que rinde culto a la saciedad.",
     "hack": "Hacé el huevo a la plancha con mínimo aceite o agua (técnica poché/plancha) para sumar la yema cremosa sin saturar el plato con grasa extra de fritura. Tip extra: un toque de pimienta negra o pimentón sobre la yema estimula las secreciones gástricas.",
-    "que_observar": " Registra tu nivel de saciedad: este combo elimina por completo los picos de hambre voraz a la tarde gracias a su densidad de grasas limpias y proteínas."
+    "que_observar": "Registra tu nivel de saciedad: este combo elimina por completo los picos de hambre voraz a la tarde gracias a su densidad de grasas limpias y proteínas."
   },
   {
     "plato_id": "bife-vacuno",
     "sinonimos": [
+      "bife de carne vacuna",
       "bife de carne",
       "bife de chorizo",
       "bife vacuno",
@@ -74,7 +76,7 @@
     ],
     "resumen": "¡Excelente elección! Estás yendo a la fuente primaria: proteína de altísima calidad biológica, cero ultraprocesados, rica en zinc y creatina natural. Un pilar fundamental para mantener la masa muscular y la estabilidad metabólica.",
     "hack": "Controla el punto de cocción: no quemes ni carbonices la carne en exceso (la costra muy negra genera compuestos pro-inflamatorios). Tip extra: marinalo antes con un toque de ajo aplastado y romero fresco; además de perfumar, los antioxidantes de las hierbas protegen la carne durante el grillado.",
-    "que_observar": " Observa la claridad mental y la estabilidad de energía que te deja este plato: al no tener harinas ni azúcares ocultos, el bostezo post-almuerzo desaparece."
+    "que_observar": "Observa la claridad mental y la estabilidad de energía que te deja este plato: al no tener harinas ni azúcares ocultos, el bostezo post-almuerzo desaparece."
   },
   {
     "plato_id": "bife-pollo",
@@ -85,7 +87,7 @@
     ],
     "resumen": "Proteína magra por excelencia. Limpio, versátil y de rápida asimilación por el organismo. Una base perfecta para cualquier estrategia nutricional diaria.",
     "hack": "El gran pecado del bife de pollo es pasarlo de cocción y dejarlo seco como una suela. Cocinalo a fuego vivo el tiempo justo para conservar jugosidad. Tip extra: un chorrito de jugo de limón y pimentón ahumado alimonado levantan el perfil de sabor sin sumar una sola caloría extra.",
-    "que_observar": " Nota cómo responde tu digestión: al ser una carne blanca magra, el tránsito estomacal es ágil y libre de pesadez."
+    "que_observar": "Nota cómo responde tu digestión: al ser una carne blanca magra, el tránsito estomacal es ágil y libre de pesadez."
   },
   {
     "plato_id": "bife-cerdo",
@@ -96,7 +98,7 @@
     ],
     "resumen": "Un corte sumamente noble, injustamente rotulado en el pasado. Hoy los cortes magros de cerdo (como el carré o jamón) tienen un perfil graso muy saludable y aportan altísima cantidad de vitamina B1.",
     "hack": "Cocinalo a punto (ligeramente rosado en el centro si la carne es de confianza) para mantener toda su terneza y evitar que se seque. Tip extra: acompañalo con una pizca de mostaza natural en grano; la mostaza estimula las enzimas digestivas para procesar mejor las grasas del cerdo.",
-    "que_observar": " Evalúa la saciedad prolongada que te otorga frente al pollo; el cerdo tiene una densidad de nutrientes y perfil lipídico muy interesante."
+    "que_observar": "Evalúa la saciedad prolongada que te otorga frente al pollo; el cerdo tiene una densidad de nutrientes y perfil lipídico muy interesante."
   },
   {
     "plato_id": "bife-merluza",
@@ -108,7 +110,7 @@
     ],
     "resumen": "Excelente opción de pescado blanco. Aporta proteínas de fácil digestión y ácidos grasos livianos, ideal para almorzar o cenar sin generar somnolencia.",
     "hack": "Al ser un pescado muy delicado, évita cocinarlo de más para que no se desarme. Si va a la plancha, asegurate de que esté bien caliente y con unas gotas de aceite para que no se pegue. Tip extra: impregnarlo con jugo de limón y una pizca de jengibre rallado le da un giro bio-hack de sabor y activa la digestión gástrica de forma magistral.",
-    "que_observar": " Registra la liviandad absoluta con la que te levantás de la mesa; la merluza se digiere a una velocidad notable sin restar energía."
+    "que_observar": "Registra la liviandad absoluta con la que te levantás de la mesa; la merluza se digiere a una velocidad notable sin restar energía."
   },
   {
     "plato_id": "hamburguesa-carne",
@@ -119,7 +121,7 @@
     ],
     "resumen": "Si es carne picada real (preferentemente seleccionada), es un plato denso en nutrientes, proteínas y grasas saludables. El formato práctico de la carne vacuna.",
     "hack": "Evitá el exceso de pan industrial ultraprocesado. Si la comís al plato o con un pan de buena calidad, el impacto metabólico cambia por completo. Tip extra: sumale cebolla rehogada lentamente en la base; los compuestos sulfurados de la cebolla ayudan a la función hepática y suavizan la digestión de la carne roja.",
-    "que_observar": " Compara tu nivel de saciedad frente a comer la carne en bife; el formato picado a veces acelera la masticación, así que presta atención a comer más lento."
+    "que_observar": "Compara tu nivel de saciedad frente a comer la carne en bife; el formato picado a veces acelera la masticación, así que presta atención a comer más lento."
   },
   {
     "plato_id": "hamburguesa-pollo",
@@ -128,7 +130,7 @@
     ],
     "resumen": "Una variante proteica más liviana que la de carne vacuna, ideal para sumar volumen diario de proteínas sin la carga calórica de las carnes rojas grasas.",
     "hack": "Cuidado con las versiones industriales congeladas que traen féculas y aditivos ocultos; prioriza las caseras o picadas de pollo real. Tip extra: un toque de curry suave o cúrcuma en la mezcla no solo le da un color increíble, sino que aporta propiedades antiinflamatorias naturales.",
-    "que_observar": " Nota la diferencia de pesadez estomacal frente a la hamburguesa de carne vacuna tradicional."
+    "que_observar": "Nota la diferencia de pesadez estomacal frente a la hamburguesa de carne vacuna tradicional."
   },
   {
     "plato_id": "hamburguesa-soja",
@@ -137,7 +139,7 @@
     ],
     "resumen": "Opción de origen vegetal basada en legumbres. Aporta proteínas vegetales y fibra, aunque su impacto glucémico depende en gran medida de los aditivos y almidones que tenga la marca.",
     "hack": "Revisa el listado de ingredientes para evitar que el primer componente sea harina refinada en lugar de grano de soja texturizado o poroto. Tip extra: cocinala con un toque de salsa de soja baja en sodio y jengibre para realzar el umami natural.",
-    "que_observar": " Presta atención a la respuesta de tu abdomen; las legumbres procesadas pueden generar algo de hinchazón en personas sensibles."
+    "que_observar": "Presta atención a la respuesta de tu abdomen; las legumbres procesadas pueden generar algo de hinchazón en personas sensibles."
   },
   {
     "plato_id": "hamburguesa-semillas",
@@ -148,45 +150,49 @@
     ],
     "resumen": "Aporte interesante de grasas saludables (omega-3 de la chía) y aminoácidos completos de la quinoa. Una alternativa rica en fibra y micronutrientes.",
     "hack": "Al tener alta concentración de semillas enteras, es fundamental una excelente masticación para que el cuerpo pueda aprovechar sus nutrientes reales y no pasen de largo. Tip extra: acompañala con un medio limón exprimido por encima para mejorar la absorción de los minerales de las semillas.",
-    "que_observar": " Evalúa el tránsito intestinal y la saciedad a largo plazo gracias al alto contenido de fibra soluble e insoluble."
+    "que_observar": "Evalúa el tránsito intestinal y la saciedad a largo plazo gracias al alto contenido de fibra soluble e insoluble."
   },
   {
     "plato_id": "medallon-merluza",
     "sinonimos": [
+      "medallón rebozado de merluza",
       "medallon de merluza",
       "patitas de pescado"
     ],
     "resumen": "Versión comercial procesada del pescado. Aporta proteína pero viene acompañada de una capa importante de rebozado industrial y harinas refinadas.",
     "hack": "Si vas a consumirlos, prioriza hacerlos al horno a temperatura fuerte en lugar de freírlos para no duplicar la carga de aceites oxidados. Tip extra: rocialos con jugo de limón antes de comer para cortar la pesadez de la costra frita o al horno.",
-    "que_observar": " Compara la energía post-comida frente a un bife de pescado real; los medallones industriales suelen generar más letargo por el combo harina + grasa de cocción."
+    "que_observar": "Compara la energía post-comida frente a un bife de pescado real; los medallones industriales suelen generar más letargo por el combo harina + grasa de cocción."
   },
   {
     "plato_id": "medallon-brocoli",
     "sinonimos": [
+      "medallón rebozado de brócoli",
       "medallon de brocoli"
     ],
     "resumen": "Apariencia saludable por el brócoli, pero comercialmente suele estar sostenido por una base alta de féculas, harinas y aditivos para mantener la forma.",
     "hack": "No lo consideres un reemplazo equivalente a comer un plato de brócoli real; miralo como un opcional de hidratos con un toque vegetal. Tip extra: sumale una salsa a base de oliva y ajo al plato para levantar el perfil nutricional.",
-    "que_observar": " Chequea si te genera la misma saciedad que una verdura entera o si al rato sentís el bache de hambre por el almidón refinado del rebozado."
+    "que_observar": "Chequea si te genera la misma saciedad que una verdura entera o si al rato sentís el bache de hambre por el almidón refinado del rebozado."
   },
   {
     "plato_id": "medallon-espinaca",
     "sinonimos": [
+      "medallón rebozado de espinaca",
       "medallon de espinaca"
     ],
     "resumen": "Similar al de brócoli: la espinaca aporta color y micronutrientes, pero el rebozado industrial domina la carga de carbohidratos del plato.",
     "hack": "Cocinalos bien crocantes al horno para mejorar la experiencia sensorial y evitar la textura gomosa típica del producto descongelado. Tip extra: un toque de nuez moscada realza el sabor de la espinaca y disimula el gusto industrial.",
-    "que_observar": " Presta atención a cómo responde tu glucemia y tus ganas de picotear dulce a la hora de haber comido."
+    "que_observar": "Presta atención a cómo responde tu glucemia y tus ganas de picotear dulce a la hora de haber comido."
   },
   {
     "plato_id": "medallon-jamon-queso",
     "sinonimos": [
+      "medallón rebozado de jamón y queso",
       "medallon de jamon y queso",
       "medallon jamon y queso"
     ],
     "resumen": "Un formato de comida rápida procesada. Alta densidad de grasas saturadas industriales, harinas refinadas y sodio, con un aporte proteico secundario.",
     "hack": "Trata de que sea un consumo ocasional dentro de tu semana y combinalo siempre con una buena porción de ensalada cruda para aportar fibra viva que amortigüe el impacto. Tip extra: un toque de pimienta negra ayuda a estimular la digestión de este tipo de procesados pesados.",
-    "que_observar": " Registra el nivel de pesadez estomacal y sed posterior debido al alto contenido de sodio y grasas cocidas."
+    "que_observar": "Registra el nivel de pesadez estomacal y sed posterior debido al alto contenido de sodio y grasas cocidas."
   },
   {
     "plato_id": "lampreado-marinera",
@@ -197,17 +203,18 @@
     ],
     "resumen": "Carne o pollo sumergidos en una mezcla espesa de huevo y harina antes de freír. Capa de carbohidratos densa que absorbe una cantidad importante de aceite.",
     "hack": "Dejá escurrir el exceso de fritura sobre papel absorbente y consumilo caliente para evitar que la costra se ponga reseca o demasiado pesada. Tip extra: el clásico baño de jugo de limón por encima cumple una doble función: corta la grasa en boca y aligera la digestión.",
-    "que_observar": " Evalúa la velocidad de digestión; este tipo de preparaciones pesadas suelen requerir un tiempo de reposo estomacal más largo."
+    "que_observar": "Evalúa la velocidad de digestión; este tipo de preparaciones pesadas suelen requerir un tiempo de reposo estomacal más largo."
   },
   {
     "plato_id": "sandwich-milanesa",
     "sinonimos": [
+      "sándwich de milanesa",
       "sandwich de milanesa",
       "sanguche de milanesa"
     ],
     "resumen": "El rey indiscutido de la calle y los bodegones. Un monumento al placer gastronómico que combina proteína frita/horneada con una gran cantidad de carbohidratos refinados del pan.",
     "hack": "Si querés hackear el impacto glucémico sin arruinar la experiencia, abrilo al medio y sacale la miga superior del pan, o sumale una base generosa de lechuga y tomate adentro para meter fibra antes de que actúe el pan y el rebozado. Tip extra: un buen chimichurri casero con ajo y vinagre ayuda a procesar las grasas pesadas del sándwich.",
-    "que_observar": " Nota el pico de energía inmediato seguido de una posible modorra o bajón a las pocas horas por el combo masivo de carbohidratos y grasas."
+    "que_observar": "Nota el pico de energía inmediato seguido de una posible modorra o bajón a las pocas horas por el combo masivo de carbohidratos y grasas."
   },
   {
     "plato_id": "hamburguesa-comercial",
@@ -218,7 +225,7 @@
     ],
     "resumen": "Alimento ultraprocesado por excelencia. Pan blanco de miga ultra suave, medallón industrial y salsas comerciales con alta carga de azúcares ocultos y sodio.",
     "hack": "Pedila sin salsas industriales dulces (como aderezos azucarados) y prioriza acompañarla con agua en lugar de gaseosas azucaradas para no duplicar el daño metabólico. Tip extra: comé primero los vegetales si el sándwich trae ensalada adentro antes de morder el pan.",
-    "que_observar": " Detecta la sed intensa post-comida y la rapidez con la que vuelve el apetito debido a la rápida absorción de los azúcares del pan refinado."
+    "que_observar": "Detecta la sed intensa post-comida y la rapidez con la que vuelve el apetito debido a la rápida absorción de los azúcares del pan refinado."
   },
   {
     "plato_id": "lomito",
@@ -229,28 +236,29 @@
     ],
     "resumen": "El hermano mayor de los sándwiches. Aporta una excelente cantidad de proteína magra de carne vacuna, pero viene envuelto en un pan grande y acompañado de fiambres o aderezos.",
     "hack": "Si podés elegir el pan, optá por una opción de masa más compacta o retirale parte de la miga. Prioriza aderezos naturales (como provenzal o criolla) antes que mayonesas industriales pesadas. Tip extra: una infusión digestiva (como té de menta o carqueja) post-sándwich ayuda a evitar la sensación de abdomen inflado.",
-    "que_observar": " Compara la saciedad brutal que te deja este sándwich frente a una hamburguesa comercial; la carne de lomo real marca una diferencia gigante en el tiempo sin hambre."
+    "que_observar": "Compara la saciedad brutal que te deja este sándwich frente a una hamburguesa comercial; la carne de lomo real marca una diferencia gigante en el tiempo sin hambre."
   },
   {
     "plato_id": "asado-tira",
     "sinonimos": [
-      "asado",
       "asado de tira",
+      "asado",
       "tira de asado"
     ],
     "resumen": "¡Excelente elección! El ritual sagrado de nuestra carne. Aporta proteínas de primera y grasas naturales que, lejos de ser el enemigo, son fundamentales para la saciedad y la salud hormonal si no se abusa de los azúcares con los que se acompaña.",
     "hack": "Disfrutá la carne priorizando los sectores más magros o equilibrando la grasa tostada. No te recargues de pan blanco mientras sale el asado. Tip extra: acompañalo con una salsa criolla abundante (tomate, cebolla y morrón crudos con vinagre y aceite); la acidez del vinagre y los vegetales crudos son el antídoto digestivo perfecto para las carnes grasas a la parrilla.",
-    "que_observar": " Registra la saciedad extrema y placentera que te otorga; es un alimento que estabiliza el apetito por horas."
+    "que_observar": "Registra la saciedad extrema y placentera que te otorga; es un alimento que estabiliza el apetito por horas."
   },
   {
     "plato_id": "vacio",
     "sinonimos": [
+      "vacío",
       "vacio",
       "vacio a la parrilla"
     ],
     "resumen": "¡Excelente elección! Un corte magro por excelencia dentro de los cortes parrilleros. Mucha fibra muscular, proteína noble y un contenido graso externo muy fácil de manejar.",
     "hack": "Cocinalo a fuego lento para que quede tierno sin quemar la superficie. Es un aliado perfecto para planes de rendimiento y recomposición corporal. Tip extra: un buen chimichurri casero con ajo fresco estimula las secreciones gástricas y potencia la asimilación de los aminoácidos del corte.",
-    "que_observar": " Nota la energía limpia y sostenida que te deja este corte; es ideal para días de entrenamiento intenso o actividad física exigente."
+    "que_observar": "Nota la energía limpia y sostenida que te deja este corte; es ideal para días de entrenamiento intenso o actividad física exigente."
   },
   {
     "plato_id": "matambre",
@@ -261,7 +269,7 @@
     ],
     "resumen": "¡Excelente elección! Corte tradicional con un perfil proteico muy alto. Ya sea a la pizza o tierno a la leche, aporta una textura y satisfacción incomparables.",
     "hack": "Si lo hacés a la pizza, moderá la cantidad de queso o elegí una muzarella de buena calidad para evitar sumar un exceso de grasa pesada. Tip extra: un toque de provenzal o ají molido realza el sabor profundo de este corte y ayuda a una digestión más ágil.",
-    "que_observar": " Evalúa cómo responde tu estómago; al ser un corte fibroso, requiere una buena masticación que de por sí ya activa el proceso de saciedad cerebral."
+    "que_observar": "Evalúa cómo responde tu estómago; al ser un corte fibroso, requiere una buena masticación que de por sí ya activa el proceso de saciedad cerebral."
   },
   {
     "plato_id": "chorizo",
@@ -272,7 +280,7 @@
     ],
     "resumen": "Embutido tradicional de alta densidad calórica y grasa. Aporta sabor intenso y energía rápida, pero su procesamiento industrial puede variar drásticamente según la calidad del chacinado.",
     "hack": "Pinchalo antes de cocinarlo a la parrilla para que libere parte de su grasa excedente al fuego, o elegí versiones artesanales de cerdo puro y baja carga de aditivos. Tip extra: consumilo siempre acompañado de una picada de vegetales frescos o ensalada verde para equilibrar el impacto lipídico en el plato.",
-    "que_observar": " Nota la pesadez o el nivel de energía sostenida; al ser un alimento muy graso, su digestión es lenta y demanda mayor trabajo metabólico."
+    "que_observar": "Nota la pesadez o el nivel de energía sostenida; al ser un alimento muy graso, su digestión es lenta y demanda mayor trabajo metabólico."
   },
   {
     "plato_id": "morcilla",
@@ -283,7 +291,7 @@
     ],
     "resumen": "¡Joyita nutricional a su manera! Aporta una cantidad masiva de hierro, zinc y minerales gracias a su base de sangre, combinada con grasas y especias.",
     "hack": "No la abuses si tenés digestiones lentas, pero integrala como un excelente bocado ocasional de alta densidad de micronutrientes. Tip extra: un toque de limón o vinagre al cortarla en el plato contrarresta la pesadez grasa y realza el sabor metálico del hierro.",
-    "que_observar": " Presta atención a la energía y saciedad que te otorga; es un alimento denso que corta el apetito de manera fulminante."
+    "que_observar": "Presta atención a la energía y saciedad que te otorga; es un alimento denso que corta el apetito de manera fulminante."
   },
   {
     "plato_id": "salchichas",
@@ -294,6 +302,6 @@
     ],
     "resumen": "Alimento ultraprocesado por antonomasia. Textura homogénea lograda mediante molienda fina de subproductos cárnicos, almidones, aditivos y altos niveles de sodio.",
     "hack": "Si están en tu menú por practicidad, saltealás o hervilas y acompañalas obligatoriamente con una fuente gigante de fibra cruda para amortiguar el impacto metabólico de los aditivos. Tip extra: una buena cucharada de mostaza natural ayuda a enmascarar el exceso de sodio y estimula la digestión.",
-    "que_observar": " Detecta la sed posterior y la rapidez con la que vuelve el hambre; al ser un ultraprocesado de rápida absorción, no genera saciedad real a largo plazo."
+    "que_observar": "Detecta la sed posterior y la rapidez con la que vuelve el hambre; al ser un ultraprocesado de rápida absorción, no genera saciedad real a largo plazo."
   }
 ]
