@@ -8,7 +8,8 @@ import { emitirEventoProducto } from "./_eventos-producto.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 // Capa de IA (Groq) — opcional, "dormida" hasta que exista GROQ_API_KEY en Vercel.
 import { clasificarComidaIA } from "./_clasificador-ia.js";
-import { elegirTipRelevanteIA, construirProtocoloCulinarioAdaptativo } from "./_selector-tips-ia.js";
+import { construirProtocoloCulinarioAdaptativo } from "./_selector-tips-ia.js";
+import { resolverFichaPlato } from "./_catalogo-platos.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 import { copyPlatoPreview } from "./_copy-platos-preview.js";
 
@@ -550,23 +551,9 @@ export default async function handler(req, res) {
     // llamado aparte, aislado (ver _selector-tips-ia.js: si esto falla, se apaga solo,
     // sin arriesgar el motor de bloqueos). Nunca inventa una ficha: solo puede elegir un
     // ID real o "ninguna", igual de blindado que el clasificador de comida.
-    if (bloqueosReales.length === 0) {
-      const alternativas = await supabaseFetch(
-        `alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,nivel_evidencia`
-      );
-      const idElegido = await elegirTipRelevanteIA(texto, alternativas);
-      if (idElegido) {
-        const elegida = alternativas.find((a) => a.id === idElegido);
-        if (elegida) {
-          sugerencias.push({
-            nombre: elegida.mecanismo || "",
-            mecanismo: elegida.descripcion_mecanismo || "",
-            opcion: elegida.recomendacion || "",
-            evidencia: elegida.nivel_evidencia || "",
-          });
-        }
-      }
-    }
+    // Ficha editorial estática: mismo contrato para Descubrir, Antes de Comer y Mi Día.
+    // Si no hay coincidencia o falla Supabase, resolverFichaPlato devuelve el fallback de tres bloques.
+    const fichaPlato = await resolverFichaPlato(texto);
 
     // --- MIS Etapa 1 — Piloto de Instrumentación (DC-05). Único agregado de este archivo. ---
     // No intrusivo: emitirEvento nunca lanza, un fallo interno se loguea y se descarta (Directiva 2).
@@ -593,7 +580,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const respuesta = { registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, soloVista: Boolean(soloVista) };
+    const respuesta = { registroId, bloqueos, resueltos: resueltosRespuesta, sugerencias, fichaPlato, soloVista: Boolean(soloVista) };
     // El protocolo culinario es contenido Premium: no incluir la propiedad en respuestas Free.
     if (esPremiumComida) {
       const textoEnriquecido = await resolverTextoComidaParaProtocolo(texto);
