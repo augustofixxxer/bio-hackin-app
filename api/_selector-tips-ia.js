@@ -1,27 +1,7 @@
 // api/_selector-tips-ia.js
-//
-// Reemplaza al matching por palabras sueltas contra alternativas_locales (desactivado
-// 31/07/2026 tras 5 falsos positivos reales y consecutivos: carne, salsa, harina, leche,
-// queso — ver historial en registrar-comida.js). Ese mecanismo ADIVINABA relevancia
-// comparando palabras; este ENTIENDE, usando la misma IA (Groq) que ya clasifica la
-// comida para el motor de bloqueos.
-//
-// Deliberadamente un módulo aparte, un segundo llamado a Groq independiente del de
-// _clasificador-ia.js (Opción B, elegida por Augusto el 31/07/2026 sobre la alternativa de
-// fusionar todo en un solo llamado): si esto falla, se apaga solo, sin arriesgar el motor
-// de bloqueos que ya funciona. Recuperable en minutos — ver "CÓMO APAGAR ESTO" al final.
-//
-// BLINDAJE LEGAL — mismo criterio que _clasificador-ia.js:
-// - Groq NUNCA elige libremente: solo puede devolver uno de los IDs reales que le
-//   pasamos en la lista, o "ninguna". No puede inventar una ficha que no exista —
-//   forzado por Structured Outputs con enum estricto armado con los IDs reales de
-//   este pedido puntual.
-// - Groq nunca redacta el tip — solo elige CUÁL de las fichas ya escritas y aprobadas
-//   mostrar. El texto final siempre sale de Supabase, nunca de la IA.
-// - Si Groq falla, tarda de más, o no está configurada: devuelve null y
-//   registrar-comida.js sigue mostrando "sin tip" — nunca bloquea ni degrada nada más.
-//
-// Mismo patrón de archivo único que el resto de api/_*.js — no separar en lib/ (Sprint 16).
+// Selectores deterministas. El catálogo editorial de platos vive en _catalogo-platos.js.
+// Este archivo conserva el protocolo culinario existente y una selección conservadora
+// para el asistente de heladera; no realiza llamadas a proveedores de IA.
 
 // Selección de fichas del catálogo maestro: determinista y sin proveedor de IA.
 
@@ -35,13 +15,6 @@ async function elegirTipRelevanteIA() {
   // por matching genérico. El flujo principal usa resolverFichaPlato y el catálogo maestro.
   return null;
 }
-
-// CÓMO APAGAR ESTO si algo sale mal en producción (recuperable en minutos, sin tocar
-// nada más de la app): en registrar-comida.js, la línea que llama a
-// elegirTipRelevanteIA(...) — comentarla o hacer que la función de más arriba retorne
-// null directo acá arriba (return null; como primera línea de elegirTipRelevanteIA).
-// El resto de la app (bloqueos, clasificador de comida, todo lo demás) sigue intacto.
-
 
 const PROTOCOLO_CULINARIO_CANONICO = {
   coccion: "Priorizar cocción a fuego lento en cacerola/sartén tipo Essen con tapa, reteniendo humedad, o sellado en plancha/sartén de hierro. Como materia grasa para cocinar a temperatura media/baja: manteca real, grasa vacuna (cebo) o aceite de oliva virgen extra. Evitar aceites de semilla refinados.",
@@ -182,7 +155,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   const coincideGrupo = (grupo) => (grupo.terminos || []).some((termino) => {
     const clave = normalizarProtocolo(termino).trim();
     if (!clave) return false;
-    const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\\s+");
+    const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\s+");
     return new RegExp("\\b" + patron + "\\b", "i").test(t);
   });
   const validarGrupo = (grupo) => grupo && grupo.activo !== false &&
@@ -269,7 +242,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   return protocolo;
 }
 async function elegirFichaHeladeraIA(ingredientes, fichas) {
-  const texto = normalizarProtocolo(ingredientes).replace(/[^a-z0-9ñ\\s-]/g, " ").replace(/\\s+/g, " ").trim();
+  const texto = normalizarProtocolo(ingredientes).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
   if (!texto || !Array.isArray(fichas) || fichas.length === 0) return null;
   const ignoradas = new Set(["para","con","sin","del","las","los","una","uno","que","como","esto","esta","este","tengo","hay","usar"]);
   const tokens = [...new Set(texto.split(/[^a-z0-9ñ]+/).filter(t => t.length >= 4 && !ignoradas.has(t)))];
@@ -279,7 +252,7 @@ async function elegirFichaHeladeraIA(ingredientes, fichas) {
   for (const ficha of fichas) {
     const textoFicha = normalizarProtocolo([
       ficha.mecanismo, ficha.descripcion_mecanismo, ficha.recomendacion
-    ].filter(Boolean).join(" ")).replace(/[^a-z0-9ñ\\s-]/g, " ").replace(/\\s+/g, " ").trim();
+    ].filter(Boolean).join(" ")).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
     const coincidencias = tokens.filter(token => (" " + textoFicha + " ").includes(" " + token + " ")).length;
     // Criterio conservador: exige al menos dos términos distintivos para evitar
     // falsos positivos por ingredientes genéricos compartidos.
