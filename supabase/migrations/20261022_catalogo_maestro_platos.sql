@@ -1,5 +1,5 @@
 -- Catálogo editorial determinista de platos. Aplicar solo en Supabase staging/preview.
-create table if not exists public.catalogo_maestro_platos (
+create table if not exists public.preview_catalogo_maestro_platos (
   plato_id text primary key,
   sinonimos text[] not null default '{}',
   resumen text not null,
@@ -9,10 +9,11 @@ create table if not exists public.catalogo_maestro_platos (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-comment on table public.catalogo_maestro_platos is 'Whitelist editorial determinista para fichas de platos. Nuevos platos se agregan como filas.';
-alter table public.catalogo_maestro_platos enable row level security;
--- Sin políticas públicas: el acceso de servidor usa la service role key del entorno Preview.
-insert into public.catalogo_maestro_platos (plato_id, sinonimos, resumen, hack, que_observar, activo)
+comment on table public.preview_catalogo_maestro_platos is 'Whitelist editorial determinista para fichas de platos. Nuevos platos se agregan como filas.';
+alter table public.preview_catalogo_maestro_platos enable row level security;
+-- Sin políticas públicas: solo el backend con service_role puede leer la tabla prefijada de Preview.
+grant all on table public.preview_catalogo_maestro_platos to service_role;
+insert into public.preview_catalogo_maestro_platos (plato_id, sinonimos, resumen, hack, que_observar, activo)
 values
 ('milanesa-carne', ARRAY['milanesa de carne', 'milanesa', 'milanesa vacuna', 'milanesa sola']::text[], 'Clásico innegable. La carne aporta proteína noble y el rebozado suma carbohidratos rápidos. Si se hace al horno con aceite medido, logras un balance excelente sin sacrificar sabor.', 'Mantené el corte que te guste pero controlá el espesor del rebozado: a menor capa de pan, menor absorción de grasa en cocción. Tip extra: sumale una pizca de pimentón dulce u orégano al pan rallado; no solo realza el sabor, sino que ayuda a mitigar la pesadez estomacal.', 'Compara saciedad y pesadez digestiva frente a la versión frita tradicional. Nota la diferencia en tu energía a las 2 horas de comer.', true),
 ('milanesa-pollo', ARRAY['milanesa de pollo', 'suprema', 'suprema de pollo']::text[], 'Una excelente opción de proteína magra. El pollo es liviano, pero el rebozado y la técnica de cocción definen el impacto final en tu digestión.', 'Prioriza la cocción al horno o plancha con rocío vegetal. Si la hacés frita, asegurate de que el aceite esté a temperatura alta para que no chupe grasa de más. Tip extra: un toque de provenzal (ajo y perejil deshidratado) en el rebozado potencia la digestión y le da un golpe de sabor bárbaro.', 'Evalúa cómo se siente tu estómago en comparación con carnes rojas pesadas; busca notar liviandad sin perder saciedad.', true),
