@@ -23,9 +23,9 @@ function normalizarEntrada(valor) {
   const base = String(valor || "")
     .toLocaleLowerCase("es")
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
-    .replace(/[^a-z0-9ñ\\s-]/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9ñ\s-]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
   return base.split(" ")
     .filter(token => token && !PALABRAS_FUNCION.has(token))
