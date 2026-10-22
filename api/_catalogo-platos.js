@@ -11,14 +11,26 @@ const FALLBACK_PLATO = Object.freeze({
   fallback: true
 });
 
+const PALABRAS_FUNCION = new Set(["de", "del", "la", "las", "el", "los", "al", "a", "y", "con", "en", "para"]);
+
+function singularizarToken(token) {
+  if (token.length > 5 && token.endsWith("es")) return token.slice(0, -2);
+  if (token.length > 4 && token.endsWith("s")) return token.slice(0, -1);
+  return token;
+}
+
 function normalizarEntrada(valor) {
-  return String(valor || "")
+  const base = String(valor || "")
     .toLocaleLowerCase("es")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9ñ\s-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[^a-z0-9ñ\\s-]/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
+  return base.split(" ")
+    .filter(token => token && !PALABRAS_FUNCION.has(token))
+    .map(singularizarToken)
+    .join(" ");
 }
 
 function contieneFrase(texto, frase) {
@@ -29,8 +41,10 @@ function contieneFrase(texto, frase) {
 function puntuar(texto, sinonimo) {
   const frase = normalizarEntrada(sinonimo);
   if (!frase) return 0;
-  if (texto === frase) return 10000 + frase.length;
-  if (contieneFrase(texto, frase)) return 1000 + frase.length;
+  const cantidadTokens = frase.split(" ").filter(Boolean).length;
+  // Una coincidencia específica ("bife cerdo") gana a una genérica ("bife").
+  if (texto === frase) return 10000 + cantidadTokens * 100 + frase.length;
+  if (contieneFrase(texto, frase)) return 1000 + cantidadTokens * 100 + frase.length;
   return 0;
 }
 
