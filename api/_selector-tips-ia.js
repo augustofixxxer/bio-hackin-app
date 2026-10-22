@@ -176,7 +176,7 @@ function resolverPlatoCompuestoArgentino(t) {
 
   const pasta = has(/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/);
   const salsas = [
-    {re:/\b(bolognesa|boloñesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"La salsa ya suma proteína; incorporá vegetales si te gustan y cociná la pasta al dente. La proteína no anula el almidón de la pasta."},
+    {re:/\b(bolognesa|boloñesa|bolonesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"La salsa ya suma proteína; incorporá vegetales si te gustan y cociná la pasta al dente. La proteína no anula el almidón de la pasta."},
     {re:/\b(salsa blanca|crema|cremosa)\b/,nombre:"salsa cremosa",hack:"Conservá la salsa que disfrutás, definí la porción y sumá vegetales en la salsa o al costado. No hace falta eliminarla para ajustar la composición del plato."},
     {re:/\b(pesto)\b/,nombre:"pesto",hack:"El pesto concentra sabor y grasa: usá la cantidad que cubra la pasta y sumá vegetales. Cociná la pasta al dente y mantené estable la porción para comparar."},
     {re:/\b(tomate|tuco|fileto|pomodoro|salsa roja)\b/,nombre:"salsa de tomate",hack:"Podés enriquecer la salsa con cebolla, zucchini, berenjena u otros vegetales. Cociná la pasta al dente y mantené estable la porción para comparar."}
@@ -208,7 +208,7 @@ function resolverPlatoCompuestoArgentino(t) {
       resumenIntegrado:"La masa aporta harina y el relleno de "+relleno+" define parte de la proteína, fibra y grasa. "+(ensalada?"La ensalada también forma parte del plato.":"No se informó una guarnición adicional."),
       hackIntegrado:"COMBO INTEGRADO: mantené el relleno que te gusta y sumá una porción visible de vegetales; "+(ensalada?"podés empezar por la ensalada si te resulta cómodo.":"si querés completar el plato, acompañá la tarta con ensalada o vegetales.")+" No hace falta retirar toda la masa.",
       queObservar:"Compará saciedad, energía y comodidad digestiva. En otra prueba cambiá solo la guarnición o la proporción de vegetales.",
-      coccion:"PLATO COMPUESTO: masa + relleno de "+relleno+(ensalada+" + ensalada/vegetales." : ".")+" La recomendación considera la tarta completa.",
+      coccion:"PLATO COMPUESTO: masa + relleno de "+relleno+(ensalada ? " + ensalada/vegetales." : ".")+" La recomendación considera la tarta completa.",
       sinergia:"Priorizá que el relleno tenga una proporción clara de su ingrediente principal y, si elegís ensalada, que sea una guarnición real.",
       timingOrden:ensalada?"Podés empezar por la ensalada y después comer la tarta; es una prueba opcional.":"No se informó ensalada; no se asume que esté presente.",
       variableModificada:"plato_compuesto_tarta"
@@ -350,7 +350,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
 
   if (!protocolo.coccion) protocolo.coccion = "Elegí una cocción pareja y ajustá el tiempo al alimento, al grosor y a la textura buscada. Evitá quemar la superficie; si es una preparación húmeda, cociná a fuego moderado y revisá el punto antes de agregar más tiempo.";
   if (!protocolo.sinergia) protocolo.sinergia = "Elegí uno o dos condimentos según la base: orégano o albahaca para tomate y pastas; comino y laurel para legumbres; ajo y pimienta para carnes; limón y hierbas para vegetales. Ajustá al gusto, sin tapar el sabor del ingrediente."
-  protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
+  if (!protocoloCompuesto) protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
   if (!protocolo.familiaDetectada) protocolo.familiaDetectada = gruposDetectados[0]?.clave || "familia_general";
   return protocolo;
 }
