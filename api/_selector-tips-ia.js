@@ -151,11 +151,11 @@ function resolverPlatoCompuestoArgentino(t) {
   const has = (re) => re.test(t);
   const milanesa = has(/\b(milanesa|milanesas)\b/);
   const guarniciones = [
-    {id:"pure", re:/\b(pure|pure de papa)\b/, nombre:"puré", hack:"Si es puré, podés prepararlo con papa hervida y porción definida. Como experimento, compará otra vez con papa cocida, enfriada rápidamente en heladera y recalentada bien antes de triturar; no es obligatorio ni garantiza una respuesta glucémica menor."},
-    {id:"papas_fritas", re:/\b(papas fritas|papas al horno|papas doradas|papas noisette)\b/, nombre:"papas", hack:"Mantené una porción decidida. Para cambiar una variable, compará papas fritas con papas al horno y conservá similar la cantidad; el horno puede reducir la grasa añadida, pero no elimina el almidón."},
-    {id:"arroz", re:/\b(arroz|arroz blanco|arroz integral)\b/, nombre:"arroz", hack:"Serví una porción definida y sumá vegetales. Si preparás el arroz con antelación, enfriá rápido, refrigerá dentro de 1–2 horas y recalentá bien: puede aumentar el almidón resistente, con efecto variable."},
-    {id:"pasta", re:/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/, nombre:"pasta", hack:"Cociná la pasta al dente y mantené estable la porción. La milanesa suma proteína y, si tiene rebozado, carbohidratos también: ninguno de los componentes anula al otro."},
-    {id:"ensalada", re:/\b(ensalada|lechuga|rucula|tomate|verduras|vegetales|brocoli|zanahoria)\b/, nombre:"vegetales", hack:"Incluí los vegetales como parte real de la comida. Si te resulta cómodo, empezá por ellos y después seguí con la milanesa y la guarnición; es una prueba opcional, no una garantía glucémica."}
+    {id:"pure", re:/\b(pure|pure de papa)\b/, nombre:"puré", hack:"Serví una porción definida. Como prueba, enfriá la papa cocida en heladera y recalentala bien antes de hacer el puré: puede aumentar el almidón resistente."},
+    {id:"papas_fritas", re:/\b(papas fritas|papas al horno|papas doradas|papas noisette)\b/, nombre:"papas", hack:"Si querés reducir la grasa añadida, probá papas al horno en una porción similar; el almidón sigue presente."},
+    {id:"arroz", re:/\b(arroz|arroz blanco|arroz integral)\b/, nombre:"arroz", hack:"Definí la porción y sumá vegetales. Si lo preparás antes, enfriá rápido, refrigerá dentro de 1–2 horas y recalentá bien: puede aumentar el almidón resistente."},
+    {id:"pasta", re:/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/, nombre:"pasta", hack:"Cociná la pasta al dente y mantené la porción; el rebozado también suma carbohidratos."},
+    {id:"ensalada", re:/\b(ensalada|lechuga|rucula|tomate|verduras|vegetales|brocoli|zanahoria)\b/, nombre:"vegetales", hack:"Sumá una porción real de vegetales y, si te resulta cómodo, empezá por ellos."}
   ];
   const guarnicion = guarniciones.find(g => g.re.test(t));
   if (milanesa && guarnicion) {
@@ -170,7 +170,7 @@ function resolverPlatoCompuestoArgentino(t) {
       componentesDetectados:["milanesa ("+coccion+")",guarnicion.nombre],
       resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" también aporta almidón; el plato suma ambos.",
       hackIntegrado:(frita?"Probá la milanesa al horno y mantené igual la guarnición para comparar. ":"Mantené la milanesa como te gusta y ajustá la guarnición. ")+guarnicion.hack,
-      queObservar:"Compará saciedad, energía y comodidad digestiva. Cambiá una sola variable por vez; si medís glucosa, contrastá porciones y condiciones similares. Ningún cambio garantiza el mismo efecto en todas las personas.",
+      queObservar:"Observá saciedad y energía después de comer. Cambiá una sola variable por vez.",
       coccion:"Milanesa "+coccion+" con "+guarnicion.nombre+".",
       sinergia:""+guarnicion.hack,
       timingOrden:"Si el plato incluye vegetales, podés empezar por ellos y después seguir con la milanesa y "+guarnicion.nombre+"; es opcional.",
@@ -180,10 +180,10 @@ function resolverPlatoCompuestoArgentino(t) {
 
   const pasta = has(/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/);
   const salsas = [
-    {re:/\b(bolognesa|boloñesa|bolonesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"La salsa ya suma proteína; incorporá vegetales si te gustan y cociná la pasta al dente. La proteína no anula el almidón de la pasta."},
-    {re:/\b(salsa blanca|crema|cremosa)\b/,nombre:"salsa cremosa",hack:"Conservá la salsa que disfrutás, definí la porción y sumá vegetales en la salsa o al costado. No hace falta eliminarla para ajustar la composición del plato."},
-    {re:/\b(pesto)\b/,nombre:"pesto",hack:"El pesto concentra sabor y grasa: usá la cantidad que cubra la pasta y sumá vegetales. Cociná la pasta al dente y mantené estable la porción para comparar."},
-    {re:/\b(tomate|tuco|fileto|pomodoro|salsa roja)\b/,nombre:"salsa de tomate",hack:"Podés enriquecer la salsa con cebolla, zucchini, berenjena u otros vegetales. Cociná la pasta al dente y mantené estable la porción para comparar."}
+    {re:/\b(bolognesa|boloñesa|bolonesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"Cociná la pasta al dente; la salsa suma proteína, pero no elimina el almidón."},
+    {re:/\b(salsa blanca|crema|cremosa)\b/,nombre:"salsa cremosa",hack:"Mantené la salsa, medí la porción y sumá vegetales en la salsa o al costado."},
+    {re:/\b(pesto)\b/,nombre:"pesto",hack:"Usá el pesto justo para cubrir la pasta, cocinala al dente y sumá vegetales."},
+    {re:/\b(tomate|tuco|fileto|pomodoro|salsa roja)\b/,nombre:"salsa de tomate",hack:"Sumá cebolla, zucchini o berenjena a la salsa y cociná la pasta al dente."}
   ].find(s=>s.re.test(t));
   if (pasta && salsas) {
     const acomp = has(/\b(ensalada|verduras|vegetales|pollo|carne|albondigas|albóndigas|milanesa)\b/);
@@ -193,7 +193,7 @@ function resolverPlatoCompuestoArgentino(t) {
       componentesDetectados:["pasta",salsas.nombre],
       resumenIntegrado:"La pasta aporta almidón; la salsa de "+salsas.nombre+" completa el plato.",
       hackIntegrado:"Cociná la pasta al dente. "+salsas.hack,
-      queObservar:"Compará saciedad, energía, disfrute y comodidad digestiva con una porción similar. Cambiá solo el punto de cocción o la composición de la salsa en cada prueba.",
+      queObservar:"Observá saciedad, energía y digestión. En la próxima prueba, cambiá solo una variable.",
       coccion:"Pasta al dente con "+salsas.nombre+".",
       sinergia:salsas.hack,
       timingOrden:acomp?"Si hay vegetales, podés empezar por ellos y seguir con la pasta y su salsa; no es obligatorio.":"No se indicó una guarnición vegetal; no la damos por presente.",
@@ -211,7 +211,7 @@ function resolverPlatoCompuestoArgentino(t) {
       componentesDetectados:["masa de tarta","relleno de "+relleno,...(ensalada?["ensalada/vegetales"]:[])],
       resumenIntegrado:"La masa aporta harina y el relleno de "+relleno+" define el aporte de proteína, fibra y grasa.",
       hackIntegrado:"Mantené el relleno y sumá vegetales o ensalada. No hace falta quitar la masa.",
-      queObservar:"Compará saciedad, energía y comodidad digestiva. En otra prueba cambiá solo la guarnición o la proporción de vegetales.",
+      queObservar:"Observá saciedad y digestión. En otra comida, compará con y sin vegetales.",
       coccion:"Tarta de "+relleno+(ensalada ? " con ensalada." : "."),
       sinergia:"Priorizá que el relleno tenga una proporción clara de su ingrediente principal y, si elegís ensalada, que sea una guarnición real.",
       timingOrden:ensalada?"Podés empezar por la ensalada y después comer la tarta; es una prueba opcional.":"No se informó ensalada; no se asume que esté presente.",
