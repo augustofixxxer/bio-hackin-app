@@ -168,7 +168,7 @@ function resolverPlatoCompuestoArgentino(t) {
       familiaDetectada:"milanesa + " + guarnicion.id,
       gruposDetectados:["plato_compuesto_argentino","milanesa",guarnicion.id],
       componentesDetectados:["milanesa ("+coccion+")",guarnicion.nombre],
-      resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" aporta su propio perfil: hay que considerar los dos componentes.",
+      resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" también aporta almidón; el plato suma ambos.",
       hackIntegrado:""+(frita?"si querés comparar la cocción, probá milanesa al horno manteniendo la misma guarnición y una porción parecida.":"conservá la preparación de la milanesa y cambiá una sola variable de la guarnición.")+" "+guarnicion.hack,
       queObservar:"Compará saciedad, energía y comodidad digestiva. Cambiá una sola variable por vez; si medís glucosa, contrastá porciones y condiciones similares. Ningún cambio garantiza el mismo efecto en todas las personas.",
       coccion:"milanesa "+coccion+" + "+guarnicion.nombre+". "+principal+" La recomendación incluye ambos componentes.",
