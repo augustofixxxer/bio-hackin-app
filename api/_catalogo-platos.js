@@ -57,7 +57,7 @@ export async function resolverFichaPlato(textoUsuario) {
     if (!mejor) return { ...FALLBACK_PLATO };
     return {
       plato_id: mejor.plato_id,
-      nombre: String(mejor.plato_id || "Tu comida").replace(/-/g, " "),
+      nombre: String(textoUsuario || mejor.plato_id || "Tu comida").trim(),
       resumen: mejor.resumen,
       hack: mejor.hack,
       que_observar: mejor.que_observar,
