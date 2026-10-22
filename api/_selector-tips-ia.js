@@ -46,6 +46,10 @@ Reglas estrictas:
 async function elegirTipRelevanteIA(texto, fichas) {
   if (!GROQ_API_KEY) return null; // mismo criterio que _clasificador-ia.js: dormido sin key
   if (!fichas || fichas.length === 0) return null;
+  // Un plato compuesto no debe resolverse con una ficha aislada por ingrediente.
+  // Su recomendación integrada se construye en construirProtocoloCulinarioAdaptativo.
+  const textoNormalizado = normalizarProtocolo(texto).replace(/[^a-z0-9ñ\\s-]/g, " ").replace(/\\s+/g, " ").trim();
+  if (resolverPlatoCompuestoArgentino(textoNormalizado)) return null;
 
   const idsValidos = fichas.map((f) => f.id);
   const listaParaPrompt = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
