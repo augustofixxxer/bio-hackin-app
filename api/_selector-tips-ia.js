@@ -46,6 +46,10 @@ Reglas estrictas:
 async function elegirTipRelevanteIA(texto, fichas) {
   if (!GROQ_API_KEY) return null; // mismo criterio que _clasificador-ia.js: dormido sin key
   if (!fichas || fichas.length === 0) return null;
+  // Un plato compuesto no debe resolverse con una ficha aislada por ingrediente.
+  // Su recomendación integrada se construye en construirProtocoloCulinarioAdaptativo.
+  const textoNormalizado = normalizarProtocolo(texto).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
+  if (resolverPlatoCompuestoArgentino(textoNormalizado)) return null;
 
   const idsValidos = fichas.map((f) => f.id);
   const listaParaPrompt = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
@@ -123,7 +127,7 @@ const PROTOCOLO_CULINARIO_CANONICO = {
   coccion: "Priorizar cocción a fuego lento en cacerola/sartén tipo Essen con tapa, reteniendo humedad, o sellado en plancha/sartén de hierro. Como materia grasa para cocinar a temperatura media/baja: manteca real, grasa vacuna (cebo) o aceite de oliva virgen extra. Evitar aceites de semilla refinados.",
   condimentos: "Si el plato incluye cúrcuma, combinarla con una pizca de pimienta negra recién molida y una base grasa. Incorporar jengibre fresco o en polvo, comino, orégano, tomillo o laurel según el ingrediente base.",
   fibra: "Si la preparación contiene almidones (arroz, papas, fideos) u otros carbohidratos, iniciar la ingesta con una porción de fibra o vegetales verdes/crujientes.",
-  almidonResistente: "Para arroces, papas o legumbres, promover el enfriado previo durante 12–24 horas como mínimo en heladera y luego un recalentado suave."
+  almidonResistente: "Si el usuario consulta por almidón resistente o preparación anticipada de arroz, papa o legumbres: enfriar rápidamente, refrigerar dentro de 1–2 horas y, tras 12–24 horas, recalentar bien. El enfriado puede aumentar el almidón resistente, pero el efecto glucémico varía; no presentarlo como obligación ni prometer una reducción fija."
 };
 
 const HELADERA_SYSTEM_PROMPT = `Sos un selector de fichas existentes para una consulta de cocina.
@@ -142,6 +146,81 @@ function normalizarProtocolo(texto) {
 
 // Construye solo los apartados que justifican los ingredientes descritos.
 // No genera una receta ni altera la ficha curada que ya devuelve el motor.
+
+function resolverPlatoCompuestoArgentino(t) {
+  const has = (re) => re.test(t);
+  const milanesa = has(/\b(milanesa|milanesas)\b/);
+  const guarniciones = [
+    {id:"pure", re:/\b(pure|pure de papa)\b/, nombre:"puré", hack:"Serví una porción definida. Como prueba, enfriá la papa cocida en heladera y recalentala bien antes de hacer el puré: puede aumentar el almidón resistente."},
+    {id:"papas_fritas", re:/\b(papas fritas|papas al horno|papas doradas|papas noisette)\b/, nombre:"papas", hack:"Si querés reducir la grasa añadida, probá papas al horno en una porción similar; el almidón sigue presente."},
+    {id:"arroz", re:/\b(arroz|arroz blanco|arroz integral)\b/, nombre:"arroz", hack:"Definí la porción y sumá vegetales. Si lo preparás antes, enfriá rápido, refrigerá dentro de 1–2 horas y recalentá bien: puede aumentar el almidón resistente."},
+    {id:"pasta", re:/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/, nombre:"pasta", hack:"Cociná la pasta al dente y mantené la porción; el rebozado también suma carbohidratos."},
+    {id:"ensalada", re:/\b(ensalada|lechuga|rucula|tomate|verduras|vegetales|brocoli|zanahoria)\b/, nombre:"vegetales", hack:"Sumá una porción real de vegetales y, si te resulta cómodo, empezá por ellos."}
+  ];
+  const guarnicion = guarniciones.find(g => g.re.test(t));
+  if (milanesa && guarnicion) {
+    const frita = has(/\b(frita|fritas|frito|fritos)\b/);
+    const horno = has(/\b(al horno|horno|air fryer|freidora de aire)\b/);
+    const coccion = frita ? "frita" : horno ? "al horno/aire" : "de cocción no especificada";
+    const napo = has(/\b(napolitana|napolitanas)\b/);
+    const principal = napo ? "La milanesa napolitana suma rebozado, tomate y queso." : "La milanesa aporta proteína y, si lleva rebozado, también carbohidratos.";
+    return {
+      familiaDetectada:"milanesa + " + guarnicion.id,
+      gruposDetectados:["plato_compuesto_argentino","milanesa",guarnicion.id],
+      componentesDetectados:["milanesa ("+coccion+")",guarnicion.nombre],
+      resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" también aporta almidón; el plato suma ambos.",
+      hackIntegrado:(frita?"Probá la milanesa al horno y mantené igual la guarnición para comparar. ":"Mantené la milanesa como te gusta y ajustá la guarnición. ")+guarnicion.hack,
+      queObservar:"Observá saciedad y energía después de comer. Cambiá una sola variable por vez.",
+      coccion:"Milanesa "+coccion+" con "+guarnicion.nombre+".",
+      sinergia:""+guarnicion.hack,
+      timingOrden:"Si el plato incluye vegetales, podés empezar por ellos y después seguir con la milanesa y "+guarnicion.nombre+"; es opcional.",
+      variableModificada:"plato_compuesto_milanesa_"+guarnicion.id
+    };
+  }
+
+  const pasta = has(/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/);
+  const salsas = [
+    {re:/\b(bolognesa|boloñesa|bolonesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"Cociná la pasta al dente; la salsa suma proteína, pero no elimina el almidón."},
+    {re:/\b(salsa blanca|crema|cremosa)\b/,nombre:"salsa cremosa",hack:"Mantené la salsa, medí la porción y sumá vegetales en la salsa o al costado."},
+    {re:/\b(pesto)\b/,nombre:"pesto",hack:"Usá el pesto justo para cubrir la pasta, cocinala al dente y sumá vegetales."},
+    {re:/\b(tomate|tuco|fileto|pomodoro|salsa roja)\b/,nombre:"salsa de tomate",hack:"Sumá cebolla, zucchini o berenjena a la salsa y cociná la pasta al dente."}
+  ].find(s=>s.re.test(t));
+  if (pasta && salsas) {
+    const acomp = has(/\b(ensalada|verduras|vegetales|pollo|carne|albondigas|albóndigas|milanesa)\b/);
+    return {
+      familiaDetectada:"pasta + "+salsas.nombre.replace(/\s+/g,"_"),
+      gruposDetectados:["plato_compuesto_argentino","pasta","salsa"],
+      componentesDetectados:["pasta",salsas.nombre],
+      resumenIntegrado:"La pasta aporta almidón; la salsa de "+salsas.nombre+" completa el plato.",
+      hackIntegrado:"Cociná la pasta al dente. "+salsas.hack,
+      queObservar:"Observá saciedad, energía y digestión. En la próxima prueba, cambiá solo una variable.",
+      coccion:"Pasta al dente con "+salsas.nombre+".",
+      sinergia:salsas.hack,
+      timingOrden:acomp?"Si hay vegetales, podés empezar por ellos y seguir con la pasta y su salsa; no es obligatorio.":"No se indicó una guarnición vegetal; no la damos por presente.",
+      variableModificada:"plato_compuesto_pasta_salsa"
+    };
+  }
+
+  const tarta = has(/\b(tarta|tartas)\b/);
+  const relleno = has(/\b(pollo)\b/) ? "pollo" : has(/\b(choclo)\b/) ? "choclo" : has(/\b(jamon|queso)\b/) ? "jamón y queso" : has(/\b(acelga|espinaca|verdura|verduras|zapallito)\b/) ? "verduras" : null;
+  if (tarta && relleno) {
+    const ensalada = has(/\b(ensalada|lechuga|rucula|tomate|vegetales)\b/);
+    return {
+      familiaDetectada:"tarta + "+(ensalada?"ensalada":"relleno"),
+      gruposDetectados:["plato_compuesto_argentino","tarta","relleno"],
+      componentesDetectados:["masa de tarta","relleno de "+relleno,...(ensalada?["ensalada/vegetales"]:[])],
+      resumenIntegrado:"La masa aporta harina y el relleno de "+relleno+" define el aporte de proteína, fibra y grasa.",
+      hackIntegrado:"Mantené el relleno y sumá vegetales o ensalada. No hace falta quitar la masa.",
+      queObservar:"Observá saciedad y digestión. En otra comida, compará con y sin vegetales.",
+      coccion:"Tarta de "+relleno+(ensalada ? " con ensalada." : "."),
+      sinergia:"Priorizá que el relleno tenga una proporción clara de su ingrediente principal y, si elegís ensalada, que sea una guarnición real.",
+      timingOrden:ensalada?"Podés empezar por la ensalada y después comer la tarta; es una prueba opcional.":"No se informó ensalada; no se asume que esté presente.",
+      variableModificada:"plato_compuesto_tarta"
+    };
+  }
+  return null;
+}
+
 function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas = []) {
   const t = normalizarProtocolo(textoComida).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
   if (!t) return null;
@@ -268,10 +347,14 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
     protocolo.variableModificada = "variable_por_confirmar";
   }
 
-  // Salvaguarda: si el motor no identificó un detalle culinario, no inventarlo.
-  if (!protocolo.coccion) protocolo.coccion = "No hay información suficiente para recomendar una técnica concreta para esta preparación.";
-  if (!protocolo.sinergia) protocolo.sinergia = "No hay suficiente detalle sobre los ingredientes para asignar una combinación de condimentos específica.";
-  protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
+  // Respuesta útil de base: no inventar propiedades del plato, pero tampoco devolver campos vacíos.
+  // Prioridad máxima: si el usuario escribió un plato compuesto, la salida debe cruzar sus componentes.
+  const protocoloCompuesto = resolverPlatoCompuestoArgentino(t);
+  if (protocoloCompuesto) Object.assign(protocolo, protocoloCompuesto);
+
+  if (!protocolo.coccion) protocolo.coccion = "Elegí una cocción pareja y ajustá el tiempo al alimento, al grosor y a la textura buscada. Evitá quemar la superficie; si es una preparación húmeda, cociná a fuego moderado y revisá el punto antes de agregar más tiempo.";
+  if (!protocolo.sinergia) protocolo.sinergia = "Elegí uno o dos condimentos según la base: orégano o albahaca para tomate y pastas; comino y laurel para legumbres; ajo y pimienta para carnes; limón y hierbas para vegetales. Ajustá al gusto, sin tapar el sabor del ingrediente."
+  if (!protocoloCompuesto) protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
   if (!protocolo.familiaDetectada) protocolo.familiaDetectada = gruposDetectados[0]?.clave || "familia_general";
   return protocolo;
 }

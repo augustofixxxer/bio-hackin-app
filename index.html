@@ -213,7 +213,8 @@ function BloqueoCard({ b, pase, tieneCondicionMedica, onVerPremium }) {
       borderRadius: 20, padding: 18, boxShadow: EXPLORADOR_TOKENS.cardShadow,
     }}>
       <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 15, fontWeight: 700, marginBottom: 8 }}>{b.combinacion}</p>
-      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 13, lineHeight: 1.6, marginBottom: (b.solucion || b.invitacionPremium) ? 12 : 0 }}>{b.resultado}</p>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10, color: EXPLORADOR_TOKENS.accent, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>Resumen</p>
+      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 13, lineHeight: 1.6, marginBottom: (b.solucion || b.invitacionPremium) ? 12 : 0 }}>{b.resumen || b.resultado}</p>
 
       {!confirmado && (
         <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12 }}>
@@ -237,13 +238,9 @@ function BloqueoCard({ b, pase, tieneCondicionMedica, onVerPremium }) {
       {confirmado && b.solucion && (
         <div style={{ borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 12 }}>
           <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10, color: EXPLORADOR_TOKENS.accent, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>🔧 Hack</p>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 13, lineHeight: 1.6, marginBottom: 10 }}>{b.solucion.adaptacion}</p>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55, marginBottom: 4 }}>
-            <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Probá:</b> la próxima vez que se repita esta situación, aplicá este cambio.
-          </p>
-          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55 }}>
-            <b style={{ color: EXPLORADOR_TOKENS.textPrimary }}>Observá:</b> cómo te sentís después. Con suficientes registros vas a poder ver si se repite un patrón.
-          </p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 13, lineHeight: 1.6, marginBottom: 10 }}>{b.solucion.hackMitigador || b.solucion.adaptacion}</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 10, color: EXPLORADOR_TOKENS.accent, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>Qué observar</p>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, fontSize: 12, color: EXPLORADOR_TOKENS.textSecondary, lineHeight: 1.55 }}>{b.solucion.queObservar || b.solucion.observacionUsuario || "Registrá cómo te resulta el cambio para poder compararlo en otra ocasión."}</p>
         </div>
       )}
 

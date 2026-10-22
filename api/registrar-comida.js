@@ -10,6 +10,7 @@ import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 import { clasificarComidaIA } from "./_clasificador-ia.js";
 import { elegirTipRelevanteIA, construirProtocoloCulinarioAdaptativo } from "./_selector-tips-ia.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
+import { copyPlatoPreview } from "./_copy-platos-preview.js";
 
 // AUTENTICACIÓN REAL DE SESIÓN (29/07/2026): el usuarioId ya NO se toma de un
 // campo suelto del body (eso permitía que cualquiera mandara el usuarioId de
@@ -456,25 +457,29 @@ export default async function handler(req, res) {
     //     curados; si no, bloque único con adaptacion completa (punto 7: nunca se arma la
     //     separación por lógica creativa en JS, se espera la curaduría en la fuente).
     const esPremiumComida = nivelAcceso === "Premium";
-    function armarSolucion(soluciones, reglaEsPremium) {
-      if (!soluciones) return null;
+    function armarSolucion(soluciones, reglaEsPremium, reglaId) {
+      const copyPreview = copyPlatoPreview(reglaId);
+      if (!soluciones && !copyPreview) return null;
       return {
-        id: soluciones.id || null,
-        nombre: soluciones.nombre_hackeo || "",
-        adaptacion: soluciones.adaptacion || "",
-        accionUsuario: soluciones.accion_usuario || null,
-        observacionUsuario: soluciones.observacion_usuario || null,
-        contextoActivacion: soluciones.contexto_activacion || null,
-        continuidad: soluciones.continuidad || null,
-        variableModificada: soluciones.variable_modificada || null,
-        categoria: soluciones.categoria || null,
-        cambioComposicional: soluciones.cambio_composicional || null,
-        aprendizajeComparativo: soluciones.aprendizaje_comparativo || null,
-        queSeMantiene: soluciones.que_se_mantiene || null,
-        porQueCambio: soluciones.por_que_cambio || null,
-        tipoComparacion: soluciones.tipo_comparacion || null,
-        estadoContenidoPremium: soluciones.estado_contenido_premium || null,
-        fuenteConocimiento: soluciones.fuente_conocimiento || null,
+        id: soluciones?.id || null,
+        nombre: soluciones?.nombre_hackeo || copyPreview?.resumen || "",
+        resumen: copyPreview?.resumen || null,
+        hackMitigador: copyPreview?.hack || null,
+        queObservar: copyPreview?.observar || null,
+        adaptacion: copyPreview?.hack || soluciones?.adaptacion || "",
+        accionUsuario: copyPreview?.hack || soluciones?.accion_usuario || null,
+        observacionUsuario: copyPreview?.observar || soluciones?.observacion_usuario || null,
+        contextoActivacion: soluciones?.contexto_activacion || null,
+        continuidad: soluciones?.continuidad || null,
+        variableModificada: soluciones?.variable_modificada || null,
+        categoria: soluciones?.categoria || null,
+        cambioComposicional: soluciones?.cambio_composicional || null,
+        aprendizajeComparativo: soluciones?.aprendizaje_comparativo || null,
+        queSeMantiene: soluciones?.que_se_mantiene || null,
+        porQueCambio: soluciones?.por_que_cambio || null,
+        tipoComparacion: soluciones?.tipo_comparacion || null,
+        estadoContenidoPremium: soluciones?.estado_contenido_premium || null,
+        fuenteConocimiento: soluciones?.fuente_conocimiento || null,
         premium: reglaEsPremium,
       };
     }
@@ -482,7 +487,8 @@ export default async function handler(req, res) {
       const reglaEsPremium = r.nivel_acceso === "Premium";
       // Fase 3 — frontera Free/Premium: la tarjeta gratuita entrega solo el hallazgo/estado.
       // La acción, observación de prueba y continuidad quedan reservadas a Premium.
-      const puedeVerAdaptacion = Boolean(r.soluciones) && esPremiumComida;
+      const copyPreview = copyPlatoPreview(r.id);
+      const puedeVerAdaptacion = (Boolean(r.soluciones) || Boolean(copyPreview)) && esPremiumComida;
       // La continuidad hacia Premium no depende del nivel de acceso:
       // si existe una solución contextual, el resultado debe ofrecer el puente.
       // El acceso sólo define si la solución completa se revela en la devolución.
@@ -490,14 +496,15 @@ export default async function handler(req, res) {
       return {
         reglaId: r.id || null,
         combinacion: r.combinacion || "",
-        resultado: r.resultado || "",
+        resumen: copyPreview?.resumen || r.resultado || "",
+        resultado: copyPreview?.resumen || r.resultado || "",
         nivelRiesgo: r.nivel_riesgo || "Bajo",
-        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
+        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium, r.id) : null,
         invitacionPremium: tieneContinuidadPremium && !esPremiumComida
           ? {
               texto: construirInvitacionPremium(),
-              variable: r.soluciones.variable_modificada || null,
-              categoria: r.soluciones.categoria || null,
+              variable: r.soluciones?.variable_modificada || null,
+              categoria: r.soluciones?.categoria || null,
               reglaId: r.id || null,
               solucionId: r.soluciones.id || null,
             }
@@ -505,8 +512,8 @@ export default async function handler(req, res) {
         continuidadPremium: tieneContinuidadPremium && esPremiumComida
           ? {
               texto: "Esta consulta ya puede continuar dentro de Premium.",
-              variable: r.soluciones.variable_modificada || null,
-              categoria: r.soluciones.categoria || null,
+              variable: r.soluciones?.variable_modificada || null,
+              categoria: r.soluciones?.categoria || null,
             }
           : null,
         bloqueoId: bloqueosCreados[i]?.id,
@@ -518,11 +525,12 @@ export default async function handler(req, res) {
     // independientemente del nivel de acceso de la regla.
     const resueltosRespuesta = resueltos.map((r) => {
       const reglaEsPremium = r.nivel_acceso === "Premium";
-      const puedeVerAdaptacion = Boolean(r.soluciones) && esPremiumComida;
+      const copyPreview = copyPlatoPreview(r.id);
+      const puedeVerAdaptacion = (Boolean(r.soluciones) || Boolean(copyPreview)) && esPremiumComida;
       return {
         combinacion: r.combinacion || "",
         mensaje: "Ya aplicaste este hackeo con la versión casera.",
-        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium) : null,
+        solucion: puedeVerAdaptacion ? armarSolucion(r.soluciones, reglaEsPremium, r.id) : null,
       };
     });
 
