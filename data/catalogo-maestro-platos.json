@@ -931,5 +931,16 @@
     "resumen": "El plato patrio por excelencia. Un guiso denso y pesado a base de maíz blanco, porotos, zapallo y diferentes cortes de carne y achuras.",
     "hack": "Es un plato de altísima densidad calórica y grasa; reservarlo para ocasiones especiales, servite una porción medida y disfrutalo sabiendo que su digestión demandará tiempo. Tip extra: un toque de salsita picante (quiquirimí) con verdeo y pimentón por encima es el toque clásico que ayuda a levantar la digestión de las grasas.",
     "que_observar": "Registra el nivel de pesadez o letargo posterior; al ser un plato sumamente pesado, exige una tarde tranquila sin exigencias físicas intensas."
+  },
+  {
+    "plato_id": "pastel-polenta",
+    "sinonimos": [
+      "pastel de polenta",
+      "pastel de maíz y carne",
+      "torre de polenta"
+    ],
+    "resumen": "Variante del clásico pastel de papas que reemplaza el puré por capas de polenta dorada con un corazón de carne picada sazonada.",
+    "hack": "Al igual que con el pastel de papas, el secreto para que no resulte pesado es moderar la capa de grasa añadida y dejar que la humedad de la carne haga el trabajo. Tip extra: un toque de queso gratinado arriba le aporta una costra crocante increíble sin alterar la digestibilidad.",
+    "que_observar": "Evalúa tu nivel de saciedad; combina la energía rápida de la polenta con la proteína de la carne, resultando en un plato muy rendidor."
   }
 ]
