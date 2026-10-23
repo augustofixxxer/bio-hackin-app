@@ -787,5 +787,160 @@
     "resumen": "Capas superpuestas de puré de papa y carne picada especiada, gratinadas al horno. El gran confort food de olla y fuente.",
     "hack": "No satures la capa de puré con exceso de manteca o leche entera; deja que la carne jugosa aporte toda la humedad necesaria. Tip extra: un toque de pimentón dulce o ahumado en la superficie antes de gratinar le da un color y aroma tostado inigualable.",
     "que_observar": "Nota la saciedad profunda y el calor reconfortante que deja el plato; al ser denso en carbohidratos y proteínas, es ideal para días de alto desgaste físico."
+  },
+  {
+    "plato_id": "arroz-valenciana",
+    "sinonimos": [
+      "arroz a la valenciana",
+      "arroz valenciano",
+      "arroz con mariscos y carnes"
+    ],
+    "resumen": "Un plato complejo que combina carbohidratos de arroz con una mixtura rica de proteínas animales (pollo, cerdo, mariscos) y vegetales dorados.",
+    "hack": "Al ser un plato muy abundante en ingredientes, servite una porción moderada y masticá con calma; la combinación de varias proteínas puede alargar la digestión si se come apurado. Tip extra: un buen golpe de jugo de limón por encima al servir activa las secreciones gástricas y equilibra la densidad de los sabores.",
+    "que_observar": "Registra la estabilidad de tu energía durante la tarde; al tener una matriz variada, la saciedad suele ser sumamente prolongada."
+  },
+  {
+    "plato_id": "paella",
+    "sinonimos": [
+      "paella",
+      "paella mixta",
+      "paella de mariscos"
+    ],
+    "resumen": "Joya de la cocina mediterránea. Arroz estacionado con azafrán, vegetales y frutos del mar o carnes magras, con un excelente perfil de micronutrientes.",
+    "hack": "El azafrán puro no solo da el color clásico, sino que aporta compuestos bioactivos que mejoran el confort digestivo y el estado de ánimo. Tip extra: disfrutala sin apuro, saboreando el fondo dorado (socarrat) con moderación si sos sensible a las digestiones pesadas.",
+    "que_observar": "Analiza tu liviandad estomacal; los mariscos combinados con arroz de buena calidad suelen dar una satisfacción muy limpia sin la modorra típica de las harinas refinadas."
+  },
+  {
+    "plato_id": "guiso-arroz",
+    "sinonimos": [
+      "guiso de arroz",
+      "arroz con carne y verduras",
+      "arrocito guisado"
+    ],
+    "resumen": "Clásico de olla reconfortante. Arroz cocido en caldo concentrado con verduras de estación y pequeños trozos de carne, logrando una textura melosa y de rápida asimilación.",
+    "hack": "Dejar reposar el guiso unos minutos antes de servir ayuda a que los almidones se estabilicen y no caigan pesados al estómago. Tip extra: sumarle un toque de queso rallado de calidad o perejil fresco al plato realza el perfil nutricional y estimula la digestión.",
+    "que_observar": "Presta atención al calor y confort que aporta; es un plato que reconforta pero requiere actividad posterior para metabolizar bien su energía rápida."
+  },
+  {
+    "plato_id": "guiso-lentejas",
+    "sinonimos": [
+      "guiso de lentejas",
+      "lentejas guisadas",
+      "guiso criollo de lentejas"
+    ],
+    "resumen": "El rey indiscutido de los platos de invierno. Aporte masivo de proteína vegetal, hierro y fibra prebiótica gracias a las legumbres.",
+    "hack": "Si las lentejas estuvieron bien remojadas previamente, vas a evitar por completo la hinchazón abdominal típica. El toque fit de valor: sumale un chorrito generoso de vinagre o limón al plato servido y comelo con una hojita de laurel; los ácidos orgánicos potencian la absorción del hierro vegetal y cuidan tu microbiota.",
+    "que_observar": "Registra el nivel de saciedad extrema que te deja; es un plato de alta densidad que mantiene el hambre a raya durante horas, ideal para días de mucho desgaste."
+  },
+  {
+    "plato_id": "guiso-papa",
+    "sinonimos": [
+      "guiso de papa",
+      "guiso de papas con carne",
+      "estofado de papa"
+    ],
+    "resumen": "Alimento de olla muy noble, donde la papa absorbe todos los jugos del fondo de cocción, aportando carbohidratos reconfortantes y un nivel calórico moderado.",
+    "hack": "Cocinalas con los cubos de papa enteros para que no se deshagan por completo y mantengan una estructura que obligue a una mínima masticación. Tip extra: un toque de pimentón dulce y cebolla de verdeo picada arriba levanta el plato a otro nivel sin sumar complicaciones.",
+    "que_observar": "Nota la velocidad de digestión; al ser un plato blando y húmedo, se asimila con muchísima rapidez, por lo que la porción justa es la clave."
+  },
+  {
+    "plato_id": "guiso-fideos",
+    "sinonimos": [
+      "guiso de fideos",
+      "fideos guisados",
+      "tallarines de olla"
+    ],
+    "resumen": "Fideos cortos cocidos directamente en el caldo con verduras y carne, logrando una salsa espesa y bien integrada por el almidón de la pasta.",
+    "hack": "Al igual que con el arroz de olla, controlar el tamaño de la porción es fundamental para evitar el letargo post-comida propio de las harinas de cocción húmeda. Tip extra: un toque de queso cremoso o rallado al final aporta untuosidad y frena levemente el pico de absorción rápida.",
+    "que_observar": "Evalúa tu nivel de energía inmediata; te da un envión rápido pero puede pedir movimiento físico para evitar la modorra."
+  },
+  {
+    "plato_id": "tortilla-papa",
+    "sinonimos": [
+      "tortilla de papa",
+      "tortilla española",
+      "tortilla de papas",
+      "tortillita"
+    ],
+    "resumen": "Estructura sólida a base de papa y huevo coagulado, combinando carbohidratos energéticos con una proteína de altísima calidad biológica.",
+    "hack": "Si querés aligerar la cocción tradicional, hacé las papas previamente al horno o vapor antes de unirlas al huevo en la sartén, evitando el exceso de aceite de la fritura previa. Tip extra: acompañada de una buena ensalada de hojas verdes crudas, equilibras perfectamente el plato.",
+    "que_observar": "Registra tu saciedad; la combinación de huevo y papa es una de las fórmulas más saciantes y estables para mantener el apetito controlado."
+  },
+  {
+    "plato_id": "tortilla-acelga",
+    "sinonimos": [
+      "tortilla de acelga",
+      "tortilla de verdura",
+      "tortilla de espinaca"
+    ],
+    "resumen": "Versión verde y ligera que reemplaza gran parte del tubérculo por vegetales de hoja unidos por el huevo. Fibra y micronutrientes asegurados.",
+    "hack": "Escurrí muy bien el agua de la acelga antes de batirla con los huevos para que la tortilla no quede húmeda ni se desarme en la sartén. Tip extra: un toque de ajo deshidratado o rallado realza el sabor de la verdura de forma excelente.",
+    "que_observar": "Analiza tu liviandad estomacal; es una opción sumamente amigable para comer al mediodía y seguir con la mente despejada."
+  },
+  {
+    "plato_id": "estofado",
+    "sinonimos": [
+      "estofado",
+      "estofado de carne",
+      "estofado criollo"
+    ],
+    "resumen": "Carne vacuna u otro corte cocinado a fuego muy lento en salsa de tomate con verduras, logrando una ternura extrema y una concentración profunda de sabor umami.",
+    "hack": "La cocción lenta predigiere las fibras de la carne, facilitando enormemente el trabajo de tu sistema gástrico. Tip extra: acompañalo con vegetales al vapor o una base liviana en lugar de abusar de grandes cantidades de pan.",
+    "que_observar": "Nota el confort digestivo profundo y la energía sostenida que te otorga una buena carne bien estofada."
+  },
+  {
+    "plato_id": "polenta",
+    "sinonimos": [
+      "polenta",
+      "harina de maiz",
+      "polenta cremosa"
+    ],
+    "resumen": "Puré caliente a base de harina de maíz. Aporta carbohidratos de rápida asimilación y una textura sumamente reconfortante.",
+    "hack": "El secreto para que no te tire un bajón de energía: preparala con un toque de caldo real y sumale una buena cucharada de manteca o aceite de oliva al final junto con un buen queso. Las grasas saludables frenan el impacto glucémico directo de la harina de maíz. Tip extra: un toque de pimienta negra despierta el sabor de la polenta instantáneamente.",
+    "que_observar": "Presta atención a la velocidad con la que digerís la polenta; al ser un carbohidrato puro, su tránsito es rápido y pide un buen acompañamiento proteico."
+  },
+  {
+    "plato_id": "humita",
+    "sinonimos": [
+      "humita",
+      "humita en olla",
+      "humita en chala"
+    ],
+    "resumen": "Preparación tradicional a base de choclo tierno rallado, zapallo, cebolla y leche o queso, con un perfil de sabor dulce y cremoso muy característico.",
+    "hack": "Al tener una base natural de choclo y zapallo, aporta una fibra muy noble, pero al ser dulce y cremosa, modera la porción si buscás evitar picos de glucosa. Tip extra: un toque de pimentón picante o rehogado de cebolla con ají molido arriba contrasta perfecto con el dulzor del choclo.",
+    "que_observar": "Registra la sensación de confort y energía cálida; es un plato sumamente reconfortante pero de digestión rápida."
+  },
+  {
+    "plato_id": "tamal",
+    "sinonimos": [
+      "tamal",
+      "tamales",
+      "humita envuelta"
+    ],
+    "resumen": "Masa de maíz rellena de carne especiada, envuelta y cocida en su propia chala. Alimento ancestral de alta densidad energética y portátil.",
+    "hack": "Por su contenido de masa de maíz y carne especiada, funciona como una comida completa por sí sola; comelo despacio y acompáñalo con agua fresca. Tip extra: un toque de salsa criolla picante por encima realza los sabores y estimula las secreciones digestivas.",
+    "que_observar": "Nota la saciedad prolongada que otorga; al estar envuelto y compacto, su digestión es pausada y requiere su tiempo de reposo."
+  },
+  {
+    "plato_id": "locro",
+    "sinonimos": [
+      "locro",
+      "locro criollo",
+      "locro pulsudo"
+    ],
+    "resumen": "El plato patrio por excelencia. Un guiso denso y pesado a base de maíz blanco, porotos, zapallo y diferentes cortes de carne y achuras.",
+    "hack": "Es un plato de altísima densidad calórica y grasa; reservarlo para ocasiones especiales, servite una porción medida y disfrutalo sabiendo que su digestión demandará tiempo. Tip extra: un toque de salsita picante (quiquirimí) con verdeo y pimentón por encima es el toque clásico que ayuda a levantar la digestión de las grasas.",
+    "que_observar": "Registra el nivel de pesadez o letargo posterior; al ser un plato sumamente pesado, exige una tarde tranquila sin exigencias físicas intensas."
+  },
+  {
+    "plato_id": "pastel-polenta",
+    "sinonimos": [
+      "pastel de polenta",
+      "pastel de maíz y carne",
+      "torre de polenta"
+    ],
+    "resumen": "Variante del clásico pastel de papas que reemplaza el puré por capas de polenta dorada con un corazón de carne picada sazonada.",
+    "hack": "Al igual que con el pastel de papas, el secreto para que no resulte pesado es moderar la capa de grasa añadida y dejar que la humedad de la carne haga el trabajo. Tip extra: un toque de queso gratinado arriba le aporta una costra crocante increíble sin alterar la digestibilidad.",
+    "que_observar": "Evalúa tu nivel de saciedad; combina la energía rápida de la polenta con la proteína de la carne, resultando en un plato muy rendidor."
   }
 ]
