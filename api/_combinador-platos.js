@@ -50,6 +50,50 @@ export async function resolverCombinacionTexto(textoUsuario) {
   console.info("[combinador-trace]", JSON.stringify(trace));
 
   try {
+    const filtroActivo = process.env.VERCEL_ENV === "preview" ? "" : "&activo=eq.true";
+    const filas = await supabaseFetch(
+      "preview_combinaciones_platos?select=combinacion_id,plato_principal_id,acompanamiento_id,sinonimos,resumen_hibrido,hack_combinado,que_observar" +
+      filtroActivo
+    );
+    const combinaciones = Array.isArray(filas) ? filas : [];
+    trace.filasMatriz = combinaciones.length;
+
+    // Primero se contrastan los alias completos de la matriz activa. Esto permite
+    // reconocer entradas naturales como "milanesa con puré" aunque "puré" solo
+    // no sea una ficha activa del catálogo individual.
+    const textoNormalizado = normalizarEntrada(textoUsuario);
+    const porSinonimo = combinaciones.find((fila) =>
+      Array.isArray(fila.sinonimos) &&
+      fila.sinonimos.some((sinonimo) => normalizarEntrada(sinonimo) === textoNormalizado)
+    );
+
+    if (porSinonimo) {
+      trace.principalId = porSinonimo.plato_principal_id;
+      trace.acompanamientoId = porSinonimo.acompanamiento_id;
+      trace.coincidencia = porSinonimo.combinacion_id;
+      trace.etapa = "dupla_encontrada_por_sinonimo";
+      console.info("[combinador-trace]", JSON.stringify(trace));
+      return {
+        modo: "dupla",
+        detectada: true,
+        entidades: {
+          principal: porSinonimo.plato_principal_id,
+          acompanamiento: porSinonimo.acompanamiento_id
+        },
+        nombres: {
+          principal: partes.principal,
+          acompanamiento: partes.acompanamiento
+        },
+        cards: [
+          { titulo: "Resumen de la combinación", texto: porSinonimo.resumen_hibrido },
+          { titulo: "El super-hack combinado", texto: porSinonimo.hack_combinado },
+          { titulo: "Qué observar", texto: porSinonimo.que_observar }
+        ],
+        fallback: false,
+        ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
+      };
+    }
+
     const [principal, acompanamiento] = await Promise.all([
       resolverEntidad(partes.principal),
       resolverEntidad(partes.acompanamiento)
@@ -59,14 +103,7 @@ export async function resolverCombinacionTexto(textoUsuario) {
     trace.acompanamientoId = acompanamiento?.plato_id || null;
     console.info("[combinador-trace]", JSON.stringify(trace));
 
-    const filtroActivo = process.env.VERCEL_ENV === "preview" ? "" : "&activo=eq.true";
-    const filas = await supabaseFetch(
-      "preview_combinaciones_platos?select=combinacion_id,plato_principal_id,acompanamiento_id,sinonimos,resumen_hibrido,hack_combinado,que_observar" +
-      filtroActivo
-    );
-
-    trace.filasMatriz = Array.isArray(filas) ? filas.length : -1;
-    const combinacion = (Array.isArray(filas) ? filas : []).find((fila) =>
+    const combinacion = combinaciones.find((fila) =>
       fila.plato_principal_id === principal.plato_id &&
       fila.acompanamiento_id === acompanamiento.plato_id
     );
