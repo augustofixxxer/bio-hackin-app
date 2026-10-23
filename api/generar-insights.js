@@ -412,7 +412,7 @@ export default async function handler(req, res) {
     }
 
     const usuarioRows = await supabaseFetch(
-      `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso`
+      `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso,premium_until`
     );
     if (!usuarioRows.length) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
@@ -437,7 +437,15 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Debés aceptar los Términos y Condiciones para continuar.', requiereTerminos: true });
     }
 
-    const esPremium = usuario.nivel_acceso === 'Premium';
+    const esPremium = usuario.cuenta_suspendida !== true && usuario.terminos_aceptados === true && usuario.nivel_acceso === 'Premium' && (!usuario.premium_until || new Date(usuario.premium_until).getTime() > Date.now());
+
+    // Endpoint específico para la analítica Premium. El progreso básico sigue disponible
+    // en la ruta raíz para alimentar la barra de Mi Día, pero esta ruta nunca entrega
+    // patrones ni métricas ampliadas a una cuenta Free, vencida o suspendida.
+    if (req.query?.vista === 'patrones' && !esPremium) {
+      res.setHeader('Cache-Control', 'private, no-store');
+      return res.status(403).json({ error: 'Tendencias y Patrones requiere una suscripción Premium activa.', requierePremium: true, nivelAcceso: 'gratuito' });
+    }
 
     // FASE 7 (10/08/2026) — CAMBIO DE COMPORTAMIENTO declarado: antes, Gratis estaba
     // 100% bloqueado (0 datos reales, solo MUESTRA_GENERICA). Paywall aprobado por
@@ -451,6 +459,8 @@ export default async function handler(req, res) {
 
     const resultado = await calcularInsights(usuarioId, opciones);
     resultado.limitado14dias = !esPremium;
+    resultado.nivelAcceso = esPremium ? 'Premium' : 'gratuito';
+    res.setHeader('Cache-Control', 'private, no-store');
 
     await emitirEvento({
       usuarioId,
