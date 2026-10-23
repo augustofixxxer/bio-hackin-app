@@ -1135,13 +1135,15 @@
     "que_observar": "Analiza tu confort digestivo; es una alternativa sumamente amable para hidratar y acompañar la mañana sin sobrecargar el sistema gástrico."
   },
   {
-    "plato_id": "torta-criollitos",
+    "plato_id": "tortilla-criollitos",
     "sinonimos": [
-      "torta",
-      "tortitas",
+      "tortilla",
+      "tortilla criollitos",
+      "tortilla de grasa",
+      "tortilla de criollitos",
       "criollitos",
-      "bizcochitos de grasa criollos",
-      "tortas cordobesas"
+      "criollitos de grasa",
+      "bizcochitos de grasa criollos"
     ],
     "resumen": "Pieza de panadería tradicional a base de harina refinada y alta carga de grasa animal o vegetal. Textura hojaldrada y sabor irresistible.",
     "hack": "Son una bomba calórica y lipídica de consumo ocasional; si te vas a dar el gusto, acompañalos con un buen mate amargo para equilibrar la pesadez. Tip extra: no los comas como desayuno diario si buscás rendimiento mental despejado, ya que exigen mucha energía gástrica.",
