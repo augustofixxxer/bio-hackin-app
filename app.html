@@ -546,16 +546,20 @@ function App(){
   setSupermercadoMsg('✓ ¡Buena elección! Ya tenés un reemplazo concreto para buscar en este pasillo.');
   fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json',...(pase()?{Authorization:'Bearer '+pase()}: {})},body:JSON.stringify({evento:'supermercado_reemplazo_aplicado',contexto:bloque.id,metadata:{pasillo:bloque.titulo,opcion,fecha:new Date().toISOString().slice(0,10)}})}).catch(()=>{});
  }
- function irPremium(origen='basica',contexto=null){
+ async function irPremium(origen='basica',contexto=null){
   if(tab==='mi-dia'||origen==='patrones')setPremiumRetorno('mi-dia');
   else if(tab==='descubrir'||contexto)setPremiumRetorno('descubrir');
-  setPremiumOrigen(origen);setPremiumContexto(contexto?{...contexto,cambioComposicional:contexto.solucion?.cambioComposicional||contexto.cambioComposicional||null,aprendizajeComparativo:contexto.solucion?.aprendizajeComparativo||contexto.aprendizajeComparativo||null,queSeMantiene:contexto.solucion?.queSeMantiene||contexto.queSeMantiene||null}:null);setPremiumVista('home');setTab('premium')
+  let destino=origen;let contextoSeguro=contexto?{...contexto,cambioComposicional:contexto.solucion?.cambioComposicional||contexto.cambioComposicional||null,aprendizajeComparativo:contexto.solucion?.aprendizajeComparativo||contexto.aprendizajeComparativo||null,queSeMantiene:contexto.solucion?.queSeMantiene||contexto.queSeMantiene||null}:null;
+  if(origen==='patrones'){
+   try{const r=await fetch('/api/premium?ruta=estado',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const estado=await r.json();if(!r.ok||estado.premium!==true){destino='basica';contextoSeguro=null}else{setPremiumEstado(estado)}}catch(_){destino='basica';contextoSeguro=null}
+  }
+  setPremiumOrigen(destino);setPremiumContexto(contextoSeguro);setPremiumVista('home');setTab('premium')
  }
  function volverDesdePremium(){const destino=premiumRetorno==='mi-dia'?'mi-dia':'descubrir';if(destino==='descubrir')setDiscoverView('home');setTab(destino)}
  function irMiDiaDesdePildora(target='bienestar'){setResultado(null);setMsg('');setMsgMiDia('');setResultadoMiDia(null);setFocusMiDia(target);setTab('mi-dia')}
  async function cargarHistorialMiDia(){setHistorialLoading(true);setHistorialError('');try{const r=await fetch('/api/generar-insights?vista=historial',{headers:{Authorization:'Bearer '+pase()}});const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar el historial.');setHistorialMiDia((d.historial||[]).slice(0,14));}catch(e){setHistorialError(e.message||'No pudimos cargar el historial.')}finally{setHistorialLoading(false)}}
  async function cargarProgresoPatrones(){if(!pase()){setProgresoPatrones({diasRegistrados:null,cargando:false,error:'Tu sesión no está disponible. Volvé a iniciar sesión para consultar el progreso.'});return}setProgresoPatrones(v=>({...v,cargando:true,error:''}));try{const r=await fetch('/api/generar-insights',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos actualizar tu progreso.');const dias=Number(d.diasRegistrados);if(!Number.isFinite(dias)||dias<0)throw Error('La respuesta no incluyó un progreso válido.');setProgresoPatrones({diasRegistrados:Math.min(10,dias),cargando:false,error:''})}catch(e){setProgresoPatrones({diasRegistrados:null,cargando:false,error:e.message||'No pudimos actualizar tu progreso.'})}}
- async function cargarPatronesPremium(){if(!pase()){setPatronesAnalisis({data:null,cargando:false,error:'Tu sesión no está disponible. Volvé a iniciar sesión para consultar tus patrones.'});return}setPatronesAnalisis(v=>({...v,cargando:true,error:''}));try{const r=await fetch('/api/generar-insights',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar tus tendencias y patrones.');if(!d||typeof d.estado!=='string'||!Array.isArray(d.insights))throw Error('El análisis devolvió una respuesta incompleta.');setPatronesAnalisis({data:d,cargando:false,error:''})}catch(e){setPatronesAnalisis({data:null,cargando:false,error:e.message||'No pudimos cargar tus tendencias y patrones.'})}}
+ async function cargarPatronesPremium(){if(!pase()){setPatronesAnalisis({data:null,cargando:false,error:'Tu sesión no está disponible. Volvé a iniciar sesión para consultar tus patrones.'});return}setPatronesAnalisis(v=>({...v,cargando:true,error:''}));try{const r=await fetch('/api/generar-insights?vista=patrones',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'No pudimos cargar tus tendencias y patrones.');if(!d||typeof d.estado!=='string'||!Array.isArray(d.insights))throw Error('El análisis devolvió una respuesta incompleta.');setPatronesAnalisis({data:d,cargando:false,error:''})}catch(e){setPatronesAnalisis({data:null,cargando:false,error:e.message||'No pudimos cargar tus tendencias y patrones.'})}}
  useEffect(()=>{if(tab==='premium'&&premiumOrigen==='patrones')cargarPatronesPremium()},[tab,premiumOrigen]);
  // Punto de extensión futuro: validar nivel_acceso antes de ampliar el historial; si es Free, abrir el paywall con irPremium('historial').
  function alternarHistorialAnterior(){setHistorialExpandido(v=>!v)}
@@ -718,7 +722,7 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
 </div>
 
 
-{premiumOrigen==='patrones'&&<div className="premium-home premium-patterns-view">
+{premiumOrigen==='patrones'&&premiumEstado?.premium===true&&<div className="premium-home premium-patterns-view">
   <div className="premium-feature">
     <div className="feature-kicker">ANÁLISIS DE TUS REGISTROS</div>
     {patronesAnalisis.cargando&&<div className="empty-state" role="status"><b>Analizando tus registros…</b><p>Estamos consultando los datos guardados en tu cuenta.</p></div>}
