@@ -790,7 +790,7 @@ function App(){
       <form className="adaptive-log-form" onSubmit={guardarBitacoraVariante}>
         <label htmlFor="premium-experience-note">¿Cómo te sentiste con esta variante?</label>
         <p className="adaptive-log-hint">Anotá acá lo que notaste, sin buscar una respuesta correcta ni medirlo todo.</p>
-        <textarea id="premium-experience-note" value={premiumRegistroTexto} onChange={e=>setPremiumRegistroTexto(e.target.value)} maxLength={500} placeholder="Jotéalo acá… ¿Notaste algún cambio o te sentiste igual?" rows={4} />
+        <textarea id="premium-experience-note" value={premiumRegistroTexto} onChange={e=>setPremiumRegistroTexto(e.target.value)} maxLength={500} placeholder="Anotalo acá… ¿Notaste algún cambio o te sentiste igual?" rows={4} />
         <button type="submit" className="primary" disabled={premiumExpBusy||!premiumRegistroTexto.trim()}>{premiumExpBusy?'Guardando…':'Guardar en mi bitácora'}</button>{premiumExpMsg&&<p className={'adaptive-save-feedback '+(premiumExpMsg.startsWith('✓')?'success':'')} role="status" aria-live="polite">{premiumExpMsg.startsWith('✓')?'¡Guardado con éxito en tu bitácora!':premiumExpMsg}</p>}
       </form>
     </> : <><p>Entrá desde una comida de Descubrir para registrar tu experiencia.</p><button className="secondary" onClick={volverDesdePremium}>← Volver a {premiumRetorno==='mi-dia'?'Mi Día':'Descubrir'}</button></>}
