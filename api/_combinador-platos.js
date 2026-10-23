@@ -1,7 +1,7 @@
 // Combinador de fichas del catálogo maestro. No usa tablas de duplas ni genera copy.
 import { resolverFichaPlato, normalizarEntrada } from "./_catalogo-platos.js";
 
-const CONECTORES = /\\s+(con|y)\\s+/i;
+const CONECTORES = /\s+(con|y)\s+/i;
 
 function separarDupla(texto) {
   const original = String(texto || "").trim();
