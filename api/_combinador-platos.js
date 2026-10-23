@@ -1,8 +1,7 @@
-// Resolver determinista de duplas culinarias. Sin IA generativa ni servicios pagos.
-import { supabaseFetch } from "./_supabase.js";
+// Combinador de fichas del catálogo maestro. No usa tablas de duplas ni genera copy.
 import { resolverFichaPlato, normalizarEntrada } from "./_catalogo-platos.js";
 
-const CONECTORES = /\s+(acompañado\s+de|acompanado\s+de|con|y)\s+/i;
+const CONECTORES = /\s+(con|y)\s+/i;
 
 function separarDupla(texto) {
   const original = String(texto || "").trim();
@@ -15,12 +14,10 @@ function separarDupla(texto) {
 }
 
 async function resolverEntidad(texto) {
-  // "Milanesa" sola es ambigua en el catálogo; en el uso rioplatense se interpreta
-  // como milanesa de carne salvo que el usuario especifique pollo, hígado o berenjena.
-  const limpio = normalizarEntrada(texto);
-  const consulta = limpio === "milanesa" ? "milanesa de carne" : texto;
-  // El combinador puede resolver fichas inactivas solo para contrastarlas con una dupla activa.
-  // Esto evita publicar el catálogo individual mientras habilita las combinaciones aprobadas.
+  // En el uso rioplatense, "milanesa" sin especificación se interpreta como carne.
+  const consulta = normalizarEntrada(texto) === "milanesa" ? "milanesa de carne" : texto;
+  // Se permiten fichas inactivas en la resolución interna: el catálogo individual
+  // conserva su visibilidad actual, pero sus fichas aprobadas pueden cruzarse aquí.
   return resolverFichaPlato(consulta, { incluirInactivos: true });
 }
 
@@ -35,138 +32,106 @@ function fichaPublica(ficha, nombreEntrada) {
   };
 }
 
+function crearTarjetas(principal, acompanamiento) {
+  const pares = [
+    { titulo: "Resumen", campo: "resumen" },
+    { titulo: "Hack", campo: "hack" },
+    { titulo: "Qué observar", campo: "que_observar" }
+  ];
+  return pares.map(({ titulo, campo }) => {
+    const fichas = [
+      { nombre: principal.nombre, texto: principal[campo] },
+      { nombre: acompanamiento.nombre, texto: acompanamiento[campo] }
+    ];
+    return {
+      titulo,
+      fichas,
+      // Compatibilidad con clientes anteriores: el contenido sigue siendo
+      // exclusivamente el texto ya aprobado de las dos fichas individuales.
+      texto: fichas.map((ficha) => `${ficha.nombre}: ${ficha.texto || ""}`).join("\n\n")
+    };
+  });
+}
+
 export async function resolverCombinacionTexto(textoUsuario) {
-  const trace = { etapa: "inicio", textoRecibido: String(textoUsuario || ""), conectorDetectado: null, principalTexto: null, acompanamientoTexto: null, principalId: null, acompanamientoId: null, filasMatriz: null, coincidencia: null, error: null };
+  const trace = {
+    etapa: "inicio",
+    textoRecibido: String(textoUsuario || ""),
+    conectorDetectado: null,
+    principalTexto: null,
+    acompanamientoTexto: null,
+    principalId: null,
+    acompanamientoId: null,
+    coincidencia: null,
+    error: null
+  };
   const partes = separarDupla(textoUsuario);
   if (!partes) {
     trace.etapa = "sin_conector";
     console.info("[combinador-trace]", JSON.stringify(trace));
     return { modo: "sin_dupla", detectada: false, ...(process.env.VERCEL_ENV === "preview" ? { trace } : {}) };
   }
+
   trace.etapa = "conector_detectado";
   trace.conectorDetectado = partes.conector;
   trace.principalTexto = partes.principal;
   trace.acompanamientoTexto = partes.acompanamiento;
-  console.info("[combinador-trace]", JSON.stringify(trace));
 
   try {
-    const filtroActivo = process.env.VERCEL_ENV === "preview" ? "" : "&activo=eq.true";
-    const filas = await supabaseFetch(
-      "preview_combinaciones_platos?select=combinacion_id,plato_principal_id,acompanamiento_id,sinonimos,resumen_hibrido,hack_combinado,que_observar" +
-      filtroActivo
-    );
-    const combinaciones = Array.isArray(filas) ? filas : [];
-    trace.filasMatriz = combinaciones.length;
-
-    // Primero se contrastan los alias completos de la matriz activa. Esto permite
-    // reconocer entradas naturales como "milanesa con puré" aunque "puré" solo
-    // no sea una ficha activa del catálogo individual.
-    const textoNormalizado = normalizarEntrada(textoUsuario);
-    const porSinonimo = combinaciones.find((fila) =>
-      Array.isArray(fila.sinonimos) &&
-      fila.sinonimos.some((sinonimo) => normalizarEntrada(sinonimo) === textoNormalizado)
-    );
-
-    if (porSinonimo) {
-      trace.principalId = porSinonimo.plato_principal_id;
-      trace.acompanamientoId = porSinonimo.acompanamiento_id;
-      trace.coincidencia = porSinonimo.combinacion_id;
-      trace.etapa = "dupla_encontrada_por_sinonimo";
-      console.info("[combinador-trace]", JSON.stringify(trace));
-      return {
-        modo: "dupla",
-        detectada: true,
-        entidades: {
-          principal: porSinonimo.plato_principal_id,
-          acompanamiento: porSinonimo.acompanamiento_id
-        },
-        nombres: {
-          principal: partes.principal,
-          acompanamiento: partes.acompanamiento
-        },
-        cards: [
-          { titulo: "Resumen de la combinación", texto: porSinonimo.resumen_hibrido },
-          { titulo: "El super-hack combinado", texto: porSinonimo.hack_combinado },
-          { titulo: "Qué observar", texto: porSinonimo.que_observar }
-        ],
-        fallback: false,
-        ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
-      };
-    }
-
-    const [principal, acompanamiento] = await Promise.all([
+    // Única fuente editorial: las fichas individuales del catálogo maestro.
+    const [principalResuelta, acompanamientoResuelto] = await Promise.all([
       resolverEntidad(partes.principal),
       resolverEntidad(partes.acompanamiento)
     ]);
-    trace.etapa = "entidades_resueltas";
-    trace.principalId = principal?.plato_id || null;
-    trace.acompanamientoId = acompanamiento?.plato_id || null;
+    const principal = fichaPublica(principalResuelta, partes.principal);
+    const acompanamiento = fichaPublica(acompanamientoResuelto, partes.acompanamiento);
+    trace.principalId = principal.plato_id;
+    trace.acompanamientoId = acompanamiento.plato_id;
+    trace.etapa = "fichas_resueltas";
+
     console.info("[combinador-trace]", JSON.stringify(trace));
 
-    const combinacion = combinaciones.find((fila) =>
-      fila.plato_principal_id === principal.plato_id &&
-      fila.acompanamiento_id === acompanamiento.plato_id
-    );
-    trace.coincidencia = combinacion?.combinacion_id || null;
-    trace.etapa = combinacion ? "dupla_encontrada" : "sin_coincidencia_matriz";
-    console.info("[combinador-trace]", JSON.stringify(trace));
-
-    if (combinacion) {
+    if (principal.fallback || acompanamiento.fallback) {
+      trace.etapa = "ficha_no_encontrada";
       return {
-        modo: "dupla",
+        modo: "fallback",
         detectada: true,
         entidades: { principal: principal.plato_id, acompanamiento: acompanamiento.plato_id },
         nombres: { principal: partes.principal, acompanamiento: partes.acompanamiento },
-        cards: [
-          { titulo: "Resumen de la combinación", texto: combinacion.resumen_hibrido },
-          { titulo: "El super-hack combinado", texto: combinacion.hack_combinado },
-          { titulo: "Qué observar", texto: combinacion.que_observar }
-        ],
-        fallback: false,
+        puente: {
+          etiqueta: "Ver los consejos de cada plato por separado",
+          platos: [
+            { nombre: partes.principal, ficha: principal },
+            { nombre: partes.acompanamiento, ficha: acompanamiento }
+          ]
+        },
+        fallback: true,
         ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
       };
     }
 
-    const fichaPrincipal = fichaPublica(principal, partes.principal);
-    const fichaAcompanamiento = fichaPublica(acompanamiento, partes.acompanamiento);
     return {
-      modo: "fallback",
+      modo: "dupla",
       detectada: true,
       entidades: { principal: principal.plato_id, acompanamiento: acompanamiento.plato_id },
       nombres: { principal: partes.principal, acompanamiento: partes.acompanamiento },
-      cards: [
-        { titulo: "Resumen", texto: fichaPrincipal.resumen }
-      ],
-      puente: {
-        etiqueta: "Ver los consejos de cada plato por separado",
-        platos: [
-          { nombre: partes.principal, ficha: fichaPrincipal },
-          { nombre: partes.acompanamiento, ficha: fichaAcompanamiento }
-        ]
-      },
-      fallback: true,
+      cards: crearTarjetas(principal, acompanamiento),
+      fallback: false,
       ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
     };
   } catch (error) {
     trace.etapa = "error";
     trace.error = String(error?.message || error);
     console.error("[combinador-trace]", JSON.stringify(trace));
-    console.error("[combinador-platos] No se pudo resolver la dupla; se devuelve fallback seguro.");
-    const ficha = await resolverFichaPlato(partes.principal).catch(() => null);
-    const segura = ficha || {
-      resumen: "Todavía no tenemos una ficha específica para esta comida. La preparación y los ingredientes principales ayudan a ponerla en contexto.",
-      hack: "Describí los ingredientes y la preparación; no hace falta cambiar todo de una vez.",
-      que_observar: "Prestá atención a tu saciedad, comodidad digestiva y energía durante las horas posteriores. Son observaciones personales, no un diagnóstico.",
-      plato_id: "ficha-generica",
-      fallback: true
-    };
     return {
       modo: "fallback",
       detectada: true,
-      cards: [{ titulo: "Resumen", texto: segura.resumen }],
       puente: {
         etiqueta: "Ver los consejos de cada plato por separado",
-        platos: [{ nombre: partes.principal, ficha: fichaPublica(segura, partes.principal) }]
+        platos: [
+          { nombre: partes.principal, ficha: fichaPublica(await resolverFichaPlato(partes.principal).catch(() => null) || { plato_id: "ficha-generica", resumen: "", hack: "", que_observar: "", fallback: true }, partes.principal) },
+          { nombre: partes.acompanamiento, ficha: fichaPublica(await resolverFichaPlato(partes.acompanamiento).catch(() => null) || { plato_id: "ficha-generica", resumen: "", hack: "", que_observar: "", fallback: true }, partes.acompanamiento) }
+        ]
       },
       fallback: true,
       ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
