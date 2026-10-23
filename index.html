@@ -274,6 +274,8 @@ function LogMealScreen({ onBack, pase, tieneCondicionMedica, onIrABienestar, onV
   const [momento, setMomento] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [resultadoCombinacion, setResultadoCombinacion] = useState(null);
+  const [mostrarConsejosSeparados, setMostrarConsejosSeparados] = useState(false);
   const [error, setError] = useState(null);
   // Cierre de loop Comida -> Bienestar (05/08/2026): progreso pedido al mismo endpoint
   // extendido que ya usa TableroAccesos/Mis Patrones — sin IA, sin endpoint nuevo.
@@ -639,6 +641,8 @@ function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium, prefillTexto, o
     setEnviando(true);
     setError(null);
     setResultado(null);
+    setResultadoCombinacion(null);
+    setMostrarConsejosSeparados(false);
     try {
       const resp = await fetch("/api/registrar-comida", {
         method: "POST",
@@ -648,6 +652,22 @@ function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium, prefillTexto, o
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
       setResultado(data);
+      // Lectura adicional y no persistente: el combinador no modifica el registro de comida.
+      try {
+        const respCombinacion = await fetch("/api/registrar-comida", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${pase || ""}` },
+          body: JSON.stringify({ texto: t, soloCombinacion: true }),
+        });
+        if (respCombinacion.ok) {
+          const datosCombinacion = await respCombinacion.json();
+          if (datosCombinacion.modo && datosCombinacion.modo !== "sin_dupla") {
+            setResultadoCombinacion(datosCombinacion);
+          }
+        }
+      } catch (_) {
+        // El combinador es complementario: nunca bloquea el flujo principal existente.
+      }
       // Fase 2/P0, Bloque 2 — hack_visto: se ve al mismo tiempo que el resultado, acá
       // (no hace falta un useEffect aparte porque no depende del ciclo de montaje).
       (data.bloqueos || []).forEach((b) => {
@@ -776,6 +796,44 @@ function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium, prefillTexto, o
           <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 10.5, textAlign: "center", lineHeight: 1.5, marginTop: 14 }}>
             Info observacional. No es consejo médico.
           </p>
+        </div>
+      )}
+      {resultadoCombinacion && (
+        <div style={{ marginTop: 14, borderTop: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, paddingTop: 14 }}>
+          <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontWeight: 800, fontSize: 13, marginBottom: 10 }}>
+            Combinación de platos
+          </p>
+          <div style={{ display: "grid", gap: 10 }}>
+            {(resultadoCombinacion.cards || []).map((card, i) => (
+              <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, borderRadius: 14, padding: 12 }}>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, fontWeight: 800, margin: "0 0 5px" }}>{card.titulo}</p>
+                <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 12, lineHeight: 1.55, margin: 0 }}>{card.texto}</p>
+              </div>
+            ))}
+          </div>
+          {resultadoCombinacion.modo === "fallback" && resultadoCombinacion.puente && (
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => setMostrarConsejosSeparados(v => !v)} style={{
+                background: "none", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, borderRadius: 12,
+                padding: "10px 12px", color: EXPLORADOR_TOKENS.accent, fontFamily: EXPLORADOR_TOKENS.font,
+                fontSize: 12, fontWeight: 800, cursor: "pointer",
+              }}>
+                {mostrarConsejosSeparados ? "Ocultar consejos por separado" : resultadoCombinacion.puente.etiqueta}
+              </button>
+              {mostrarConsejosSeparados && (
+                <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                  {(resultadoCombinacion.puente.platos || []).map((item, i) => (
+                    <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${EXPLORADOR_TOKENS.cardBorder}`, borderRadius: 14, padding: 12 }}>
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textPrimary, fontSize: 12.5, fontWeight: 800, margin: "0 0 6px" }}>{item.nombre}</p>
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 12, lineHeight: 1.5, margin: "0 0 8px" }}>{item.ficha.resumen}</p>
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 12, lineHeight: 1.5, margin: "0 0 8px" }}><b>Hack:</b> {item.ficha.hack}</p>
+                      <p style={{ fontFamily: EXPLORADOR_TOKENS.font, color: EXPLORADOR_TOKENS.textSecondary, fontSize: 12, lineHeight: 1.5, margin: 0 }}><b>Qué observar:</b> {item.ficha.que_observar}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
