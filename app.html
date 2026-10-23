@@ -113,6 +113,15 @@
 .mi-dia-progress{margin-top:12px;padding:16px;border:1px solid rgba(197,160,89,.32);border-radius:16px;background:linear-gradient(145deg,rgba(197,160,89,.09),rgba(23,33,30,.98) 62%)}.mi-dia-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.mi-dia-progress .mi-dia-progress-kicker{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#d9b96b;font-weight:800}.mi-dia-progress h2{font-size:17px;line-height:1.3;margin:5px 0}.mi-dia-progress-count{font-size:13px;font-weight:800;white-space:nowrap;color:#f2efe9}.mi-dia-progress p{font-size:12px;line-height:1.55;color:#cbd4ce;margin:8px 0 12px}.mi-dia-progress-track{height:9px;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.1)}.mi-dia-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#c5a059,#e4c878);transition:width .25s ease}.mi-dia-progress-meta{display:flex;justify-content:space-between;gap:8px;margin-top:7px;color:#aab5af;font-size:10px}.mi-dia-progress .primary{margin-top:13px;white-space:normal;line-height:1.4}.mi-dia-progress-error{font-size:11px;color:#d9b96b;margin-top:8px}.mi-dia-progress-help{margin-top:11px;padding:10px 11px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);font-size:11px;line-height:1.55;color:#cbd4ce}.mi-dia-progress-help b{color:#e4c878}
 
 /* Mi Día: panel compacto de registro */
+.pattern-methodology{margin:14px 0 20px;padding:16px;border:1px solid rgba(197,160,89,.38);border-radius:15px;background:linear-gradient(145deg,rgba(197,160,89,.075),rgba(23,33,30,.92));}
+.pattern-methodology h2{font-size:18px;line-height:1.3;margin:0 0 14px;color:#f5f0e5}
+.pattern-methodology-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.pattern-methodology-step{padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(8,15,12,.28)}
+.pattern-methodology-step h3{font-size:14px;line-height:1.35;margin:5px 0 7px;color:#e6d3a8}
+.pattern-methodology-step p{font-size:12px;line-height:1.6;margin:0;color:#d0d8d2}
+.pattern-methodology-step .pattern-methodology-caveat{margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.09);color:#e4d6b5}
+.pattern-methodology-close{margin:12px 0 0;padding-top:12px;border-top:1px solid rgba(197,160,89,.25);font-size:12px;line-height:1.6;color:#f0e2c2;font-weight:600}
+@media(min-width:560px){.pattern-methodology-grid{grid-template-columns:1fr 1fr}.pattern-methodology-step:last-child{grid-column:1/-1}}
 .mi-dia-screen{padding:20px 16px 108px;line-height:1.55}
 .mi-dia-screen .hero{margin-bottom:14px}
 .mi-dia-screen .hero h1{font-size:24px;line-height:1.2;margin:6px 0 7px}
@@ -737,6 +746,28 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
 {premiumOrigen==='patrones'&&premiumEstado?.premium===true&&<div className="premium-home premium-patterns-view">
   <div className="premium-feature">
     <div className="feature-kicker">ANÁLISIS DE TUS REGISTROS</div>
+    <section className="pattern-methodology" aria-labelledby="pattern-methodology-title">
+      <h2 id="pattern-methodology-title">¿Cómo funciona tu motor de patrones? (Y por qué la paciencia es tu mejor métrica)</h2>
+      <div className="pattern-methodology-grid">
+        <article className="pattern-methodology-step">
+          <span className="feature-kicker">PASO 1</span>
+          <h3>El registro honesto (Sin exigencias)</h3>
+          <p>Cada vez que anotás lo que comís y cómo te sentís en Mi Día, le entregás una coordenada real a tu bitácora. Cero contadores obsesivos de calorías: buscamos contexto puro.</p>
+        </article>
+        <article className="pattern-methodology-step">
+          <span className="feature-kicker">PASO 2</span>
+          <h3>El umbral de los 10 días (La barrera contra el humo)</h3>
+          <p>¿Por qué exigimos 10 días de cruce? Porque el cuerpo humano tiene fluctuaciones diarias normales (mal sueño, estrés laboral, clima). El motor necesita una ventana mínima de observaciones para ayudar a distinguir el ruido diario de una posible asociación repetida. No te vendemos magia instantánea: te mostramos lo que permiten sostener tus datos.</p>
+        </article>
+        <article className="pattern-methodology-step">
+          <span className="feature-kicker">PASO 3</span>
+          <h3>La revelación de causa y efecto</h3>
+          <p>Una vez alcanzado el umbral, el algoritmo analiza las repeticiones de tus bloques alimentarios frente a tus 5 señales de bienestar. Si encuentra una diferencia sistemática (por ejemplo, cómo se relaciona una cena con tu energía del día siguiente), te la traduce en una oportunidad táctica de mejora.</p>
+          <p className="pattern-methodology-caveat"><b>Transparencia:</b> una asociación no demuestra que una comida haya causado un cambio. El motor detecta patrones en tus registros; no establece diagnósticos ni causalidad por sí solo.</p>
+        </article>
+      </div>
+      <p className="pattern-methodology-close">Tu suscripción Founder no compra promesas vacías; financia un motor analítico que trabaja con tus propios datos para devolverte el control de tus decisiones.</p>
+    </section>
     {patronesAnalisis.cargando&&<div className="empty-state" role="status"><b>Analizando tus registros…</b><p>Estamos consultando los datos guardados en tu cuenta.</p></div>}
     {!patronesAnalisis.cargando&&patronesAnalisis.error&&<div className="empty-state" role="alert"><b>No pudimos cargar el análisis</b><p>{patronesAnalisis.error}</p><button className="primary" onClick={cargarPatronesPremium}>Reintentar</button></div>}
     {!patronesAnalisis.cargando&&!patronesAnalisis.error&&patronesAnalisis.data&&(()=>{const d=patronesAnalisis.data;const dias=Math.max(0,Math.min(10,Number(d.diasRegistrados)||0));const porcentaje=Math.round(dias/10*100);return <>
