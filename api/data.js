@@ -156,7 +156,7 @@ function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
     evitar,
     opcionGanadora,
     alternativaDisponible:true,
-    roi:{ cuantificable:false, mensaje:pasillo.ahorroInteligente },
+    roi:{ cuantificable:false, mensaje:regla?.soluciones?.ahorro_inteligente || pasillo.ahorroInteligente },
     accion:regla?.soluciones?.accion_usuario || "",
     observacion:regla?.soluciones?.observacion_usuario || "",
     continuidad:regla?.soluciones?.continuidad || "",
@@ -186,7 +186,7 @@ async function consultarHeladera(req,res) {
   try {
     const [alternativas,reglas]=await Promise.all([
       supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,tipo,estado_curado"),
-      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,nivel_acceso,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)")
+      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,nivel_acceso,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad,ahorro_inteligente)")
     ]);
     const candidatas=[
       ...alternativas.filter((a)=>!["rehacer","hueco"].includes(a.estado_curado)).map((a)=>({
