@@ -1,140 +1,27 @@
 // api/_selector-tips-ia.js
-//
-// Reemplaza al matching por palabras sueltas contra alternativas_locales (desactivado
-// 31/07/2026 tras 5 falsos positivos reales y consecutivos: carne, salsa, harina, leche,
-// queso — ver historial en registrar-comida.js). Ese mecanismo ADIVINABA relevancia
-// comparando palabras; este ENTIENDE, usando la misma IA (Groq) que ya clasifica la
-// comida para el motor de bloqueos.
-//
-// Deliberadamente un módulo aparte, un segundo llamado a Groq independiente del de
-// _clasificador-ia.js (Opción B, elegida por Augusto el 31/07/2026 sobre la alternativa de
-// fusionar todo en un solo llamado): si esto falla, se apaga solo, sin arriesgar el motor
-// de bloqueos que ya funciona. Recuperable en minutos — ver "CÓMO APAGAR ESTO" al final.
-//
-// BLINDAJE LEGAL — mismo criterio que _clasificador-ia.js:
-// - Groq NUNCA elige libremente: solo puede devolver uno de los IDs reales que le
-//   pasamos en la lista, o "ninguna". No puede inventar una ficha que no exista —
-//   forzado por Structured Outputs con enum estricto armado con los IDs reales de
-//   este pedido puntual.
-// - Groq nunca redacta el tip — solo elige CUÁL de las fichas ya escritas y aprobadas
-//   mostrar. El texto final siempre sale de Supabase, nunca de la IA.
-// - Si Groq falla, tarda de más, o no está configurada: devuelve null y
-//   registrar-comida.js sigue mostrando "sin tip" — nunca bloquea ni degrada nada más.
-//
-// Mismo patrón de archivo único que el resto de api/_*.js — no separar en lib/ (Sprint 16).
+// Selectores deterministas. El catálogo editorial de platos vive en _catalogo-platos.js.
+// Este archivo conserva el protocolo culinario existente y una selección conservadora
+// para el asistente de heladera; no realiza llamadas a proveedores de IA.
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-const SYSTEM_PROMPT = `Sos un selector, no un asistente conversacional ni un nutricionista.
-Se te da el texto de una comida y una lista numerada de fichas (nombre corto de cada una).
-Tu única tarea: elegir el ID de la ficha más relevante para esa comida específica, solo si
-la relación es clara y directa — no por compartir un ingrediente suelto o común.
-Reglas estrictas:
-- SOLO podés devolver uno de los IDs de la lista que se te da, o "ninguna".
-- Si ninguna ficha tiene relación clara y específica con la comida, devolvé "ninguna".
-  Ante la duda, elegí "ninguna" — preferimos no mostrar nada antes que mostrar algo forzado.
-- Un ingrediente común compartido (ej. "queso", "leche", "carne") NO alcanza por sí solo
-  para considerar que hay relación — tiene que ser el plato/concepto central el que coincida.
-- NUNCA agregues texto, consejos ni explicaciones fuera del JSON pedido.`;
+// Selección de fichas del catálogo maestro: determinista y sin proveedor de IA.
 
 /**
  * @param {string} texto - el texto de la comida que escribió el usuario
  * @param {Array<{id: string, mecanismo: string}>} fichas - candidatas reales de Supabase
  * @returns {Promise<string|null>} el id elegido, o null (sin IA / sin relación clara / error)
  */
-async function elegirTipRelevanteIA(texto, fichas) {
-  if (!GROQ_API_KEY) return null; // mismo criterio que _clasificador-ia.js: dormido sin key
-  if (!fichas || fichas.length === 0) return null;
-
-  const idsValidos = fichas.map((f) => f.id);
-  const listaParaPrompt = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
-
-  const jsonSchema = {
-    type: "object",
-    properties: {
-      id_elegido: { type: "string", enum: [...idsValidos, "ninguna"] },
-    },
-    required: ["id_elegido"],
-    additionalProperties: false,
-  };
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000); // no bloquea más de 3s
-
-  try {
-    const resp = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Comida: "${texto}"\n\nFichas disponibles:\n${listaParaPrompt}` },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "seleccion_tip", strict: true, schema: jsonSchema },
-        },
-        // Mismo fix que _clasificador-ia.js (29/07/2026): gpt-oss-20b necesita
-        // reasoning_effort bajo y margen de tokens, o devuelve 400 sin llegar a
-        // escribir el JSON final.
-        reasoning_effort: "low",
-        max_completion_tokens: 300,
-        temperature: 0,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!resp.ok) {
-      console.error("[selector-tips-ia] Groq respondió", resp.status);
-      return null;
-    }
-
-    const data = await resp.json();
-    const contenido = data.choices?.[0]?.message?.content;
-    if (!contenido) return null;
-
-    const parsed = JSON.parse(contenido);
-    const elegido = parsed.id_elegido;
-
-    // Cinturón de seguridad extra: aunque el schema ya lo restringe, nunca confiamos
-    // ciegamente en la respuesta de una IA — se revalida contra la lista real.
-    return idsValidos.includes(elegido) ? elegido : null;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    console.error("[selector-tips-ia] fallo no bloqueante:", err);
-    return null;
-  }
+async function elegirTipRelevanteIA() {
+  // Compatibilidad temporal con llamadas antiguas: las fichas libres ya no se seleccionan
+  // por matching genérico. El flujo principal usa resolverFichaPlato y el catálogo maestro.
+  return null;
 }
-
-// CÓMO APAGAR ESTO si algo sale mal en producción (recuperable en minutos, sin tocar
-// nada más de la app): en registrar-comida.js, la línea que llama a
-// elegirTipRelevanteIA(...) — comentarla o hacer que la función de más arriba retorne
-// null directo acá arriba (return null; como primera línea de elegirTipRelevanteIA).
-// El resto de la app (bloqueos, clasificador de comida, todo lo demás) sigue intacto.
-
 
 const PROTOCOLO_CULINARIO_CANONICO = {
   coccion: "Priorizar cocción a fuego lento en cacerola/sartén tipo Essen con tapa, reteniendo humedad, o sellado en plancha/sartén de hierro. Como materia grasa para cocinar a temperatura media/baja: manteca real, grasa vacuna (cebo) o aceite de oliva virgen extra. Evitar aceites de semilla refinados.",
   condimentos: "Si el plato incluye cúrcuma, combinarla con una pizca de pimienta negra recién molida y una base grasa. Incorporar jengibre fresco o en polvo, comino, orégano, tomillo o laurel según el ingrediente base.",
   fibra: "Si la preparación contiene almidones (arroz, papas, fideos) u otros carbohidratos, iniciar la ingesta con una porción de fibra o vegetales verdes/crujientes.",
-  almidonResistente: "Para arroces, papas o legumbres, promover el enfriado previo durante 12–24 horas como mínimo en heladera y luego un recalentado suave."
+  almidonResistente: "Si el usuario consulta por almidón resistente o preparación anticipada de arroz, papa o legumbres: enfriar rápidamente, refrigerar dentro de 1–2 horas y, tras 12–24 horas, recalentar bien. El enfriado puede aumentar el almidón resistente, pero el efecto glucémico varía; no presentarlo como obligación ni prometer una reducción fija."
 };
-
-const HELADERA_SYSTEM_PROMPT = `Sos un selector de fichas existentes para una consulta de cocina.
-Recibís ingredientes disponibles y fichas ya curadas en la base.
-Elegí una ficha SOLO si coincide de forma clara con los ingredientes y aporta una preparación útil.
-No inventes recetas, ingredientes, cantidades ni atribuciones a una ficha.
-El siguiente protocolo es contexto canónico del producto para reconocer pertinencia culinaria; no lo redactes ni lo devuelvas como si proviniera de una ficha seleccionada:
-${JSON.stringify(PROTOCOLO_CULINARIO_CANONICO)}
-Tu única tarea es elegir un ID real de la lista o "ninguna". No escribas explicaciones. Devolvé únicamente el JSON pedido.
-Si no hay una ficha suficientemente pertinente, devolvé "ninguna".`;
-
 
 function normalizarProtocolo(texto) {
   return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -142,6 +29,81 @@ function normalizarProtocolo(texto) {
 
 // Construye solo los apartados que justifican los ingredientes descritos.
 // No genera una receta ni altera la ficha curada que ya devuelve el motor.
+
+function resolverPlatoCompuestoArgentino(t) {
+  const has = (re) => re.test(t);
+  const milanesa = has(/\b(milanesa|milanesas)\b/);
+  const guarniciones = [
+    {id:"pure", re:/\b(pure|pure de papa)\b/, nombre:"puré", hack:"Serví una porción definida. Como prueba, enfriá la papa cocida en heladera y recalentala bien antes de hacer el puré: puede aumentar el almidón resistente."},
+    {id:"papas_fritas", re:/\b(papas fritas|papas al horno|papas doradas|papas noisette)\b/, nombre:"papas", hack:"Si querés reducir la grasa añadida, probá papas al horno en una porción similar; el almidón sigue presente."},
+    {id:"arroz", re:/\b(arroz|arroz blanco|arroz integral)\b/, nombre:"arroz", hack:"Definí la porción y sumá vegetales. Si lo preparás antes, enfriá rápido, refrigerá dentro de 1–2 horas y recalentá bien: puede aumentar el almidón resistente."},
+    {id:"pasta", re:/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/, nombre:"pasta", hack:"Cociná la pasta al dente y mantené la porción; el rebozado también suma carbohidratos."},
+    {id:"ensalada", re:/\b(ensalada|lechuga|rucula|tomate|verduras|vegetales|brocoli|zanahoria)\b/, nombre:"vegetales", hack:"Sumá una porción real de vegetales y, si te resulta cómodo, empezá por ellos."}
+  ];
+  const guarnicion = guarniciones.find(g => g.re.test(t));
+  if (milanesa && guarnicion) {
+    const frita = has(/\b(frita|fritas|frito|fritos)\b/);
+    const horno = has(/\b(al horno|horno|air fryer|freidora de aire)\b/);
+    const coccion = frita ? "frita" : horno ? "al horno/aire" : "de cocción no especificada";
+    const napo = has(/\b(napolitana|napolitanas)\b/);
+    const principal = napo ? "La milanesa napolitana suma rebozado, tomate y queso." : "La milanesa aporta proteína y, si lleva rebozado, también carbohidratos.";
+    return {
+      familiaDetectada:"milanesa + " + guarnicion.id,
+      gruposDetectados:["plato_compuesto_argentino","milanesa",guarnicion.id],
+      componentesDetectados:["milanesa ("+coccion+")",guarnicion.nombre],
+      resumenIntegrado:principal+" La guarnición de "+guarnicion.nombre+" también aporta almidón; el plato suma ambos.",
+      hackIntegrado:(frita?"Probá la milanesa al horno y mantené igual la guarnición para comparar. ":"Mantené la milanesa como te gusta y ajustá la guarnición. ")+guarnicion.hack,
+      queObservar:"Observá saciedad y energía después de comer. Cambiá una sola variable por vez.",
+      coccion:"Milanesa "+coccion+" con "+guarnicion.nombre+".",
+      sinergia:""+guarnicion.hack,
+      timingOrden:"Si el plato incluye vegetales, podés empezar por ellos y después seguir con la milanesa y "+guarnicion.nombre+"; es opcional.",
+      variableModificada:"plato_compuesto_milanesa_"+guarnicion.id
+    };
+  }
+
+  const pasta = has(/\b(fideos|pasta|tallarines|espaguetis|noquis|ñoquis|ravioles|canelones|sorrentinos)\b/);
+  const salsas = [
+    {re:/\b(bolognesa|boloñesa|bolonesa|tuco|salsa de carne)\b/,nombre:"salsa con carne",hack:"Cociná la pasta al dente; la salsa suma proteína, pero no elimina el almidón."},
+    {re:/\b(salsa blanca|crema|cremosa)\b/,nombre:"salsa cremosa",hack:"Mantené la salsa, medí la porción y sumá vegetales en la salsa o al costado."},
+    {re:/\b(pesto)\b/,nombre:"pesto",hack:"Usá el pesto justo para cubrir la pasta, cocinala al dente y sumá vegetales."},
+    {re:/\b(tomate|tuco|fileto|pomodoro|salsa roja)\b/,nombre:"salsa de tomate",hack:"Sumá cebolla, zucchini o berenjena a la salsa y cociná la pasta al dente."}
+  ].find(s=>s.re.test(t));
+  if (pasta && salsas) {
+    const acomp = has(/\b(ensalada|verduras|vegetales|pollo|carne|albondigas|albóndigas|milanesa)\b/);
+    return {
+      familiaDetectada:"pasta + "+salsas.nombre.replace(/\s+/g,"_"),
+      gruposDetectados:["plato_compuesto_argentino","pasta","salsa"],
+      componentesDetectados:["pasta",salsas.nombre],
+      resumenIntegrado:"La pasta aporta almidón; la salsa de "+salsas.nombre+" completa el plato.",
+      hackIntegrado:"Cociná la pasta al dente. "+salsas.hack,
+      queObservar:"Observá saciedad, energía y digestión. En la próxima prueba, cambiá solo una variable.",
+      coccion:"Pasta al dente con "+salsas.nombre+".",
+      sinergia:salsas.hack,
+      timingOrden:acomp?"Si hay vegetales, podés empezar por ellos y seguir con la pasta y su salsa; no es obligatorio.":"No se indicó una guarnición vegetal; no la damos por presente.",
+      variableModificada:"plato_compuesto_pasta_salsa"
+    };
+  }
+
+  const tarta = has(/\b(tarta|tartas)\b/);
+  const relleno = has(/\b(pollo)\b/) ? "pollo" : has(/\b(choclo)\b/) ? "choclo" : has(/\b(jamon|queso)\b/) ? "jamón y queso" : has(/\b(acelga|espinaca|verdura|verduras|zapallito)\b/) ? "verduras" : null;
+  if (tarta && relleno) {
+    const ensalada = has(/\b(ensalada|lechuga|rucula|tomate|vegetales)\b/);
+    return {
+      familiaDetectada:"tarta + "+(ensalada?"ensalada":"relleno"),
+      gruposDetectados:["plato_compuesto_argentino","tarta","relleno"],
+      componentesDetectados:["masa de tarta","relleno de "+relleno,...(ensalada?["ensalada/vegetales"]:[])],
+      resumenIntegrado:"La masa aporta harina y el relleno de "+relleno+" define el aporte de proteína, fibra y grasa.",
+      hackIntegrado:"Mantené el relleno y sumá vegetales o ensalada. No hace falta quitar la masa.",
+      queObservar:"Observá saciedad y digestión. En otra comida, compará con y sin vegetales.",
+      coccion:"Tarta de "+relleno+(ensalada ? " con ensalada." : "."),
+      sinergia:"Priorizá que el relleno tenga una proporción clara de su ingrediente principal y, si elegís ensalada, que sea una guarnición real.",
+      timingOrden:ensalada?"Podés empezar por la ensalada y después comer la tarta; es una prueba opcional.":"No se informó ensalada; no se asume que esté presente.",
+      variableModificada:"plato_compuesto_tarta"
+    };
+  }
+  return null;
+}
+
 function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas = []) {
   const t = normalizarProtocolo(textoComida).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
   if (!t) return null;
@@ -193,7 +155,7 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
   const coincideGrupo = (grupo) => (grupo.terminos || []).some((termino) => {
     const clave = normalizarProtocolo(termino).trim();
     if (!clave) return false;
-    const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\\s+");
+    const patron = clave.split(/\s+/).map((parte) => parte.replace(/[.*+?^|]/g, "\\$&")).join("\s+");
     return new RegExp("\\b" + patron + "\\b", "i").test(t);
   });
   const validarGrupo = (grupo) => grupo && grupo.activo !== false &&
@@ -268,47 +230,38 @@ function construirProtocoloCulinarioAdaptativo(textoComida, reglasConfiguradas =
     protocolo.variableModificada = "variable_por_confirmar";
   }
 
-  // Salvaguarda: si el motor no identificó un detalle culinario, no inventarlo.
-  if (!protocolo.coccion) protocolo.coccion = "No hay información suficiente para recomendar una técnica concreta para esta preparación.";
-  if (!protocolo.sinergia) protocolo.sinergia = "No hay suficiente detalle sobre los ingredientes para asignar una combinación de condimentos específica.";
-  protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
+  // Respuesta útil de base: no inventar propiedades del plato, pero tampoco devolver campos vacíos.
+  // Prioridad máxima: si el usuario escribió un plato compuesto, la salida debe cruzar sus componentes.
+  const protocoloCompuesto = resolverPlatoCompuestoArgentino(t);
+  if (protocoloCompuesto) Object.assign(protocolo, protocoloCompuesto);
+
+  if (!protocolo.coccion) protocolo.coccion = "Elegí una cocción pareja y ajustá el tiempo al alimento, al grosor y a la textura buscada. Evitá quemar la superficie; si es una preparación húmeda, cociná a fuego moderado y revisá el punto antes de agregar más tiempo.";
+  if (!protocolo.sinergia) protocolo.sinergia = "Elegí uno o dos condimentos según la base: orégano o albahaca para tomate y pastas; comino y laurel para legumbres; ajo y pimienta para carnes; limón y hierbas para vegetales. Ajustá al gusto, sin tapar el sabor del ingrediente."
+  if (!protocoloCompuesto) protocolo.gruposDetectados = gruposDetectados.map((grupo) => grupo.clave || grupo.nombre).filter(Boolean);
   if (!protocolo.familiaDetectada) protocolo.familiaDetectada = gruposDetectados[0]?.clave || "familia_general";
   return protocolo;
 }
 async function elegirFichaHeladeraIA(ingredientes, fichas) {
-  if (!GROQ_API_KEY || !Array.isArray(fichas) || fichas.length === 0) return null;
-  const idsValidos = fichas.map((f) => f.id);
-  const lista = fichas.map((f, i) => `${i + 1}. [${f.id}] ${f.mecanismo}`).join("\n");
-  const schema = { type:"object", properties:{ id_elegido:{type:"string",enum:[...idsValidos,"ninguna"]} }, required:["id_elegido"], additionalProperties:false };
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
-  try {
-    const resp = await fetch(GROQ_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json",Authorization:`Bearer ${GROQ_API_KEY}`},
-      body:JSON.stringify({
-        model:"openai/gpt-oss-20b",
-        messages:[
-          {role:"system",content:HELADERA_SYSTEM_PROMPT},
-          {role:"user",content:`Ingredientes disponibles: "${ingredientes}"\n\nFichas reales disponibles:\n${lista}`}
-        ],
-        response_format:{type:"json_schema",json_schema:{name:"seleccion_heladera",strict:true,schema}},
-        reasoning_effort:"low",max_completion_tokens:300,temperature:0
-      }),
-      signal:controller.signal
-    });
-    clearTimeout(timeoutId);
-    if(!resp.ok){console.error("[selector-heladera-ia] Groq respondió",resp.status);return null}
-    const data=await resp.json();
-    const contenido=data.choices?.[0]?.message?.content;
-    if(!contenido)return null;
-    const parsed=JSON.parse(contenido);
-    return idsValidos.includes(parsed.id_elegido)?parsed.id_elegido:null;
-  } catch(err) {
-    clearTimeout(timeoutId);
-    console.error("[selector-heladera-ia] fallo no bloqueante:",err);
-    return null;
+  const texto = normalizarProtocolo(ingredientes).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
+  if (!texto || !Array.isArray(fichas) || fichas.length === 0) return null;
+  const ignoradas = new Set(["para","con","sin","del","las","los","una","uno","que","como","esto","esta","este","tengo","hay","usar"]);
+  const tokens = [...new Set(texto.split(/[^a-z0-9ñ]+/).filter(t => t.length >= 4 && !ignoradas.has(t)))];
+  if (!tokens.length) return null;
+  let mejor = null;
+  let mejorPuntaje = 0;
+  for (const ficha of fichas) {
+    const textoFicha = normalizarProtocolo([
+      ficha.mecanismo, ficha.descripcion_mecanismo, ficha.recomendacion
+    ].filter(Boolean).join(" ")).replace(/[^a-z0-9ñ\s-]/g, " ").replace(/\s+/g, " ").trim();
+    const coincidencias = tokens.filter(token => (" " + textoFicha + " ").includes(" " + token + " ")).length;
+    // Criterio conservador: exige al menos dos términos distintivos para evitar
+    // falsos positivos por ingredientes genéricos compartidos.
+    if (coincidencias >= 2 && coincidencias > mejorPuntaje) {
+      mejor = ficha.id;
+      mejorPuntaje = coincidencias;
+    }
   }
+  return mejor;
 }
 
 export { elegirTipRelevanteIA, elegirFichaHeladeraIA, PROTOCOLO_CULINARIO_CANONICO, construirProtocoloCulinarioAdaptativo };
