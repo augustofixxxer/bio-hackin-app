@@ -1216,5 +1216,115 @@
     "resumen": "Versión colada del yogur tradicional. Mucho más espeso, con el doble de concentración de proteínas y menor cantidad de suero y lactosa.",
     "hack": "Es un verdadero superalimento matutino por su alto poder saciante. Usalo como base y sumale frutas o frutos secos. Tip extra: un hilito de aceite de oliva o frutos secos tostados arriba le da un toque gourmet brutal si lo preferís salado (estilo dip mediterráneo).",
     "que_observar": "Compara el tiempo que lográs estar sin hambre en comparación con el yogur común; el aporte proteico del yogur griego frena el apetito por horas."
+  },
+  {
+    "plato_id": "caballa",
+    "sinonimos": [
+      "caballa",
+      "filete de caballa",
+      "caballa en lata"
+    ],
+    "resumen": "Pescado azul de altísimo valor nutricional. Una fuente masiva de ácidos grasos Omega-3 (cardioprotectores), proteínas de máxima calidad y vitamina D.",
+    "hack": "Si la consumís enlatada al natural o en aceite de oliva, es un comodín nutricional imbatible. El toque fit de valor: un chorrito de limón fresco y un toque de pimienta antes de comerla realzan el sabor y potencian la absorción de sus minerales. Tip extra: sumala a una tostada o ensalada para armar un almuerzo proteico en 2 minutos.",
+    "que_observar": "Registra la claridad mental y la saciedad prolongada; las grasas saludables de los pescados azules son el combustible definitivo para el cerebro."
+  },
+  {
+    "plato_id": "sardinas",
+    "sinonimos": [
+      "sardinas",
+      "sardina",
+      "sardinas en lata",
+      "filet de sardina"
+    ],
+    "resumen": "Pequeño gigante del mar. Concentración extrema de Omega-3, proteínas limpias y calcio biodisponible (al comerse con sus espinas blandas).",
+    "hack": "Al estar en la base de la cadena alimentaria, las sardinas tienen niveles mínimos de metales pesados, convirtiéndolas en uno de los pescados más seguros y limpios que podés consumir. Tip extra: pisadas con un tenedor con un toque de aceite de oliva, limón y perejil sobre pan integral quedan descomunales.",
+    "que_observar": "Analiza tu energía y confort estomacal; es un alimento sumamente denso en nutrientes pero de digestión muy ágil."
+  },
+  {
+    "plato_id": "atun",
+    "sinonimos": [
+      "atún",
+      "atun",
+      "lata de atun",
+      "lomo de atun",
+      "atun al natural"
+    ],
+    "resumen": "El rey indiscutido de la practicidad proteica. Aporte masivo de proteína magra de alta biodisponibilidad y bajo contenido graso si se elige al natural.",
+    "hack": "Prioriza el atún al natural (agua) para controlar las grasas añadidas, o en aceite de oliva si buscás saciedad. Tip extra: mezclas rápidas con un toque de mayonesa casera o queso crema y cebolla picada te salvan cualquier plato en segundos.",
+    "que_observar": "Nota la saciedad proteica pura; es una excelente herramienta para mantener los músculos nutridos sin sumar calorías vacías."
+  },
+  {
+    "plato_id": "salmon",
+    "sinonimos": [
+      "salmón",
+      "salmon",
+      "filete de salmon",
+      "salmon rosado"
+    ],
+    "resumen": "Pescado graso de alta gama. Exquisita combinación de proteínas nobles, ácidos grasos Omega-3 y un perfil de sabor sumamente untuoso.",
+    "hack": "Cocinalo a la plancha o al horno con la piel hacia abajo y retiralo en su punto justo (jugoso por dentro); si te pasas de cocción, se secan sus grasas buenas. Tip extra: un toque de salsa de soja rebajada con limón y jengibre fresco eleva el sabor del salmón a otro nivel.",
+    "que_observar": "Evalúa el nivel de confort y satisfacción general; es un plato que aporta un placer culinario enorme con una digestión muy limpia."
+  },
+  {
+    "plato_id": "sushi",
+    "sinonimos": [
+      "sushi",
+      "piezas de sushi",
+      "rolls",
+      "bocado de sushi",
+      "combo de sushi"
+    ],
+    "resumen": "Delicia oriental a base de arroz avinagrado, nori y rellenos variados de pescados frescos, vegetales o queso crema. Alta palatabilidad.",
+    "hack": "El gran detalle: el arroz de sushi lleva azúcar y vinagre añadidos, por lo que su absorción es rápida. Disfrutalo sabiendo que es un plato para comer despacio y combinar con jengibre encurtido (que ayuda a la digestión). Tip extra: moderá el baño excesivo en salsa de soja si querés evitar la retención de líquidos por el sodio.",
+    "que_observar": "Registra tu saciedad; al ser bocados pequeños, es fácil comer de más antes de notar que el estómago ya está completo."
+  },
+  {
+    "plato_id": "cabrito",
+    "sinonimos": [
+      "cabrito",
+      "chivito",
+      "carne de cabrito",
+      "asado de cabrito"
+    ],
+    "resumen": "Carne magra regional de sabor intenso y distintivo. Excelente aporte proteico con un perfil de grasa subcutánea inferior al de la carne vacuna o porcina tradicional.",
+    "hack": "Al ser una carne fibrosa pero magra, la cocción lenta a las brasas o al horno con hierbas aromáticas (romero, tomillo) saca lo mejor de su sabor sin resecarla. Tip extra: acompañalo con una salsa criolla fresca o limón para cortar la intensidad de la carne.",
+    "que_observar": "Nota la energía y la saciedad duradera que te deja; es una carne muy noble y tradicional que cae sumamente bien si se acompaña con vegetales."
+  },
+  {
+    "plato_id": "albondiga",
+    "sinonimos": [
+      "albóndiga",
+      "albondigas",
+      "albondigas con salsa",
+      "albondigas de carne"
+    ],
+    "resumen": "Esferas de carne picada sazonada, cocinadas habitualmente en salsa de tomate. Confort food clásico, versátil y de gran aceptación.",
+    "hack": "Si las hacés al horno en lugar de fritas o muy pasadas de aceite, logras una textura perfecta y liviana. Tip extra: sumales una buena cantidad de ajo y perejil picado en la mezcla de la carne; además de sabor, aportan un golpe digestivo y antimicrobiano excelente.",
+    "que_observar": "Presta atención a la velocidad de saciedad; al venir en porciones armadas, te ayuda a controlar exactamente cuánta cantidad de carne estás comiendo."
+  },
+  {
+    "plato_id": "kipe",
+    "sinonimos": [
+      "kipe",
+      "kipi",
+      "kippe",
+      "niupy",
+      "croqueta arabe de carne y trigo"
+    ],
+    "resumen": "Tradicional preparación de origen medio oriental a base de trigo burgol y carne picada, especiado con hierbas y horneado o frito.",
+    "hack": "El trigo burgol aporta una fibra y una textura almidonada mucho más interesante y de asimilación más lenta que las harinas refinadas comunes. Tip extra: rociarlo con un buen chorro de jugo de limón fresco al servirlo despierta todos los sabores de las especias.",
+    "que_observar": "Registra la saciedad prolongada; la combinación de trigo burgol hidratado y carne es sumamente densa y alimenta un montón."
+  },
+  {
+    "plato_id": "pata-muslo",
+    "sinonimos": [
+      "pata muslo",
+      "pollo pata muslo",
+      "muslo de pollo",
+      "cuarto trasero de pollo"
+    ],
+    "resumen": "El corte más jugoso y sabroso del pollo. Combina carne oscura rica en hierro con la grasa natural de la piel y el hueso.",
+    "hack": "El gran secreto bio-hack: cocinala al horno con la piel bien condimentada (pimentón, ajo, orégano) hasta que quede crocante; esa piel aporta colágeno y sabor, y si querés cuidarte podés retirarla fácilmente en el plato. Tip extra: el hueso durante la cocción aporta jugos naturales que evitan que la carne se reseque.",
+    "que_observar": "Analiza tu nivel de saciedad; la pata muslo llena mucho más y deja una sensación de confort superior a la pechuga seca."
   }
 ]
