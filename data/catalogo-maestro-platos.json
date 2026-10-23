@@ -787,5 +787,16 @@
     "resumen": "Capas superpuestas de puré de papa y carne picada especiada, gratinadas al horno. El gran confort food de olla y fuente.",
     "hack": "No satures la capa de puré con exceso de manteca o leche entera; deja que la carne jugosa aporte toda la humedad necesaria. Tip extra: un toque de pimentón dulce o ahumado en la superficie antes de gratinar le da un color y aroma tostado inigualable.",
     "que_observar": "Nota la saciedad profunda y el calor reconfortante que deja el plato; al ser denso en carbohidratos y proteínas, es ideal para días de alto desgaste físico."
+  },
+  {
+    "plato_id": "arroz-valenciana",
+    "sinonimos": [
+      "arroz a la valenciana",
+      "arroz valenciano",
+      "arroz con mariscos y carnes"
+    ],
+    "resumen": "Un plato complejo que combina carbohidratos de arroz con una mixtura rica de proteínas animales (pollo, cerdo, mariscos) y vegetales dorados.",
+    "hack": "Al ser un plato muy abundante en ingredientes, servite una porción moderada y masticá con calma; la combinación de varias proteínas puede alargar la digestión si se come apurado. Tip extra: un buen golpe de jugo de limón por encima al servir activa las secreciones gástricas y equilibra la densidad de los sabores.",
+    "que_observar": "Registra la estabilidad de tu energía durante la tarde; al tener una matriz variada, la saciedad suele ser sumamente prolongada."
   }
 ]
