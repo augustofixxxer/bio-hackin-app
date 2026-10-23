@@ -898,5 +898,38 @@
     "resumen": "Puré caliente a base de harina de maíz. Aporta carbohidratos de rápida asimilación y una textura sumamente reconfortante.",
     "hack": "El secreto para que no te tire un bajón de energía: preparala con un toque de caldo real y sumale una buena cucharada de manteca o aceite de oliva al final junto con un buen queso. Las grasas saludables frenan el impacto glucémico directo de la harina de maíz. Tip extra: un toque de pimienta negra despierta el sabor de la polenta instantáneamente.",
     "que_observar": "Presta atención a la velocidad con la que digerís la polenta; al ser un carbohidrato puro, su tránsito es rápido y pide un buen acompañamiento proteico."
+  },
+  {
+    "plato_id": "humita",
+    "sinonimos": [
+      "humita",
+      "humita en olla",
+      "humita en chala"
+    ],
+    "resumen": "Preparación tradicional a base de choclo tierno rallado, zapallo, cebolla y leche o queso, con un perfil de sabor dulce y cremoso muy característico.",
+    "hack": "Al tener una base natural de choclo y zapallo, aporta una fibra muy noble, pero al ser dulce y cremosa, modera la porción si buscás evitar picos de glucosa. Tip extra: un toque de pimentón picante o rehogado de cebolla con ají molido arriba contrasta perfecto con el dulzor del choclo.",
+    "que_observar": "Registra la sensación de confort y energía cálida; es un plato sumamente reconfortante pero de digestión rápida."
+  },
+  {
+    "plato_id": "tamal",
+    "sinonimos": [
+      "tamal",
+      "tamales",
+      "humita envuelta"
+    ],
+    "resumen": "Masa de maíz rellena de carne especiada, envuelta y cocida en su propia chala. Alimento ancestral de alta densidad energética y portátil.",
+    "hack": "Por su contenido de masa de maíz y carne especiada, funciona como una comida completa por sí sola; comelo despacio y acompáñalo con agua fresca. Tip extra: un toque de salsa criolla picante por encima realza los sabores y estimula las secreciones digestivas.",
+    "que_observar": "Nota la saciedad prolongada que otorga; al estar envuelto y compacto, su digestión es pausada y requiere su tiempo de reposo."
+  },
+  {
+    "plato_id": "locro",
+    "sinonimos": [
+      "locro",
+      "locro criollo",
+      "locro pulsudo"
+    ],
+    "resumen": "El plato patrio por excelencia. Un guiso denso y pesado a base de maíz blanco, porotos, zapallo y diferentes cortes de carne y achuras.",
+    "hack": "Es un plato de altísima densidad calórica y grasa; reservarlo para ocasiones especiales, servite una porción medida y disfrutalo sabiendo que su digestión demandará tiempo. Tip extra: un toque de salsita picante (quiquirimí) con verdeo y pimentón por encima es el toque clásico que ayuda a levantar la digestión de las grasas.",
+    "que_observar": "Registra el nivel de pesadez o letargo posterior; al ser un plato sumamente pesado, exige una tarde tranquila sin exigencias físicas intensas."
   }
 ]
