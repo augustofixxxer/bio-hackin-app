@@ -97,7 +97,9 @@ const SUPERMERCADO_PASILLOS = [
   { key:"supermercado_grasas_aceites", titulo:"Aceites y grasas", icono:"🫒", opcionesGondola:[{titulo:"Aceite de girasol",detalle:"Compará precio por litro y elegí según el uso previsto."},{titulo:"Aceite de oliva",detalle:"Si lo preferís para usar en crudo, compará precio por litro y origen declarado."},{titulo:"Aceite de girasol alto oleico",detalle:"Compará el tipo de aceite, el uso previsto y el precio por litro."}], familiasAlternativas:["grasas","aceites"], terminosProducto:["aceite de oliva","aceite de girasol","aceite alto oleico","manteca"], fallbackGondola:"Aceite de oliva o aceite de girasol según el uso y el presupuesto", filtroGratis:"Primero definí el uso: aceite para cocinar o para usar en crudo. Compará el tipo de aceite y evitá elegir solo por frases como “liviano” o “natural”.", ahorroInteligente:"“Premium”, “suave” o “natural” no explican por sí solos el precio. Compará tipo de aceite y precio por litro; elegí por el uso real, no por el halo publicitario del envase." },
   { key:"supermercado_enlatados_salsas", titulo:"Enlatados y salsas", icono:"🥫", opcionesGondola:[{titulo:"Tomate triturado envasado",detalle:"Buscá tomate como ingrediente principal y compará precio por kilo o litro."},{titulo:"Legumbres en lata al natural",detalle:"Revisá si agregan sal y compará el peso escurrido y el precio."},{titulo:"Tomates en conserva",detalle:"Compará ingredientes, peso neto y precio por kilo."}], familiasAlternativas:["conservas","enlatados","salsas"], terminosProducto:["tomate triturado envasado","puré de tomate envasado","tomates en conserva","legumbres en lata"], fallbackGondola:"Tomate triturado envasado con tomate como ingrediente principal", filtroGratis:"En salsa o tomate envasado, mirá el primer ingrediente. Priorizá tomate como ingrediente principal y revisá si agrega azúcar, jarabes o almidones.", ahorroInteligente:"Una etiqueta con imágenes de campo o palabras como “casero” no garantiza una composición superior. Compará ingredientes y precio por kilo o litro entre productos equivalentes antes de pagar el extra." },
   { key:"supermercado_untables_mermeladas", titulo:"Untables y mermeladas", icono:"🍯", opcionesGondola:[{titulo:"Ricota fresca al peso de fiambrería",detalle:"Puede servir como alternativa para untar según la preparación; compará precio por kilo y conservación."},{titulo:"Queso Tybo feteado al peso",detalle:"Opción de fiambrería para un sándwich; compará precio por kilo con quesos untables envasados."},{titulo:"Pasta de maní envasada con maní como ingrediente principal",detalle:"Revisá ingredientes y compará precio por kilo entre envases."}], familiasAlternativas:["untables","mermeladas"], terminosProducto:["queso untable envasado","mermelada envasada","dulce de fruta envasado","pasta de maní envasada"], fallbackGondola:"Queso untable, mermelada o pasta de maní envasada según el uso buscado", filtroGratis:"En mermeladas, revisá qué lugar ocupa la fruta y si hay azúcar o jarabes agregados. En quesos untables, mirá si la lista empieza por queso/leche o por almidones y espesantes.", ahorroInteligente:"“Sin culpa”, “fit” y “natural” son mensajes publicitarios, no una comparación de valor. Revisá ingredientes, tamaño real del envase y precio por kilo antes de pagar más por una promesa." },
-  { key:"snacks_bebidas", titulo:"Snacks y bebidas", icono:"🥤", familiasAlternativas:["snacks"], terminosProducto:["frutos secos tostados","almendras tostadas","nueces tostadas","semillas tostadas","semillas de girasol","chocolate 70% cacao","chocolate amargo"], opcionesGondola:[{titulo:"Frutos secos tostados sin sal",detalle:"Elegí una porción que te resulte práctica y compará el precio por kilo entre opciones a granel y envasadas."},{titulo:"Semillas envasadas sin sal agregada",detalle:"Una alternativa simple para sumar a una colación; revisá que el envase no agregue azúcar ni saborizantes."},{titulo:"Chocolate amargo con más de 70% de cacao",detalle:"Compará porcentaje de cacao, ingredientes y precio por kilo: el frente del paquete no alcanza para evaluar el producto."}], fallbackGondola:"Frutos secos tostados sin sal, semillas envasadas o chocolate amargo con 70% o más de cacao", filtroGratis:"Mirá los primeros 2 ingredientes: si hay azúcar, JMAF, aceite vegetal refinado o harina de maíz, compará con otra opción que tenga ingredientes más simples y una porción que te sacie.", traduccionMarketing:"Los snacks de arroz o “saludables” pueden reemplazar grasa por almidón refinado y sodio. El impacto glucémico depende de la fórmula y la porción: compará ingredientes antes de asumir que el frente “Fit” los vuelve mejores.", ahorroInteligente:"Compará precio por kilo y porción entre snacks “Fit”, frutos secos, semillas y chocolate amargo. El empaque puede sumar un sobreprecio que no se traduce automáticamente en más saciedad." }
+  { key:"snacks_bebidas", titulo:"Snacks y bebidas", icono:"🥤", familiasAlternativas:["snacks"], terminosProducto:["frutos secos tostados","almendras tostadas","nueces tostadas","semillas tostadas","semillas de girasol","chocolate 70% cacao","chocolate amargo"], opcionesGondola:[{titulo:"Frutos secos tostados sin sal",detalle:"Elegí una porción que te resulte práctica y compará el precio por kilo entre opciones a granel y envasadas."},{titulo:"Semillas envasadas sin sal agregada",detalle:"Una alternativa simple para sumar a una colación; revisá que el envase no agregue azúcar ni saborizantes."},{titulo:"Chocolate amargo con más de 70% de cacao",detalle:"Compará porcentaje de cacao, ingredientes y precio por kilo: el frente del paquete no alcanza para evaluar el producto."}], fallbackGondola:"Frutos secos tostados sin sal, semillas envasadas o chocolate amargo con 70% o más de cacao", filtroGratis:"Mirá los primeros 2 ingredientes: si hay azúcar, JMAF, aceite vegetal refinado o harina de maíz, compará con otra opción que tenga ingredientes más simples y una porción que te sacie.", traduccionMarketing:"Los snacks de arroz o “saludables” pueden reemplazar grasa por almidón refinado y sodio. El impacto glucémico depende de la fórmula y la porción: compará ingredientes antes de asumir que el frente “Fit” los vuelve mejores.", ahorroInteligente:"Compará precio por kilo y porción entre snacks “Fit”, frutos secos, semillas y chocolate amargo. El empaque puede sumar un sobreprecio que no se traduce automáticamente en más saciedad." },
+
+  { key:"supermercado_edulcorantes_aderezos", titulo:"Edulcorantes y aderezos", icono:"🍯", filtroGratis:"Revisá la letra chica: Si comprás edulcorante líquido o en sobre, mirá que el primer ingrediente no sea maltodextrina o dextrosa (azúcares encubiertos con mayor índice glucémico que el azúcar). En aderezos light, vigilá el almidón modificado.", editorialPremiumDesdeSupabase:true, fallbackGondola:"Edulcorantes y aderezos con ingredientes simples" },
 ];
 function seccionCurada(texto, encabezado) {
   const parrafos = String(texto || "").split(/\n\s*\n/);
@@ -139,11 +141,14 @@ function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
     nivelAcceso:"Premium", filtroGratis:pasillo.filtroGratis, requiereCriterioCurado:false
   };
   if (!esPremium) return bloque;
-  const opcionGanadora = {
-    titulo:seleccionada.titulo || pasillo.fallbackGondola,
-    recomendacion:seleccionada.detalle || "",
-    accion:""
-  };
+  const opcionEditorial = seccionCurada(adaptacion, "OPCIÓN A ELEGIR");
+  const opcionGanadora = pasillo.editorialPremiumDesdeSupabase && opcionEditorial
+    ? { titulo:"Opción ganadora", recomendacion:opcionEditorial, accion:"" }
+    : {
+        titulo:seleccionada.titulo || pasillo.fallbackGondola,
+        recomendacion:seleccionada.detalle || "",
+        accion:""
+      };
   return {
     ...bloque,
     traduccionMarketing:pasillo.traduccionMarketing || trampa,
@@ -151,7 +156,7 @@ function construirBloqueSupermercado(pasillo, regla, alternativas, esPremium) {
     evitar,
     opcionGanadora,
     alternativaDisponible:true,
-    roi:{ cuantificable:false, mensaje:pasillo.ahorroInteligente },
+    roi:{ cuantificable:false, mensaje:regla?.soluciones?.ahorro_inteligente || pasillo.ahorroInteligente },
     accion:regla?.soluciones?.accion_usuario || "",
     observacion:regla?.soluciones?.observacion_usuario || "",
     continuidad:regla?.soluciones?.continuidad || "",
@@ -181,7 +186,7 @@ async function consultarHeladera(req,res) {
   try {
     const [alternativas,reglas]=await Promise.all([
       supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,tipo,estado_curado"),
-      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,nivel_acceso,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)")
+      supabaseFetch("reglas?select=id,combinacion,resultado,palabras_clave,nivel_acceso,familia_key,momento_requerido,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad,ahorro_inteligente)")
     ]);
     const candidatas=[
       ...alternativas.filter((a)=>!["rehacer","hueco"].includes(a.estado_curado)).map((a)=>({
@@ -310,7 +315,7 @@ export default async function handler(req, res) {
       const auth = await validarUsuario(req);
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
       const [reglasSuper, alternativas] = await Promise.all([
-        supabaseFetch("reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado"),
+        supabaseFetch("reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad,ahorro_inteligente)&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado"),
         supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,estado_curado,prioridad_busqueda")
       ]);
       const reglasPorFamilia = new Map(reglasSuper.map(r => [r.familia_key, r]));
