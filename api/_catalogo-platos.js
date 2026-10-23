@@ -52,8 +52,10 @@ export async function resolverFichaPlato(textoUsuario) {
   const texto = normalizarEntrada(textoUsuario);
   if (!texto) return { ...FALLBACK_PLATO };
   try {
+    // Preview puede validar nuevas fichas inactivas sin exponerlas en producción.
+    const filtroCatalogo = process.env.VERCEL_ENV === "preview" ? "" : "&activo=eq.true";
     const filas = await supabaseFetch(
-      "preview_catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar&activo=eq.true"
+      `preview_catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar${filtroCatalogo}`
     );
     if (!Array.isArray(filas)) return { ...FALLBACK_PLATO };
     let mejor = null;
