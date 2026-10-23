@@ -783,22 +783,17 @@ function App(){
   </div>
 
   <div className="premium-feature">
-    <div className="feature-kicker">3 · LA COMPARACIÓN</div>
-    <h3>Antes y después, con una sola variable en foco.</h3>
+    <div className="feature-kicker">3 · LA BITÁCORA</div>
+    <h3>Tu experiencia con esta variante</h3>
     {premiumContexto ? <>
-      <div className="adaptive-before-after" aria-label="Comparación visual entre comida de referencia y variante">
-        <div><span>ANTES · REFERENCIA</span><b>{premiumContexto.original||premiumContexto.titulo||'Tu comida de origen'}</b></div>
-        <div className="adaptive-arrow" aria-hidden="true">→</div>
-        <div><span>DESPUÉS · VARIANTE</span><b>{premiumContexto.fichaPlato?.hack||premiumContexto.hack||premiumContexto.accion||premiumContexto.adaptacion||premiumContexto.hackNombre||'La alternativa propuesta'}</b></div>
-      </div>
-      <p className="comparison-unique">Variable en foco: <strong>{etiquetaVariable(tipoVariableAdaptativa(premiumContexto))}</strong>. Probá la variante con tu porción habitual y mantené el resto de la preparación lo más parecido posible.</p>
+      <p className="premium-variable-note">Variante en foco: <strong>{premiumContexto.original||premiumContexto.titulo||'Tu comida'}</strong></p>
       <form className="adaptive-log-form" onSubmit={guardarBitacoraVariante}>
         <label htmlFor="premium-experience-note">¿Cómo te sentiste con esta variante?</label>
-        <p className="adaptive-log-hint">Anotá una diferencia que hayas notado. No hace falta medirlo todo.</p>
-        <textarea id="premium-experience-note" value={premiumRegistroTexto} onChange={e=>setPremiumRegistroTexto(e.target.value)} maxLength={500} placeholder="Ej.: me resultó más cómoda, noté más saciedad o no percibí diferencias…" rows={4} />
+        <p className="adaptive-log-hint">Anotá acá lo que notaste, sin buscar una respuesta correcta ni medirlo todo.</p>
+        <textarea id="premium-experience-note" value={premiumRegistroTexto} onChange={e=>setPremiumRegistroTexto(e.target.value)} maxLength={500} placeholder="Jotéalo acá… ¿Notaste algún cambio o te sentiste igual?" rows={4} />
         <button type="submit" className="primary" disabled={premiumExpBusy||!premiumRegistroTexto.trim()}>{premiumExpBusy?'Guardando…':'Guardar en mi bitácora'}</button>{premiumExpMsg&&<p className={'adaptive-save-feedback '+(premiumExpMsg.startsWith('✓')?'success':'')} role="status" aria-live="polite">{premiumExpMsg.startsWith('✓')?'¡Guardado con éxito en tu bitácora!':premiumExpMsg}</p>}
       </form>
-    </> : <><p>Entrá desde una comida de Descubrir para que esta tarjeta pueda mostrar la comparación correcta.</p><button className="secondary" onClick={volverDesdePremium}>← Volver a {premiumRetorno==='mi-dia'?'Mi Día':'Descubrir'}</button></>}
+    </> : <><p>Entrá desde una comida de Descubrir para registrar tu experiencia.</p><button className="secondary" onClick={volverDesdePremium}>← Volver a {premiumRetorno==='mi-dia'?'Mi Día':'Descubrir'}</button></>}
   </div>
 
   {premiumContexto&&<button className="secondary" onClick={()=>{setPremiumContexto(null);setPremiumOrigen('basica');setPremiumVista('home');setTab('descubrir');setResultadoAntesDeComer(null);setResultado(null);}}>↺ Borrar esta consulta y volver a Descubrir</button>}
