@@ -798,5 +798,38 @@
     "resumen": "Un plato complejo que combina carbohidratos de arroz con una mixtura rica de proteínas animales (pollo, cerdo, mariscos) y vegetales dorados.",
     "hack": "Al ser un plato muy abundante en ingredientes, servite una porción moderada y masticá con calma; la combinación de varias proteínas puede alargar la digestión si se come apurado. Tip extra: un buen golpe de jugo de limón por encima al servir activa las secreciones gástricas y equilibra la densidad de los sabores.",
     "que_observar": "Registra la estabilidad de tu energía durante la tarde; al tener una matriz variada, la saciedad suele ser sumamente prolongada."
+  },
+  {
+    "plato_id": "paella",
+    "sinonimos": [
+      "paella",
+      "paella mixta",
+      "paella de mariscos"
+    ],
+    "resumen": "Joya de la cocina mediterránea. Arroz estacionado con azafrán, vegetales y frutos del mar o carnes magras, con un excelente perfil de micronutrientes.",
+    "hack": "El azafrán puro no solo da el color clásico, sino que aporta compuestos bioactivos que mejoran el confort digestivo y el estado de ánimo. Tip extra: disfrutala sin apuro, saboreando el fondo dorado (socarrat) con moderación si sos sensible a las digestiones pesadas.",
+    "que_observar": "Analiza tu liviandad estomacal; los mariscos combinados con arroz de buena calidad suelen dar una satisfacción muy limpia sin la modorra típica de las harinas refinadas."
+  },
+  {
+    "plato_id": "guiso-arroz",
+    "sinonimos": [
+      "guiso de arroz",
+      "arroz con carne y verduras",
+      "arrocito guisado"
+    ],
+    "resumen": "Clásico de olla reconfortante. Arroz cocido en caldo concentrado con verduras de estación y pequeños trozos de carne, logrando una textura melosa y de rápida asimilación.",
+    "hack": "Dejar reposar el guiso unos minutos antes de servir ayuda a que los almidones se estabilicen y no caigan pesados al estómago. Tip extra: sumarle un toque de queso rallado de calidad o perejil fresco al plato realza el perfil nutricional y estimula la digestión.",
+    "que_observar": "Presta atención al calor y confort que aporta; es un plato que reconforta pero requiere actividad posterior para metabolizar bien su energía rápida."
+  },
+  {
+    "plato_id": "guiso-lentejas",
+    "sinonimos": [
+      "guiso de lentejas",
+      "lentejas guisadas",
+      "guiso criollo de lentejas"
+    ],
+    "resumen": "El rey indiscutido de los platos de invierno. Aporte masivo de proteína vegetal, hierro y fibra prebiótica gracias a las legumbres.",
+    "hack": "Si las lentejas estuvieron bien remojadas previamente, vas a evitar por completo la hinchazón abdominal típica. El toque fit de valor: sumale un chorrito generoso de vinagre o limón al plato servido y comelo con una hojita de laurel; los ácidos orgánicos potencian la absorción del hierro vegetal y cuidan tu microbiota.",
+    "que_observar": "Registra el nivel de saciedad extrema que te deja; es un plato de alta densidad que mantiene el hambre a raya durante horas, ideal para días de mucho desgaste."
   }
 ]
