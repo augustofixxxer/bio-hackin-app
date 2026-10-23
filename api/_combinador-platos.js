@@ -34,14 +34,28 @@ function fichaPublica(ficha, nombreEntrada) {
 }
 
 export async function resolverCombinacionTexto(textoUsuario) {
+  const trace = { etapa: "inicio", textoRecibido: String(textoUsuario || ""), conectorDetectado: null, principalTexto: null, acompanamientoTexto: null, principalId: null, acompanamientoId: null, filasMatriz: null, coincidencia: null, error: null };
   const partes = separarDupla(textoUsuario);
-  if (!partes) return { modo: "sin_dupla", detectada: false };
+  if (!partes) {
+    trace.etapa = "sin_conector";
+    console.info("[combinador-trace]", JSON.stringify(trace));
+    return { modo: "sin_dupla", detectada: false, ...(process.env.VERCEL_ENV === "preview" ? { trace } : {}) };
+  }
+  trace.etapa = "conector_detectado";
+  trace.conectorDetectado = partes.conector;
+  trace.principalTexto = partes.principal;
+  trace.acompanamientoTexto = partes.acompanamiento;
+  console.info("[combinador-trace]", JSON.stringify(trace));
 
   try {
     const [principal, acompanamiento] = await Promise.all([
       resolverEntidad(partes.principal),
       resolverEntidad(partes.acompanamiento)
     ]);
+    trace.etapa = "entidades_resueltas";
+    trace.principalId = principal?.plato_id || null;
+    trace.acompanamientoId = acompanamiento?.plato_id || null;
+    console.info("[combinador-trace]", JSON.stringify(trace));
 
     const filtroActivo = process.env.VERCEL_ENV === "preview" ? "" : "&activo=eq.true";
     const filas = await supabaseFetch(
@@ -49,10 +63,14 @@ export async function resolverCombinacionTexto(textoUsuario) {
       filtroActivo
     );
 
+    trace.filasMatriz = Array.isArray(filas) ? filas.length : -1;
     const combinacion = (Array.isArray(filas) ? filas : []).find((fila) =>
       fila.plato_principal_id === principal.plato_id &&
       fila.acompanamiento_id === acompanamiento.plato_id
     );
+    trace.coincidencia = combinacion?.combinacion_id || null;
+    trace.etapa = combinacion ? "dupla_encontrada" : "sin_coincidencia_matriz";
+    console.info("[combinador-trace]", JSON.stringify(trace));
 
     if (combinacion) {
       return {
@@ -65,7 +83,8 @@ export async function resolverCombinacionTexto(textoUsuario) {
           { titulo: "El super-hack combinado", texto: combinacion.hack_combinado },
           { titulo: "Qué observar", texto: combinacion.que_observar }
         ],
-        fallback: false
+        fallback: false,
+        ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
       };
     }
 
@@ -86,9 +105,13 @@ export async function resolverCombinacionTexto(textoUsuario) {
           { nombre: partes.acompanamiento, ficha: fichaAcompanamiento }
         ]
       },
-      fallback: true
+      fallback: true,
+      ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
     };
   } catch (error) {
+    trace.etapa = "error";
+    trace.error = String(error?.message || error);
+    console.error("[combinador-trace]", JSON.stringify(trace));
     console.error("[combinador-platos] No se pudo resolver la dupla; se devuelve fallback seguro.");
     const ficha = await resolverFichaPlato(partes.principal).catch(() => null);
     const segura = ficha || {
@@ -106,7 +129,8 @@ export async function resolverCombinacionTexto(textoUsuario) {
         etiqueta: "Ver los consejos de cada plato por separado",
         platos: [{ nombre: partes.principal, ficha: fichaPublica(segura, partes.principal) }]
       },
-      fallback: true
+      fallback: true,
+      ...(process.env.VERCEL_ENV === "preview" ? { trace } : {})
     };
   }
 }
