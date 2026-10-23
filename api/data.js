@@ -315,7 +315,7 @@ export default async function handler(req, res) {
       const auth = await validarUsuario(req);
       if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
       const [reglasSuper, alternativas] = await Promise.all([
-        supabaseFetch("reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad)&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado"),
+        supabaseFetch("reglas?select=id,combinacion,resultado,nivel_acceso,momento_requerido,familia_key,soluciones(id,nombre_hackeo,adaptacion,accion_usuario,observacion_usuario,continuidad,ahorro_inteligente)&momento_requerido=eq.Durante%20la%20compra%20en%20supermercado"),
         supabaseFetch("alternativas_locales?select=id,mecanismo,descripcion_mecanismo,recomendacion,accion_texto,observacion_texto,continuidad_texto,familia_key,estado_curado,prioridad_busqueda")
       ]);
       const reglasPorFamilia = new Map(reglasSuper.map(r => [r.familia_key, r]));
