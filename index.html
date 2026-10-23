@@ -633,6 +633,8 @@ function PlanificarPanel({ pase, onVerMisPatrones, onVerPremium, prefillTexto, o
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [resultadoCombinacion, setResultadoCombinacion] = useState(null);
+  const [mostrarConsejosSeparados, setMostrarConsejosSeparados] = useState(false);
   const [error, setError] = useState(null);
 
   async function ver(textoAUsar) {
