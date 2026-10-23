@@ -831,5 +831,39 @@
     "resumen": "El rey indiscutido de los platos de invierno. Aporte masivo de proteína vegetal, hierro y fibra prebiótica gracias a las legumbres.",
     "hack": "Si las lentejas estuvieron bien remojadas previamente, vas a evitar por completo la hinchazón abdominal típica. El toque fit de valor: sumale un chorrito generoso de vinagre o limón al plato servido y comelo con una hojita de laurel; los ácidos orgánicos potencian la absorción del hierro vegetal y cuidan tu microbiota.",
     "que_observar": "Registra el nivel de saciedad extrema que te deja; es un plato de alta densidad que mantiene el hambre a raya durante horas, ideal para días de mucho desgaste."
+  },
+  {
+    "plato_id": "guiso-papa",
+    "sinonimos": [
+      "guiso de papa",
+      "guiso de papas con carne",
+      "estofado de papa"
+    ],
+    "resumen": "Alimento de olla muy noble, donde la papa absorbe todos los jugos del fondo de cocción, aportando carbohidratos reconfortantes y un nivel calórico moderado.",
+    "hack": "Cocinalas con los cubos de papa enteros para que no se deshagan por completo y mantengan una estructura que obligue a una mínima masticación. Tip extra: un toque de pimentón dulce y cebolla de verdeo picada arriba levanta el plato a otro nivel sin sumar complicaciones.",
+    "que_observar": "Nota la velocidad de digestión; al ser un plato blando y húmedo, se asimila con muchísima rapidez, por lo que la porción justa es la clave."
+  },
+  {
+    "plato_id": "guiso-fideos",
+    "sinonimos": [
+      "guiso de fideos",
+      "fideos guisados",
+      "tallarines de olla"
+    ],
+    "resumen": "Fideos cortos cocidos directamente en el caldo con verduras y carne, logrando una salsa espesa y bien integrada por el almidón de la pasta.",
+    "hack": "Al igual que con el arroz de olla, controlar el tamaño de la porción es fundamental para evitar el letargo post-comida propio de las harinas de cocción húmeda. Tip extra: un toque de queso cremoso o rallado al final aporta untuosidad y frena levemente el pico de absorción rápida.",
+    "que_observar": "Evalúa tu nivel de energía inmediata; te da un envión rápido pero puede pedir movimiento físico para evitar la modorra."
+  },
+  {
+    "plato_id": "tortilla-papa",
+    "sinonimos": [
+      "tortilla de papa",
+      "tortilla española",
+      "tortilla de papas",
+      "tortillita"
+    ],
+    "resumen": "Estructura sólida a base de papa y huevo coagulado, combinando carbohidratos energéticos con una proteína de altísima calidad biológica.",
+    "hack": "Si querés aligerar la cocción tradicional, hacé las papas previamente al horno o vapor antes de unirlas al huevo en la sartén, evitando el exceso de aceite de la fritura previa. Tip extra: acompañada de una buena ensalada de hojas verdes crudas, equilibras perfectamente el plato.",
+    "que_observar": "Registra tu saciedad; la combinación de huevo y papa es una de las fórmulas más saciantes y estables para mantener el apetito controlado."
   }
 ]
