@@ -120,7 +120,7 @@
 .mi-dia-screen .mi-dia-block{margin-top:12px;padding:15px;border-radius:16px;background:#17211e;border:1px solid rgba(255,255,255,.1)}
 .mi-dia-screen .mi-dia-block h2{font-size:18px;line-height:1.3;margin:0 0 12px;color:#fff}
 .mi-dia-screen .mi-dia-label{display:block;margin:10px 0 6px;font-size:12px;font-weight:700;color:#cbd4ce}
-.mi-dia-screen .mi-dia-block select,.mi-dia-screen .mi-dia-block textarea{width:100%;min-width:0;background:#111a17;color:#f2efe9;border:1px solid rgba(255,255,255,.13);border-radius:11px;padding:11px;font-size:13px}
+.mi-dia-screen .mi-dia-block select,.mi-dia-screen .mi-dia-block textarea{width:100%;min-width:0;background:#202d28;color:#f2efe9;border:1px solid rgba(197,160,89,.48);border-radius:11px;padding:11px;font-size:13px;outline:none}.mi-dia-screen .mi-dia-block textarea:focus{border-color:#c5a059;box-shadow:0 0 0 2px rgba(197,160,89,.16)}.precomer-search input{background:#202d28;border:1px solid rgba(197,160,89,.55);border-radius:10px;padding:12px;color:#f2efe9;outline:none;min-width:0}.precomer-search input:focus{border-color:#c5a059;box-shadow:0 0 0 2px rgba(197,160,89,.16)}
 .mi-dia-screen .mi-dia-block textarea{min-height:66px;resize:vertical;margin-top:0}
 .mi-dia-screen .mi-dia-main-action{margin-top:12px;min-height:46px;font-size:13px;line-height:1.35}
 .mi-dia-screen .mi-dia-section-hint{font-size:12px;color:#aab5af;margin:-5px 0 12px}
@@ -715,12 +715,8 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
     <h2 style={{margin:'4px 0 4px'}}>{premiumOrigen==='patrones'?'Tendencias y Patrones':'Tu espacio para probar y aprender.'}</h2>
     <p style={{margin:0}}>{premiumOrigen==='patrones'?'Explorá las asociaciones que aparecen en tus registros reales de comida y bienestar.':'Convertí una observación en una prueba: cambiá una cosa y compará.'}</p>
   </div>
-  <div className="premium-status"><span className={'status-dot '+premiumEstadoVisual}></span><b>{premiumEstadoTexto}</b></div>
 </div>
 
-<div className="premium-nav" style={{gridTemplateColumns:'1fr'}}>
-  <button className="premium-nav-item active">Inicio</button>
-</div>
 
 {premiumOrigen==='patrones'&&<div className="premium-home premium-patterns-view">
   <div className="premium-feature">
@@ -743,7 +739,7 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
 </div>}
 {premiumOrigen!=='patrones'&&premiumVista==='home'&&<div className="premium-home">
 {premiumContexto?.combinacionPlatos?.modo==='dupla'&&premiumContexto.combinacionPlatos.detectada===true&&renderCombinacionPlatos(premiumContexto.combinacionPlatos,premiumContexto,'premium')}
-<section className="founder-offer">
+{premiumEstado && !premiumEstado.premium && <section className="founder-offer">
   <div className="feature-kicker">ACCESO PRO · FOUNDER</div>
   <h2>Convertí tus registros en patrones propios.</h2>
   <p>Accedé a la bitácora de patrones y a sugerencias regionales para profundizar en lo que registrás.</p>
@@ -762,7 +758,7 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
    {premiumPagoMsg&&<div className="saved" role="alert">{premiumPagoMsg}</div>}
    <div className="founder-actions"><button className="founder-close" disabled={premiumPagoBusy} onClick={()=>setPremiumModalAbierto(false)}>CANCELAR</button><button className="founder-send" disabled={premiumPagoBusy||!premiumComprobante||!premiumPlanesConfig.medios?.alias||!premiumPlanesConfig.medios?.titular} onClick={enviarComprobanteFounder}>{premiumPagoBusy?"ENVIANDO…":"ENVIAR COMPROBANTE"}</button></div>
   </section></div>}
-</section>
+</section>}
   {!(premiumContexto?.combinacionPlatos?.modo==='dupla'&&premiumContexto.combinacionPlatos.detectada===true)&&<>
 {!premiumContexto?.fichaPlato&&(premiumContexto?<div className="premium-context"><b>Venís de Descubrir</b><span>{premiumContexto.original||premiumContexto.titulo||'La comida que acabás de explorar'}</span></div>:<div className="premium-context"><b>Premium empieza con una comida concreta.</b><span>Entrá desde una comida que acabás de explorar para recibir el hallazgo, la sugerencia y qué vamos a comparar.</span></div>)}
 
