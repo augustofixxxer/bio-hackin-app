@@ -595,5 +595,197 @@
     "resumen": "Salsa aromática a base de cebollita de verdeo rehogada (habitualmente con un toque de crema o caldo). Aporta frescura verde y compuestos sulfurados bioactivos de la familia de la cebolla.",
     "hack": "Rehogá el verdeo a fuego moderado con un hilo de aceite de oliva antes de sumarle la crema; los compuestos de la cebolla protegen la función hepática y suavizan las grasas pesadas. Tip extra: un toque de ralladura de limón al finalizar la cocción le da un giro de frescura descomunal.",
     "que_observar": "Nota el confort digestivo; a diferencia de una crema sola, los compuestos aromáticos del verdeo estimulan mejor los jugos gástricos."
+  },
+  {
+    "plato_id": "pizza",
+    "sinonimos": [
+      "pizza",
+      "pizza muzza",
+      "pizza de mozzarella",
+      "porcion de pizza"
+    ],
+    "resumen": "El clásico urbano por excelencia. Combina una base de harina refinada fermentada con salsa de tomate y un colchón fundido de mozzarella (carbohidratos de rápida absorción y grasas lácteas).",
+    "hack": "Modera la porción y acompañala obligatoriamente con una buena entrada de hojas verdes con vinagre; esa fibra inicial frena el impacto glucémico directo de la masa. El toque fit de valor: si tenés la opción, elegí versiones con masa madre o harina integral; la fermentación natural de la masa madre predigiere el gluten y mejora radicalmente la asimilación y el nivel de energía posterior. Tip extra: un toque de aceite de oliva con ají molido arriba estimula la termogénesis y la digestión.",
+    "que_observar": "Registra la velocidad con la que reaparece el hambre y la sensación de sed posterior; notarás una diferencia abismal en la liviandad si optas por la variante de masa madre frente a la harina blanca común."
+  },
+  {
+    "plato_id": "pizza-especial-jamon",
+    "sinonimos": [
+      "pizza especial",
+      "pizza con jamon",
+      "pizza jamon y morrones"
+    ],
+    "resumen": "Evolución de la clásica muzza que suma un aporte proteico extra gracias al jamón cocido, elevando la densidad general del plato.",
+    "hack": "Al igual que con la pizza base, prioriza comerla despacio y complementarla con vegetales frescos. Tip extra: si el jamón es muy salado, un toque de oliva virgen extra equilibra la palatabilidad sin saturar el paladar.",
+    "que_observar": "Compara tu nivel de saciedad frente a la pizza de mozzarella sola; el aporte de proteína extra suele mantener el apetito a raya por un poco más de tiempo."
+  },
+  {
+    "plato_id": "pizza-fugazzeta",
+    "sinonimos": [
+      "pizza fugazeta",
+      "fugazeta",
+      "pizza con cebolla"
+    ],
+    "resumen": "Base de masa cubierta por una montaña de cebollas rehogadas y abundante queso fundido. Una combinación de altísimo valor de confort y sabor profundo.",
+    "hack": "Los compuestos sulfurados de la cebolla cocida ayudan a suavizar la digestión de las grasas lácteas del queso. Tip extra: una pizca generosa de orégano seco potencia los antioxidantes y le da un perfil digestivo muy superior.",
+    "que_observar": "Presta atención a cómo responde tu estómago; las cebollas en gran cantidad pueden generar un leve reflujo si se comen de apuro o muy tarde a la noche."
+  },
+  {
+    "plato_id": "pizza-ternera",
+    "sinonimos": [
+      "pizza con ternera",
+      "pizza con carne",
+      "pizza fugazeta con carne"
+    ],
+    "resumen": "Una variante ultra contundente que suma carne vacuna desmenuzada o picada sobre la estructura de la pizza. Funciona casi como un plato principal completo.",
+    "hack": "Por su enorme densidad calórica y proteica, reduce la cantidad de porciones habituales; con dos porciones bien saboreadas cubris perfecto la energía. Tip extra: un toque de provenzal o perejil fresco al salir del horno ayuda a mitigar la pesadez de la carne roja combinada con harinas.",
+    "que_observar": "Evalúa la estabilidad de tu energía posterior; al ser un plato muy pesado, requiere un buen rato de digestión tranquila antes de encarar actividad física o mental intensa."
+  },
+  {
+    "plato_id": "pizza-calabresa",
+    "sinonimos": [
+      "pizza calabresa",
+      "pizza con salame",
+      "calabresa"
+    ],
+    "resumen": "Pizza con rodajas de embutido curado (salame/longaniza), aportando notas especiadas, grasas de alta intensidad y un perfil de sabor sumamente estimulante.",
+    "hack": "El salame aporta grasas saturadas y sodio elevados; combinala con una porción generosa de ensalada cruda al lado para amortiguar el impacto metabólico general. Tip extra: un toque de pimienta negra o ají molido realza el picor natural sin necesidad de abusar de la cantidad de embutido.",
+    "que_observar": "Nota la sed posterior y la pesadez estomacal; los embutidos curados combinados con masa de harina blanca exigen una buena hidratación para evitar el letargo."
+  },
+  {
+    "plato_id": "pizza-rucula",
+    "sinonimos": [
+      "pizza con rucula",
+      "pizza rucula y parmesano",
+      "pizza con jamon crudo y rucula"
+    ],
+    "resumen": "Una de las opciones más equilibradas del mundo pizzerio: la base de masa y queso se complementa con el amargor fresco de la rúcula cruda y viruta de queso duro o jamón.",
+    "hack": "El gran secreto bio-hack: la rúcula cruda aporta fibra viva y compuestos amargos que estimulan la secreción biliar, mejorando notablemente la digestión del queso y la masa. Tip extra: un buen hilo de aceite de oliva crudo por encima de la rúcula al servir eleva el plato a otro nivel.",
+    "que_observar": "Compara tu liviandad estomacal frente a una pizza pesada de fiambres; la rúcula aporta una frescura que evita la modorra post-comida."
+  },
+  {
+    "plato_id": "empanada-carne",
+    "sinonimos": [
+      "empanada de carne",
+      "empanadas de carne",
+      "empanada criolla",
+      "empanada cortada a cuchillo"
+    ],
+    "resumen": "Disco de masa horneado o frito que encierra un jugoso relleno de carne vacuna especiada. Densidad proteica y energética muy portátil.",
+    "hack": "Si elegís la versión al horno, logras un excelente balance; si son fritas, escurriles bien el excedente de aceite en papel. Tip extra: un toque de jugo de limón recién exprimido sobre la empanada abierta activa las papilas y facilita la digestión de la carne.",
+    "que_observar": "Registra cuántas te llenan realmente; al ser un alimento muy denso, el punto de saciedad llega de golpe y conviene frenar antes de la pesadez."
+  },
+  {
+    "plato_id": "empanada-pollo",
+    "sinonimos": [
+      "empanada de pollo",
+      "empanadas de pollo",
+      "empanada de ave"
+    ],
+    "resumen": "Variante más ligera en cuanto al tipo de carne, combinando pechuga o pollo desmenuzado con vegetales rehogados dentro de la masa.",
+    "hack": "Acompañalas con una ensalada fresca o un toque de criolla natural para sumar humedad y fibra al plato. Tip extra: un toque de pimentón ahumado en el relleno realza el sabor sin sumar grasas pesadas.",
+    "que_observar": "Nota la diferencia de liviandad estomacal en comparación con la empanada de carne roja; el pollo suele transitarse con mayor velocidad gástrica."
+  },
+  {
+    "plato_id": "empanada-verdura",
+    "sinonimos": [
+      "empanada de verdura",
+      "empanadas de verdura",
+      "empanada de acelga o espinaca",
+      "empanada de acelga"
+    ],
+    "resumen": "Relleno verde a base de acelga o espinaca combinada con cebolla y un toque de queso o ricota. Aporta fibra vegetal y menor carga calórica.",
+    "hack": "Escurrí muy bien la verdura antes de armarlas para evitar que la masa se humedezca de más. Tip extra: una pizca de nuez moscada en el ligue de la verdura realza el sabor clásico y reconfortante.",
+    "que_observar": "Analiza tu confort digestivo; al tener base vegetal, son sumamente amigables para comer al mediodía sin perder claridad mental."
+  },
+  {
+    "plato_id": "empanada-choclo",
+    "sinonimos": [
+      "empanada de choclo",
+      "empanadas de choclo",
+      "empanada humita"
+    ],
+    "resumen": "Relleno dulce y cremoso a base de granos de maíz, cebolla y salsa blanca o queso fundido. Aporte importante de carbohidratos de asimilación rápida.",
+    "hack": "Al ser un relleno dulce y denso, moderá la cantidad y combinala con alguna opción salada o proteica si armás surtido. Tip extra: un toque de pimienta negra o ají molido equilibra el dulzor natural del choclo de manera perfecta.",
+    "que_observar": "Presta atención a la energía inmediata que te aporta; da un pico rápido de glucosa que rinde muy bien si vas a moverte enseguida."
+  },
+  {
+    "plato_id": "sfija",
+    "sinonimos": [
+      "sfija",
+      "empanada arabe",
+      "empanada abierta de carne",
+      "fatay"
+    ],
+    "resumen": "Clásica empanada de formato abierto con un relleno jugoso de carne vacuna, tomate, cebolla y un toque característico de limón y especias.",
+    "hack": "Al llevar limón y especias digestivas (como comino o pimentón) integradas en el relleno, la carne se digiere con muchísima más agilidad que en una empanada tradicional cerrada. Tip extra: sumarle unas gotitas extra de limón fresco al comerla potencia su perfil digestivo original.",
+    "que_observar": "Registra la comodidad post-almuerzo; la acidez natural del relleno suele dejar el estómago mucho más liviano que otras opciones con exceso de grasa."
+  },
+  {
+    "plato_id": "tarta-jamon-queso",
+    "sinonimos": [
+      "tarta de jamon y queso",
+      "tartas",
+      "pascualina de jamon y queso"
+    ],
+    "resumen": "Clásico de casa o rotisería. Capas de masa de tarta con un corazón denso de jamón y abundante queso derretido. Alto contenido calórico y graso.",
+    "hack": "Una porción generosa acompañada de una buena ensalada de hojas verdes crudas compensa perfectamente la falta de fibra de la tarta. Tip extra: un toque de orégano o provenzal arriba ayuda a cortar la pesadez de los lácteos fundidos.",
+    "que_observar": "Nota la velocidad de saciedad; es un plato muy denso que sacia rápido pero puede dejar una sensación de modorra si la porción es grande."
+  },
+  {
+    "plato_id": "tarta-choclo",
+    "sinonimos": [
+      "tarta de choclo",
+      "tarta de humita",
+      "pascualina de choclo"
+    ],
+    "resumen": "Relleno cremoso de maíz tierno ligado con huevo y salsa blanca o queso, contenido en una masa crocante.",
+    "hack": "Si buscás aligerarla, prioriza una masa hojaldrada fina o preparala en versión sin tapa superior para reducir el impacto de las harinas refinadas. Tip extra: un toque de nuez moscada y pimentón realza el sabor del maíz sin necesidad de agregar aditivos pesados.",
+    "que_observar": "Evalúa tu confort estomacal; el choclo aporta una textura suave pero requiere buena masticación para evitar digestiones lentas."
+  },
+  {
+    "plato_id": "tarta-verdura",
+    "sinonimos": [
+      "tarta de verdura",
+      "tarta de acelga",
+      "tarta de espinaca",
+      "pascualina"
+    ],
+    "resumen": "El caballito de batalla de la cocina saludable cotidiana. Acelga o espinaca, huevo y condimentos dentro de una masa consistente.",
+    "hack": "Sumale una porción extra de queso magro o huevo duro picado en el relleno para redondear un perfil proteico completo. Tip extra: un toque de ajo deshidratado o fresco en la verdura eleva el sabor y aporta compuestos protectores hepáticos.",
+    "que_observar": "Analiza tu liviandad y energía sostenida; es una de las mejores opciones de masa para mantener el rendimiento mental sin altibajos glucémicos."
+  },
+  {
+    "plato_id": "bombas-carne",
+    "sinonimos": [
+      "bombas de carne",
+      "papa rellena frita",
+      "croqueta de carne rellena"
+    ],
+    "resumen": "Preparación a base de puré de papa moldeado con un corazón de carne picada, rebozado y frito a alta temperatura.",
+    "hack": "Por su doble carga de almidón (papa) y fritura profunda, tratá de consumirlas de forma ocasional y siempre escurridas al máximo. Tip extra: acompáñalas con un dip de limón o salsa natural para contrarrestar la densidad grasa de la fritura.",
+    "que_observar": "Registra el impacto en tu digestión; al ser una bomba calórica y lipídica, el vaciado gástrico es muy lento y demanda un tiempo largo de reposo."
+  },
+  {
+    "plato_id": "bombas-queso",
+    "sinonimos": [
+      "bombas de queso",
+      "croquetas de queso",
+      "bolitas de queso fritas"
+    ],
+    "resumen": "Bocados crujientes por fuera con un interior de queso fundido y texturas amalgamadas por el rebozado.",
+    "hack": "Moderá la cantidad como entrada o picada; funcionan mucho mejor como un gusto ocasional que como base de una comida principal. Tip extra: una salsa especiada o un toque de pimienta ayuda a levantar el perfil graso del queso frito.",
+    "que_observar": "Presta atención a la pesadez o sensación de saciedad pesada; las grasas fritas combinadas con lácteos fundidos exigen una buena tolerancia digestiva."
+  },
+  {
+    "plato_id": "pastel-papas",
+    "sinonimos": [
+      "pastel de papas",
+      "pastel de carne y puré",
+      "pastel de papa"
+    ],
+    "resumen": "Capas superpuestas de puré de papa y carne picada especiada, gratinadas al horno. El gran confort food de olla y fuente.",
+    "hack": "No satures la capa de puré con exceso de manteca o leche entera; deja que la carne jugosa aporte toda la humedad necesaria. Tip extra: un toque de pimentón dulce o ahumado en la superficie antes de gratinar le da un color y aroma tostado inigualable.",
+    "que_observar": "Nota la saciedad profunda y el calor reconfortante que deja el plato; al ser denso en carbohidratos y proteínas, es ideal para días de alto desgaste físico."
   }
 ]
