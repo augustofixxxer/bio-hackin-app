@@ -19,7 +19,7 @@ async function resolverEntidad(texto) {
   // como milanesa de carne salvo que el usuario especifique pollo, hígado o berenjena.
   const limpio = normalizarEntrada(texto);
   const consulta = limpio === "milanesa" ? "milanesa de carne" : texto;
-  return resolverFichaPlato(consulta);
+  // El combinador puede resolver fichas inactivas solo para contrastarlas con una dupla activa.\n  // Esto evita publicar el catálogo individual mientras habilita las combinaciones aprobadas.\n  return resolverFichaPlato(consulta, { incluirInactivos: true });
 }
 
 function fichaPublica(ficha, nombreEntrada) {
