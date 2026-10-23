@@ -48,12 +48,12 @@ function puntuar(texto, sinonimo) {
   return 0;
 }
 
-export async function resolverFichaPlato(textoUsuario) {
+export async function resolverFichaPlato(textoUsuario, opciones = {}) {
   const texto = normalizarEntrada(textoUsuario);
   if (!texto) return { ...FALLBACK_PLATO };
   try {
     // Preview puede validar nuevas fichas inactivas sin exponerlas en producción.
-    const filtroCatalogo = process.env.VERCEL_ENV === "preview" ? "" : "&activo=eq.true";
+    const filtroCatalogo = process.env.VERCEL_ENV === "preview" || opciones.incluirInactivos === true ? "" : "&activo=eq.true";
     const filas = await supabaseFetch(
       `preview_catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar${filtroCatalogo}`
     );
