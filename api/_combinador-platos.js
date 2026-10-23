@@ -20,7 +20,8 @@ async function resolverEntidad(texto) {
   const limpio = normalizarEntrada(texto);
   const consulta = limpio === "milanesa" ? "milanesa de carne" : texto;
   // El combinador puede resolver fichas inactivas solo para contrastarlas con una dupla activa.
-  // Esto evita publicar el catálogo individual mientras habilita las combinaciones aprobadas.\n  return resolverFichaPlato(consulta, { incluirInactivos: true });
+  // Esto evita publicar el catálogo individual mientras habilita las combinaciones aprobadas.
+  return resolverFichaPlato(consulta, { incluirInactivos: true });
 }
 
 function fichaPublica(ficha, nombreEntrada) {
