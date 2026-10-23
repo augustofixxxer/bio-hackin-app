@@ -551,7 +551,7 @@ function App(){
   else if(tab==='descubrir'||contexto)setPremiumRetorno('descubrir');
   let destino=origen;let contextoSeguro=contexto?{...contexto,cambioComposicional:contexto.solucion?.cambioComposicional||contexto.cambioComposicional||null,aprendizajeComparativo:contexto.solucion?.aprendizajeComparativo||contexto.aprendizajeComparativo||null,queSeMantiene:contexto.solucion?.queSeMantiene||contexto.queSeMantiene||null}:null;
   if(origen==='patrones'){
-   try{const r=await fetch('/api/premium?ruta=estado',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const estado=await r.json();if(!r.ok||estado.premium!==true){destino='basica';contextoSeguro=null}else{setPremiumEstado(estado)}}catch(_){destino='basica';contextoSeguro=null}
+   try{const r=await fetch('/api/premium?ruta=estado',{headers:{Authorization:'Bearer '+pase()},cache:'no-store'});const estado=await r.json();if(!r.ok||estado.premium!==true){setPremiumEstado(r.ok?estado:null);destino='basica';contextoSeguro=null}else{setPremiumEstado(estado)}}catch(_){setPremiumEstado(null);destino='basica';contextoSeguro=null}
   }
   setPremiumOrigen(destino);setPremiumContexto(contextoSeguro);setPremiumVista('home');setTab('premium')
  }
