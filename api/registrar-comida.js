@@ -10,6 +10,7 @@ import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 import { clasificarComidaIA } from "./_clasificador-ia.js";
 import { construirProtocoloCulinarioAdaptativo } from "./_selector-tips-ia.js";
 import { resolverFichaPlato } from "./_catalogo-platos.js";
+import { resolverCombinacionTexto } from "./_combinador-platos.js";
 import { usuarioIdDesdeRequest } from "./_sesion.js";
 import { copyPlatoPreview } from "./_copy-platos-preview.js";
 
@@ -267,11 +268,23 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { texto, momento, soloVista, alternativaId } = req.body || {};
+  const { texto, momento, soloVista, alternativaId, soloCombinacion } = req.body || {};
   if (!texto || typeof texto !== "string" || texto.trim().length === 0) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
     return;
   }
+  // Módulo Combinatorio: lectura pura y determinista; no crea registros ni altera
+  // el flujo actual de planificar/registrar comida.
+  if (soloCombinacion === true) {
+    try {
+      const combinacion = await resolverCombinacionTexto(texto);
+      return res.status(200).json(combinacion);
+    } catch (err) {
+      console.error("[combinador-platos] Error controlado en endpoint.");
+      return res.status(200).json({ modo: "sin_dupla", detectada: false, fallback: true });
+    }
+  }
+
   // Fase 4 (10/08/2026) — opcional, viene de CTA2 "Sumar a mi día". Si viene, tiene que
   // ser un UUID válido; si no viene, sigue siendo un registro de texto libre normal.
   if (alternativaId !== undefined && alternativaId !== null && !esUUIDValido(alternativaId)) {
