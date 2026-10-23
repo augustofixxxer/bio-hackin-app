@@ -865,5 +865,38 @@
     "resumen": "Estructura sólida a base de papa y huevo coagulado, combinando carbohidratos energéticos con una proteína de altísima calidad biológica.",
     "hack": "Si querés aligerar la cocción tradicional, hacé las papas previamente al horno o vapor antes de unirlas al huevo en la sartén, evitando el exceso de aceite de la fritura previa. Tip extra: acompañada de una buena ensalada de hojas verdes crudas, equilibras perfectamente el plato.",
     "que_observar": "Registra tu saciedad; la combinación de huevo y papa es una de las fórmulas más saciantes y estables para mantener el apetito controlado."
+  },
+  {
+    "plato_id": "tortilla-acelga",
+    "sinonimos": [
+      "tortilla de acelga",
+      "tortilla de verdura",
+      "tortilla de espinaca"
+    ],
+    "resumen": "Versión verde y ligera que reemplaza gran parte del tubérculo por vegetales de hoja unidos por el huevo. Fibra y micronutrientes asegurados.",
+    "hack": "Escurrí muy bien el agua de la acelga antes de batirla con los huevos para que la tortilla no quede húmeda ni se desarme en la sartén. Tip extra: un toque de ajo deshidratado o rallado realza el sabor de la verdura de forma excelente.",
+    "que_observar": "Analiza tu liviandad estomacal; es una opción sumamente amigable para comer al mediodía y seguir con la mente despejada."
+  },
+  {
+    "plato_id": "estofado",
+    "sinonimos": [
+      "estofado",
+      "estofado de carne",
+      "estofado criollo"
+    ],
+    "resumen": "Carne vacuna u otro corte cocinado a fuego muy lento en salsa de tomate con verduras, logrando una ternura extrema y una concentración profunda de sabor umami.",
+    "hack": "La cocción lenta predigiere las fibras de la carne, facilitando enormemente el trabajo de tu sistema gástrico. Tip extra: acompañalo con vegetales al vapor o una base liviana en lugar de abusar de grandes cantidades de pan.",
+    "que_observar": "Nota el confort digestivo profundo y la energía sostenida que te otorga una buena carne bien estofada."
+  },
+  {
+    "plato_id": "polenta",
+    "sinonimos": [
+      "polenta",
+      "harina de maiz",
+      "polenta cremosa"
+    ],
+    "resumen": "Puré caliente a base de harina de maíz. Aporta carbohidratos de rápida asimilación y una textura sumamente reconfortante.",
+    "hack": "El secreto para que no te tire un bajón de energía: preparala con un toque de caldo real y sumale una buena cucharada de manteca o aceite de oliva al final junto con un buen queso. Las grasas saludables frenan el impacto glucémico directo de la harina de maíz. Tip extra: un toque de pimienta negra despierta el sabor de la polenta instantáneamente.",
+    "que_observar": "Presta atención a la velocidad con la que digerís la polenta; al ser un carbohidrato puro, su tránsito es rápido y pide un buen acompañamiento proteico."
   }
 ]
