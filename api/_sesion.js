@@ -64,26 +64,23 @@ export function verificarPase(pase) {
   return usuarioId;
 }
 
-// Helper común para los endpoints: extrae el pase del header Authorization
-// ("Bearer <pase>") o, como respaldo, de req.body/req.query.pase — y devuelve
-// el usuarioId verificado o null. Centralizado acá para no repetir la lógica
-// de extracción en cada uno de los 6 endpoints protegidos.
-export function usuarioIdDesdeRequest(req) {
+// Extrae el pase únicamente de Authorization o del body.
+// Nunca se acepta en query string: las URL pueden quedar en logs e historial.
+function extraerPase(req) {
   const header = req.headers?.authorization || "";
-  const pase = header.startsWith("Bearer ")
-    ? header.slice(7)
-    : (req.body?.pase || req.query?.pase);
-  return verificarPase(pase);
+  if (header.startsWith("Bearer ")) return header.slice(7);
+  return req.body?.pase;
+}
+
+export function usuarioIdDesdeRequest(req) {
+  return verificarPase(extraerPase(req));
 }
 
 // Diagnóstico seguro para logs: devuelve solo la causa probable, nunca el pase,
 // la firma ni el identificador del usuario.
 export function diagnosticarPaseRequest(req) {
   if (!SESSION_SECRET) return "session_secret_ausente";
-  const header = req.headers?.authorization || "";
-  const pase = header.startsWith("Bearer ")
-    ? header.slice(7)
-    : (req.body?.pase || req.query?.pase);
+  const pase = extraerPase(req);
   if (!pase || typeof pase !== "string") return "pase_ausente";
   const partes = pase.split(".");
   if (partes.length !== 3) return "formato_pase_invalido";
