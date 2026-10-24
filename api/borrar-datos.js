@@ -27,42 +27,33 @@
 // y sobrevive al borrado en cascada, quedando como evidencia de que la solicitud
 // de borrado se ejecutó.
 import { emitirEvento } from "./_instrumentacion.js";
-// BT-02 — conexión a Supabase unificada (ver api/_supabase.js).
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
+import { usuarioIdDesdeRequest } from "./_sesion.js";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+  if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return res.status(500).json({ error: "Servicio no configurado." });
   }
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Falta configurar SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.' });
-  }
+  const usuarioId = usuarioIdDesdeRequest(req);
+  if (!usuarioId) return res.status(401).json({ error: "Iniciá sesión para eliminar tu cuenta." });
 
   const { email } = req.body || {};
-  if (!email || typeof email !== 'string' || !email.includes('@')) {
-    return res.status(400).json({ error: 'Falta un email válido' });
+  if (!email || typeof email !== "string" || !email.includes("@")) {
+    return res.status(400).json({ error: "Escribí el email de tu cuenta para confirmar." });
   }
 
-  const respuestaGenerica = {
-    ok: true,
-    mensaje: 'Si el email está registrado, tus datos fueron eliminados de forma permanente.',
-  };
-
   try {
-    // 1. Buscar el usuario por email
-    const encontrados = await supabaseFetch(
-      `usuarios?email=eq.${encodeURIComponent(email)}&select=id`
-    );
-
-    if (!encontrados || encontrados.length === 0) {
-      return res.status(200).json(respuestaGenerica);
+    const filas = await supabaseFetch(`usuarios?id=eq.${encodeURIComponent(usuarioId)}&select=id,email`);
+    if (!filas || filas.length === 0) {
+      return res.status(200).json({ ok: true, mensaje: "Tu cuenta ya no existe." });
+    }
+    if (String(filas[0].email || "").trim().toLowerCase() !== email.trim().toLowerCase()) {
+      return res.status(400).json({ error: "El email no coincide con el de tu cuenta." });
     }
 
-    const usuarioId = encontrados[0].id;
-
-    // 2. Emitir evidencia de la solicitud de borrado ANTES de ejecutar el DELETE
-    // (ver nota arriba sobre el orden, obligatorio por la FK de usuario_subject_map).
+    // Evidencia ANTES del DELETE: usuario_subject_map exige que el usuario exista.
     await emitirEvento({
       usuarioId,
       eventType: "borrado_datos_solicitado",
@@ -71,15 +62,11 @@ export default async function handler(req, res) {
       payload: {},
     });
 
-    // 3. Un solo DELETE: el ON DELETE CASCADE del esquema se encarga de arrastrar
-    // registro_diario_real, bloqueos, bienestar_diario_real e insights_generados.
-    // Los dos logs de cumplimiento no tienen FK hacia usuarios, así que quedan intactos.
-    await supabaseFetch(`usuarios?id=eq.${usuarioId}`, { method: 'DELETE' });
-
-    return res.status(200).json(respuestaGenerica);
+    await supabaseFetch(`usuarios?id=eq.${encodeURIComponent(usuarioId)}`, { method: "DELETE" });
+    return res.status(200).json({ ok: true, mensaje: "Tu cuenta y tus datos fueron eliminados de forma permanente." });
   } catch (error) {
-    console.error('Error al borrar datos:', error);
-    return res.status(500).json({ error: 'Error interno al procesar la solicitud' });
+    console.error("[borrar-datos] error procesando la eliminación:", error);
+    return res.status(500).json({ error: "Error interno al procesar la solicitud." });
   }
 }
 // END: /api/borrar-datos.js
