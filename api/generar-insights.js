@@ -86,6 +86,17 @@ function promedio(nums) {
 // "insights_generados". Devuelve el resultado como dato — no responde HTTP,
 // eso es responsabilidad exclusiva de la Sección 2.
 //
+
+function esPremiumVigente(u) {
+  if (!u) return false;
+  if (u.cuenta_suspendida === true) return false;
+  if (u.terminos_aceptados !== true) return false;
+  if (u.nivel_acceso !== "Premium") return false;
+  if (!u.premium_until) return true;
+  const vence = new Date(u.premium_until).getTime();
+  return Number.isFinite(vence) && vence > Date.now();
+}
+
 // FASE 7 (10/08/2026): acepta opciones para soportar el paywall real (antes esta función
 // solo se llamaba para Premium sin restricciones — Gratis estaba 100% bloqueado con un
 // ejemplo fijo, ver Sección 2). "opciones.metricas" restringe qué métricas se calculan
@@ -147,6 +158,15 @@ async function calcularInsights(usuarioId, opciones = {}) {
         break;
       }
     }
+  }
+
+  if (opciones.soloProgreso) {
+    return {
+      estado: 'solo_progreso',
+      diasRegistrados: fechasComidaConCruce.size,
+      diasFaltantes: Math.max(0, UMBRAL_DIAS_CRUZADOS - fechasComidaConCruce.size),
+      insights: [],
+    };
   }
 
   if (fechasComidaConCruce.size < UMBRAL_DIAS_CRUZADOS) {
@@ -285,12 +305,12 @@ function aCSV(historial) {
 }
 
 async function verificarAccesoHistorial(usuarioId) {
-  const rows = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso`);
+  const rows = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso,premium_until`);
   if (!rows.length) return { ok: false, status: 404, error: "Usuario no encontrado." };
   const u = rows[0];
-  if (u.cuenta_suspendida === true) return { ok: false, status: 403, error: "Esta cuenta fue suspendida. Contactanos si creés que es un error." };
-  if (u.terminos_aceptados !== true) return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
-  return { ok: true, esPremium: u.nivel_acceso === "Premium" };
+  if (u.cuenta_suspendida === true) return { ok: false, status: 403, error: "Cuenta suspendida." };
+  if (u.terminos_aceptados !== true) return { ok: false, status: 403, error: "Debés aceptar los Términos.", requiereTerminos: true };
+  return { ok: true, esPremium: esPremiumVigente(u) };
 }
 
 // Ruta: GET /api/generar-insights?vista=historial (antes: GET /api/historial)
@@ -437,7 +457,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Debés aceptar los Términos y Condiciones para continuar.', requiereTerminos: true });
     }
 
-    const esPremium = usuario.cuenta_suspendida !== true && usuario.terminos_aceptados === true && usuario.nivel_acceso === 'Premium' && (!usuario.premium_until || new Date(usuario.premium_until).getTime() > Date.now());
+    const esPremium = esPremiumVigente(usuario);
 
     // Endpoint específico para la analítica Premium. El progreso básico sigue disponible
     // en la ruta raíz para alimentar la barra de Mi Día, pero esta ruta nunca entrega
@@ -455,9 +475,9 @@ export default async function handler(req, res) {
     const LIMITE_DIAS_GRATIS = 14;
     const opciones = esPremium
       ? {}
-      : { metricas: ['energia'], fechaDesde: sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS) };
-
+      : { metricas: ['energia'], fechaDesde: sumarDias(fechaLocalArgentina(), -LIMITE_DIAS_GRATIS), soloProgreso: true };
     const resultado = await calcularInsights(usuarioId, opciones);
+    if (!esPremium) { resultado.insights = []; resultado.requierePremium = true; }
     resultado.limitado14dias = !esPremium;
     resultado.nivelAcceso = esPremium ? 'Premium' : 'gratuito';
     res.setHeader('Cache-Control', 'private, no-store');
