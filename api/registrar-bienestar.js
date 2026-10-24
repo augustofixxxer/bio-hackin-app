@@ -108,11 +108,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const desde = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const recientes = await supabaseFetch(
-      `bienestar_diario_real?usuario_id=eq.${encodeURIComponent(usuarioId)}&fecha_hora=gte.${encodeURIComponent(desde)}&select=id&limit=31`
-    );
-    if (recientes.length >= 30) {
+    // El RPC aplica el límite bajo bloqueo transaccional por clave; evita que
+    // solicitudes concurrentes superen el máximo antes de que se inserte el registro.
+    let permitido;
+    try {
+      permitido = await supabaseFetch("rpc/registrar_comida_rate_limit", {
+        method: "POST",
+        body: JSON.stringify({ p_key: `bienestar:${usuarioId}` }),
+      });
+    } catch (errLimite) {
+      console.error("[registrar-bienestar] No se pudo validar el límite de ritmo:", errLimite?.message);
+      return res.status(503).json({ error: "No pudimos validar el límite de registros. Probá de nuevo." });
+    }
+    if (permitido !== true) {
       return res.status(429).json({ error: "Registraste muchos datos en poco tiempo. Probá de nuevo en unos minutos." });
     }
     // fecha_hora conserva el instante real en ISO/UTC (timestamptz). No se debe
