@@ -360,11 +360,7 @@ export default async function handler(req, res) {
       try {
         permitido = await supabaseFetch("rpc/registrar_comida_rate_limit", {
           method: "POST",
-          body: JSON.stringify({
-            p_usuario_id: usuarioId,
-            p_limite: 30,
-            p_ventana_segundos: 600,
-          }),
+          body: JSON.stringify({ p_key: usuarioId }),
         });
       } catch (errLimite) {
         console.error("[registrar-comida] No se pudo validar el límite de ritmo:", errLimite?.message);
