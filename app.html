@@ -781,7 +781,7 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
       <nav className="pattern-methodology-nav" role="tablist" aria-label="Pasos del motor de patrones">
         <button id="pattern-tab-1" type="button" role="tab" aria-selected={patternStepActivo===1} aria-controls="pattern-step-panel" tabIndex={patternStepActivo===1?0:-1} onClick={()=>setPatternStepActivo(1)}>1. Registro</button>
         <button id="pattern-tab-2" type="button" role="tab" aria-selected={patternStepActivo===2} aria-controls="pattern-step-panel" tabIndex={patternStepActivo===2?0:-1} onClick={()=>setPatternStepActivo(2)}>2. Umbral de 10 días</button>
-        <button id="pattern-tab-3" type="button" role="tab" aria-selected={patternStepActivo===3} aria-controls="pattern-step-panel" tabIndex={patternStepActivo===3?0:-1} onClick={()=>setPatternStepActivo(3)}>3. Causa y efecto</button>
+        <button id="pattern-tab-3" type="button" role="tab" aria-selected={patternStepActivo===3} aria-controls="pattern-step-panel" tabIndex={patternStepActivo===3?0:-1} onClick={()=>setPatternStepActivo(3)}>3. Asociación observada</button>
       </nav>
       <div id="pattern-step-panel" className="pattern-methodology-step" role="tabpanel" aria-labelledby={'pattern-tab-'+patternStepActivo} tabIndex={0}>
         {patternStepActivo===1&&<>
@@ -796,8 +796,8 @@ function renderAntesDeComer(data=resultadoAntesDeComer){if(!data)return null;if(
         </>}
         {patternStepActivo===3&&<>
           <span className="feature-kicker">PASO 3 DE 3</span>
-          <h3>La revelación de causa y efecto</h3>
-          <p>Una vez alcanzado el umbral, el algoritmo analiza las repeticiones de tus bloques alimentarios frente a tus 5 señales de bienestar. Si encuentra una diferencia sistemática (por ejemplo, cómo se relaciona una cena con tu energía del día siguiente), te la traduce en una oportunidad táctica de mejora.</p>
+          <h3>La asociación observada</h3>
+          <p>Una vez alcanzado el umbral, el algoritmo analiza las repeticiones de tus bloques alimentarios frente a tus 5 señales de bienestar. Si encuentra una diferencia sistemática (por ejemplo, cómo se relaciona una cena con tu energía del día siguiente), te la muestra como una asociación observada que podés usar para probar cambios en tus propias comidas.</p>
           <p className="pattern-methodology-caveat"><b>Transparencia:</b> una asociación no demuestra que una comida haya causado un cambio. El motor detecta patrones en tus registros; no establece diagnósticos ni causalidad por sí solo.</p>
         </>}
       </div>
