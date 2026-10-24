@@ -12,8 +12,13 @@ import { usuarioIdDesdeRequest } from "./_sesion.js";
 import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const OCURRENCIAS_MINIMAS = 2;
+const OCURRENCIAS_MINIMAS = 2; // política E2 pendiente de resolución de producto
 const DIFERENCIA_MINIMA = 1;
+const FORMATO_FECHA_AR = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires", year: "numeric", month: "2-digit", day: "2-digit" });
+function fechaArgentina(valor) {
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? String(valor).slice(0, 10) : FORMATO_FECHA_AR.format(d);
+}
 const VALORES_FRIO_CALOR = ["Fresco", "Cálido"];
 const VALORES_LIVIANO_PESADO = ["Liviano", "Pesado"];
 
@@ -23,15 +28,16 @@ async function tipoConsentimientoRiesgo(req, res, usuarioId) {
     return res.status(405).json({ error: "Método no permitido, usar POST." });
   }
   const { bloqueo, nivelRiesgo } = req.body || {};
-  if (!bloqueo || !nivelRiesgo) {
-    return res.status(400).json({ error: "Faltan datos (bloqueo, nivelRiesgo)." });
+  const NIVELES_RIESGO = ["Alto", "Medio", "Bajo"];
+  if (typeof bloqueo !== "string" || !bloqueo.trim() || bloqueo.length > 200 || !NIVELES_RIESGO.includes(nivelRiesgo)) {
+    return res.status(400).json({ error: "Faltan datos válidos (bloqueo, nivelRiesgo)." });
   }
   try {
     await supabaseFetch(`log_consentimiento_riesgo`, {
       method: "POST",
       body: JSON.stringify({
         usuario_id: usuarioId,
-        bloqueo_regla: bloqueo,
+        bloqueo_regla: bloqueo.trim(),
         nivel_riesgo: nivelRiesgo,
         fecha: new Date().toISOString(),
       }),
@@ -39,7 +45,7 @@ async function tipoConsentimientoRiesgo(req, res, usuarioId) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("Error en registrar-extra?tipo=consentimiento-riesgo:", err);
-    return res.status(500).json({ error: "Error registrando el consentimiento", detail: String(err) });
+    return res.status(500).json({ error: "Error registrando el consentimiento" });
   }
 }
 
@@ -68,7 +74,8 @@ async function tipoReaccion(req, res, usuarioId) {
       return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
     }
   } catch (err) {
-    return res.status(400).json({ error: "El usuarioId recibido no es válido.", detail: String(err) });
+    console.error("[registrar-extra] error verificando acceso:", err);
+    return res.status(500).json({ error: "No pudimos verificar tu cuenta ahora. Probá de nuevo." });
   }
 
   if (req.method === "GET") {
@@ -79,8 +86,8 @@ async function tipoReaccion(req, res, usuarioId) {
     try {
       const [reaccionRows, comidas, bienestares] = await Promise.all([
         supabaseFetch(`reacciones_alternativas?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=frio_calor,liviano_pesado,updated_at`),
-        supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=fecha`),
-        supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion`),
+        supabaseFetch(`registro_diario_real?usuario_id=eq.${usuarioId}&alternativa_id=eq.${alternativaId}&select=fecha&order=fecha.desc&limit=1000`),
+        supabaseFetch(`bienestar_diario_real?usuario_id=eq.${usuarioId}&select=fecha_hora,energia,digestion&order=fecha_hora.desc&limit=1000`),
       ]);
 
       const fechasConAlternativa = new Set(comidas.map((c) => c.fecha));
@@ -90,7 +97,7 @@ async function tipoReaccion(req, res, usuarioId) {
         const conteoPorFecha = {};
         for (const b of bienestares) {
           if (b[campo] === null || b[campo] === undefined) continue;
-          const fecha = String(b.fecha_hora).slice(0, 10);
+          const fecha = fechaArgentina(b.fecha_hora);
           promedioPorFecha[fecha] = (promedioPorFecha[fecha] || 0) + b[campo];
           conteoPorFecha[fecha] = (conteoPorFecha[fecha] || 0) + 1;
         }
@@ -117,7 +124,8 @@ async function tipoReaccion(req, res, usuarioId) {
 
       return res.status(200).json({ reaccion: reaccionRows[0] || null, patron });
     } catch (err) {
-      return res.status(500).json({ error: "Error leyendo la reacción", detail: String(err) });
+      console.error("[registrar-extra] error leyendo reacción:", err);
+      return res.status(500).json({ error: "Error leyendo la reacción" });
     }
   }
 
@@ -150,7 +158,8 @@ async function tipoReaccion(req, res, usuarioId) {
       });
       return res.status(200).json({ reaccion: creado[0] });
     } catch (err) {
-      return res.status(500).json({ error: "Error guardando la reacción", detail: String(err) });
+      console.error("[registrar-extra] error guardando reacción:", err);
+      return res.status(500).json({ error: "Error guardando la reacción" });
     }
   }
 
