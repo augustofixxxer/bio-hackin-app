@@ -127,12 +127,13 @@ async function rutaEstado(req, res) {
 
   try {
     const filas = await supabaseFetch(
-      `usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until,cuenta_suspendida`
+      `usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`
     );
     if (!filas.length) return res.status(404).json({ error: "Usuario no encontrado." });
     const u = filas[0];
     const premiumVigente =
       u.cuenta_suspendida !== true &&
+      u.terminos_aceptados === true &&
       u.nivel_acceso === "Premium" &&
       (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
 
