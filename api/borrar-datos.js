@@ -1,6 +1,6 @@
 // api/borrar-datos.js
-// Derecho al olvido: recibe un email por POST y elimina de forma permanente
-// al usuario en Supabase. Gracias a las relaciones ON DELETE CASCADE del esquema,
+// Derecho al olvido: exige sesión válida y confirmación del email por POST.
+// Solo elimina la cuenta autenticada; nunca permite borrar a otra persona por email. Gracias a las relaciones ON DELETE CASCADE del esquema,
 // borrar la fila de "usuarios" arrastra automáticamente:
 // - Todos sus registros en "registro_diario_real"
 // - Todos los "bloqueos" vinculados a esos registros
@@ -16,8 +16,7 @@
 // se aceptaron términos o se confirmó un riesgo, con fecha e IP. Decisión
 // confirmada explícitamente por el dueño del producto.
 //
-// SIEMPRE responde con el mismo mensaje genérico, exista o no el email,
-// para no revelar si un email está registrado (buena práctica de privacidad).
+// La confirmación por email evita borrados accidentales; la sesión determina la identidad.
 
 // MIS Etapa 2 — Integración de Trazabilidad. No intrusivo: emitirEvento nunca lanza,
 // un fallo interno se loguea y se descarta (mismo patrón que registrar-comida.js).
