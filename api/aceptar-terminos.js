@@ -7,27 +7,7 @@
 // se extrae del "pase" firmado (ver _sesion.js). Si el pase no es válido, 401.
 
 import { usuarioIdDesdeRequest } from "./_sesion.js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
-  }
-  return data;
-}
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 // Subí este número cada vez que cambies el texto legal de los Términos —
 // así el log queda trazable a qué versión aceptó cada usuario.
@@ -61,20 +41,25 @@ export default async function handler(req, res) {
       }),
     });
 
-    await supabaseFetch(`log_aceptacion_terminos`, {
-      method: "POST",
-      body: JSON.stringify({
-        usuario_id: usuarioId,
-        fecha_utc: new Date().toISOString(),
-        version_terminos: VERSION_TERMINOS_ACTUAL,
-        ip_address: ip,
-      }),
-    });
+    const yaRegistrada = await supabaseFetch(
+      `log_aceptacion_terminos?usuario_id=eq.${usuarioId}&version_terminos=eq.${encodeURIComponent(VERSION_TERMINOS_ACTUAL)}&select=id&limit=1`
+    );
+    if (!yaRegistrada.length) {
+      await supabaseFetch(`log_aceptacion_terminos`, {
+        method: "POST",
+        body: JSON.stringify({
+          usuario_id: usuarioId,
+          fecha_utc: new Date().toISOString(),
+          version_terminos: VERSION_TERMINOS_ACTUAL,
+          ip_address: ip,
+        }),
+      });
+    }
 
     return res.status(200).json({ ok: true, version: VERSION_TERMINOS_ACTUAL });
   } catch (err) {
     console.error("Error en aceptar-terminos:", err);
-    return res.status(500).json({ error: "Error registrando la aceptación de términos", detail: String(err) });
+    return res.status(500).json({ error: "Error registrando la aceptación de términos" });
   }
 }
 // END: /api/aceptar-terminos.js
