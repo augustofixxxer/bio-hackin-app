@@ -1,30 +1,52 @@
 // api/_supabase.js
-// BT-02 — Unificación de la conexión a Supabase duplicada entre archivos de api/.
-// Mismo patrón que _instrumentacion.js: archivo único dentro de api/ (nunca en lib/,
-// lección Sprint 16 — un require/import entre carpetas falló dos veces en producción
-// en este pipeline de deploy manual). Prefijo "_" para que Vercel no lo trate como
-// endpoint HTTP propio.
-//
-// Sin cambios de comportamiento respecto de las copias que reemplaza: mismo armado
-// de headers, mismo manejo de 204 sin body (siempre res.text() antes de JSON.parse).
+// Cliente REST compartido por los endpoints serverless. Todas las consultas tienen
+// timeout por defecto y errores/respuestas se normalizan en un único punto.
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
+  let resp;
+  let text;
+  const signal = options.signal || AbortSignal.timeout(8000);
+
+  try {
+    resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      signal,
+    });
+    // Leer el body dentro del try: la respuesta también puede agotarse después
+    // de que fetch() haya resuelto sus headers.
+    text = await resp.text();
+  } catch (err) {
+    if (err?.name === "TimeoutError") {
+      throw new Error("Supabase no respondió a tiempo (límite de 8 segundos).");
+    }
+    if (err?.name === "AbortError") {
+      throw new Error("La consulta a Supabase fue cancelada o agotó su tiempo.");
+    }
+    throw new Error("No se pudo conectar con Supabase.");
+  }
+
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (resp.ok) {
+        throw new Error("Supabase devolvió una respuesta que no es JSON.");
+      }
+    }
+  }
+
   if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
+    throw new Error((data && (data.message || data.error || data.details)) || `Supabase respondió ${resp.status}`);
   }
   return data;
 }

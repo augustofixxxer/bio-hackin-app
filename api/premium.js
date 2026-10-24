@@ -40,6 +40,24 @@ function emailValido(email) {
   return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+// ===== Vigencia Premium: ÚNICA fuente de verdad (S2) =====
+function esPremiumVigente(u) {
+  if (!u) return false;
+  if (u.cuenta_suspendida === true) return false;
+  if (u.terminos_aceptados !== true) return false;
+  if (u.nivel_acceso !== "Premium") return false;
+  if (!u.premium_until) return true; // sin vencimiento (modo fundador)
+  const vence = new Date(u.premium_until).getTime();
+  return Number.isFinite(vence) && vence > Date.now();
+}
+function calcularNuevoVencimiento(usuario, duracionDias) {
+  if (usuario?.nivel_acceso === "Premium" && !usuario.premium_until) return null;
+  const ahora = Date.now();
+  const actual = usuario?.premium_until ? new Date(usuario.premium_until).getTime() : 0;
+  const base = Number.isFinite(actual) && actual > ahora ? actual : ahora;
+  return new Date(base + duracionDias * 24 * 60 * 60 * 1000).toISOString();
+}
+
 // ===== ruta=activar-alias (idéntico a premium-activar-alias.js) =====
 async function rutaActivarAlias(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar POST." });
@@ -131,11 +149,7 @@ async function rutaEstado(req, res) {
     );
     if (!filas.length) return res.status(404).json({ error: "Usuario no encontrado." });
     const u = filas[0];
-    const premiumVigente =
-      u.cuenta_suspendida !== true &&
-      u.terminos_aceptados === true &&
-      u.nivel_acceso === "Premium" &&
-      (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
+    const premiumVigente = esPremiumVigente(u);
 
     const origen = await supabaseFetch(
       `premium_subscriptions?user_id=eq.${usuarioId}&estado=eq.aprobado&select=metodo,created_at&order=created_at.desc&limit=1`
@@ -294,7 +308,7 @@ async function rutaExperimento(req, res) {
     const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`);
     if (!usuarios.length) return res.status(404).json({ error: "Usuario no encontrado." });
     const u = usuarios[0];
-    const premiumVigente = u.cuenta_suspendida !== true && u.terminos_aceptados === true && u.nivel_acceso === "Premium" && (!u.premium_until || new Date(u.premium_until).getTime() > Date.now());
+    const premiumVigente = esPremiumVigente(u);
     if (!premiumVigente) return res.status(403).json({ error: "Esta herramienta requiere Premium activo." });
     if (req.method === "GET") {
       const filas = await supabaseFetch(`premium_experimentos?usuario_id=eq.${usuarioId}&order=created_at.desc&limit=20&select=id,usuario_id,origen,titulo,variable,opcion_a,opcion_b,registro_a,registro_b,estado,regla_id,solucion_id,hallazgo_free,hack_concreto,cambio_composicional,aprendizaje_comparativo,que_se_mantiene,created_at,updated_at`);
@@ -451,7 +465,8 @@ async function rutaAdmin(req, res) {
 
       if (accion === "aprobar") {
         const duracionDias = Number(filas[0].duracion_dias) === 365 || filas[0].plan === "anual" ? 365 : DIAS_PREMIUM;
-        const premiumUntil = new Date(Date.now() + duracionDias * 24 * 60 * 60 * 1000).toISOString();
+        const usr = await supabaseFetch(`usuarios?id=eq.${filas[0].user_id}&select=nivel_acceso,premium_until`);
+        const premiumUntil = calcularNuevoVencimiento(usr[0], duracionDias);
         await supabaseFetch(`usuarios?id=eq.${filas[0].user_id}`, {
           method: "PATCH",
           body: JSON.stringify({ nivel_acceso: "Premium", premium_until: premiumUntil }),
@@ -471,58 +486,85 @@ async function rutaAdmin(req, res) {
 async function rutaConfirmarMP(req, res) {
   if (!MP_ACCESS_TOKEN) return res.status(500).json({ error: "Falta configurar MP_ACCESS_TOKEN en Vercel." });
   if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido, usar POST." });
-
   const usuarioId = usuarioIdDesdeRequest(req);
   if (!usuarioId) return res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
   if (!UUID_REGEX.test(usuarioId)) return res.status(400).json({ error: "usuarioId inválido." });
-
   const { paymentId } = req.body || {};
-  if (!paymentId || !/^[0-9]+$/.test(String(paymentId))) {
+  if (!paymentId || !/^[0-9]{1,20}$/.test(String(paymentId))) {
     return res.status(400).json({ error: "Falta paymentId válido." });
   }
-
+  const pid = String(paymentId);
   try {
-    const yaProcesado = await supabaseFetch(`premium_subscriptions?mp_payment_id=eq.${paymentId}&select=id,estado`);
-    if (yaProcesado.length > 0) {
-      return res.status(200).json({ ok: true, yaProcesado: true, estado: yaProcesado[0].estado });
+    const previo = await supabaseFetch(`premium_subscriptions?mp_payment_id=eq.${pid}&estado=eq.aprobado&select=id,user_id&limit=1`);
+    if (previo.length > 0) {
+      if (previo[0].user_id === usuarioId) return res.status(200).json({ ok: true, yaProcesado: true, estado: "aprobado" });
+      console.error("[premium] confirmar-mp: intento de canjear pago de otra cuenta.", { pid });
+      return res.status(409).json({ error: "Este pago no puede usarse en esta cuenta." });
     }
   } catch (err) {
-    return res.status(500).json({ error: "Error verificando pagos previos.", detail: String(err) });
+    console.error("[premium] confirmar-mp: error verificando pagos previos.", err);
+    return res.status(500).json({ error: "No pudimos verificar el pago ahora." });
   }
-
   let pago;
   try {
-    const resp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    const resp = await fetch(`https://api.mercadopago.com/v1/payments/${pid}`, {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
     if (!resp.ok) return res.status(502).json({ error: "No se pudo verificar el pago contra Mercado Pago." });
     pago = await resp.json();
   } catch (err) {
-    return res.status(502).json({ error: "Error consultando la API de Mercado Pago.", detail: String(err) });
+    console.error("[premium] confirmar-mp: error consultando Mercado Pago.", err);
+    return res.status(502).json({ error: "No pudimos consultar Mercado Pago ahora." });
   }
-
-  const aprobado = pago.status === "approved" && Number(pago.transaction_amount) >= MONTO_MINIMO_MP;
-
-  try {
-    await supabaseFetch(`premium_subscriptions`, {
-      method: "POST",
-      body: JSON.stringify({
-        user_id: usuarioId, metodo: "mp", monto: pago.transaction_amount || 0,
-        estado: aprobado ? "aprobado" : "rechazado", mp_payment_id: String(paymentId),
-      }),
+  if (String(pago.id) !== pid) {
+    return res.status(502).json({ error: "Respuesta inconsistente de Mercado Pago." });
+  }
+  if (String(pago.external_reference || "") !== usuarioId) {
+    console.error("[premium] confirmar-mp: external_reference no coincide.", { pid });
+    return res.status(403).json({ error: "Este pago no corresponde a tu cuenta." });
+  }
+  if (pago.status !== "approved") {
+    return res.status(200).json({
+      ok: false,
+      estadoPago: pago.status,
+      pendiente: ["pending", "in_process", "authorized"].includes(pago.status),
     });
-
-    if (aprobado) {
-      const premiumUntil = new Date(Date.now() + DIAS_PREMIUM * 24 * 60 * 60 * 1000).toISOString();
+  }
+  if (pago.currency_id !== "ARS" || !(Number(pago.transaction_amount) >= MONTO_MINIMO_MP)) {
+    return res.status(400).json({ error: "El pago no coincide con el plan Premium." });
+  }
+  let filaId = null;
+  try {
+    const usuarios = await supabaseFetch(`usuarios?id=eq.${usuarioId}&select=id,nivel_acceso,premium_until`);
+    if (!usuarios.length) return res.status(404).json({ error: "Usuario no encontrado." });
+    try {
+      const fila = await supabaseFetch(`premium_subscriptions`, {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          user_id: usuarioId, metodo: "mp", monto: Number(pago.transaction_amount),
+          estado: "aprobado", mp_payment_id: pid,
+        }),
+      });
+      filaId = fila?.[0]?.id || null;
+    } catch (errInsert) {
+      const dup = await supabaseFetch(`premium_subscriptions?mp_payment_id=eq.${pid}&estado=eq.aprobado&select=id,user_id&limit=1`);
+      if (dup.length && dup[0].user_id === usuarioId) return res.status(200).json({ ok: true, yaProcesado: true, estado: "aprobado" });
+      throw errInsert;
+    }
+    try {
       await supabaseFetch(`usuarios?id=eq.${usuarioId}`, {
         method: "PATCH",
-        body: JSON.stringify({ nivel_acceso: "Premium", premium_until: premiumUntil }),
+        body: JSON.stringify({ nivel_acceso: "Premium", premium_until: calcularNuevoVencimiento(usuarios[0], DIAS_PREMIUM) }),
       });
+    } catch (errPatch) {
+      if (filaId) { try { await supabaseFetch(`premium_subscriptions?id=eq.${filaId}`, { method: "DELETE" }); } catch (_) {} }
+      throw errPatch;
     }
-
-    return res.status(200).json({ ok: aprobado, estadoPago: pago.status });
+    return res.status(200).json({ ok: true, estadoPago: "approved" });
   } catch (err) {
-    return res.status(500).json({ error: "Error registrando el pago.", detail: String(err) });
+    console.error("[premium] confirmar-mp: error registrando el pago.", err);
+    return res.status(500).json({ error: "Error registrando el pago." });
   }
 }
 

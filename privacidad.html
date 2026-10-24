@@ -100,7 +100,7 @@
   <p>Tenés derecho a acceder, rectificar, actualizar o solicitar la eliminación total de tus datos en cualquier momento. Podés hacerlo con el formulario de abajo.</p>
 
   <h2>5. Solicitar el borrado de tus datos</h2>
-  <p>Ingresá el email con el que te registraste. Vamos a eliminar tu cuenta y todo tu historial de comidas, bienestar y bloqueos de forma permanente.</p>
+  <p>Iniciá sesión en Reseteo Propio y escribí el email de tu cuenta para confirmar. Vamos a eliminar tu cuenta y todo tu historial de comidas, bienestar y bloqueos de forma permanente.</p>
   <p><strong>Excepción legal:</strong> por una obligación de cumplimiento, conservamos el registro de que aceptaste los Términos y de que confirmaste haber leído una advertencia de riesgo — sin vincularlo a tu identidad una vez borrada la cuenta. La lista de espera de Premium tampoco se borra automáticamente con tu cuenta, al ser un registro de interés comercial independiente; si querés que también se elimine, pedilo explícitamente por email.</p>
 
   <div class="borrado-box">
@@ -128,9 +128,11 @@
       mensaje.textContent = '';
 
       try {
+        let pase = '';
+        try { pase = JSON.parse(localStorage.getItem('reseteo_usuario') || 'null')?.pase || ''; } catch (_) {}
         const respuesta = await fetch('/api/borrar-datos', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(pase ? { Authorization: 'Bearer ' + pase } : {}) },
           body: JSON.stringify({ email })
         });
         const data = await respuesta.json();
@@ -140,7 +142,7 @@
           mensaje.style.color = '#0a7d2c';
           document.getElementById('email-borrado').value = '';
         } else {
-          mensaje.textContent = 'Hubo un error. Probá de nuevo en unos minutos.';
+          mensaje.textContent = data.error || 'Hubo un error. Probá de nuevo en unos minutos.';
           mensaje.style.color = '#b00';
         }
       } catch (e) {

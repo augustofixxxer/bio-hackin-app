@@ -48,15 +48,33 @@ function puntuar(texto, sinonimo) {
   return 0;
 }
 
-export async function resolverFichaPlato(textoUsuario, opciones = {}) {
+const TTL_CATALOGO_MS = 60_000;
+const cacheCatalogo = new Map();
+
+async function cargarCatalogo(filtroCatalogo) {
+  const ahora = Date.now();
+  const previo = cacheCatalogo.get(filtroCatalogo);
+  if (previo && previo.hasta > ahora) return previo.filas;
+
+  const filas = await supabaseFetch(
+    `preview_catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar${filtroCatalogo}&order=plato_id.asc&limit=1000`
+  );
+  if (Array.isArray(filas)) {
+    cacheCatalogo.set(filtroCatalogo, { filas, hasta: ahora + TTL_CATALOGO_MS });
+  }
+  return filas;
+}
+
+export async function resolverFichaPlato(textoUsuario) {
   const texto = normalizarEntrada(textoUsuario);
   if (!texto) return { ...FALLBACK_PLATO };
   try {
-    // Preview puede validar nuevas fichas inactivas sin exponerlas en producción.
-    const filtroCatalogo = process.env.VERCEL_ENV === "preview" || opciones.incluirInactivos === true ? "" : "&activo=eq.true";
-    const filas = await supabaseFetch(
-      `preview_catalogo_maestro_platos?select=plato_id,sinonimos,resumen,hack,que_observar${filtroCatalogo}`
-    );
+    // Fichas inactivas/borrador solo se incluyen en Preview con opt-in explícito.
+    const incluirInactivos =
+      process.env.VERCEL_ENV === "preview" &&
+      process.env.CATALOGO_INCLUIR_INACTIVOS === "1";
+    const filtroCatalogo = incluirInactivos ? "" : "&activo=eq.true";
+    const filas = await cargarCatalogo(filtroCatalogo);
     if (!Array.isArray(filas)) return { ...FALLBACK_PLATO };
     let mejor = null;
     let mejorPuntaje = 0;

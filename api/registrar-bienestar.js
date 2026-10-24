@@ -18,27 +18,7 @@
 // (ver _sesion.js). Si el pase no es válido, 401.
 
 import { usuarioIdDesdeRequest } from "./_sesion.js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-async function supabaseFetch(path, options = {}) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!resp.ok) {
-    throw new Error((data && (data.message || data.error)) || `Supabase respondió ${resp.status}`);
-  }
-  return data;
-}
+import { supabaseFetch, SUPABASE_URL, SUPABASE_KEY } from "./_supabase.js";
 
 function validarEscala(valor) {
   return ["1", "2", "3", "4", "5"].includes(String(valor));
@@ -123,10 +103,26 @@ export default async function handler(req, res) {
       return res.status(acceso.status).json({ error: acceso.error, requiereTerminos: acceso.requiereTerminos });
     }
   } catch (err) {
-    return res.status(400).json({ error: "El usuarioId recibido no es válido.", detail: String(err) });
+    console.error("[registrar-bienestar] error verificando acceso:", err);
+    return res.status(500).json({ error: "No pudimos verificar tu cuenta ahora. Probá de nuevo." });
   }
 
   try {
+    // El RPC aplica el límite bajo bloqueo transaccional por clave; evita que
+    // solicitudes concurrentes superen el máximo antes de que se inserte el registro.
+    let permitido;
+    try {
+      permitido = await supabaseFetch("rpc/registrar_comida_rate_limit", {
+        method: "POST",
+        body: JSON.stringify({ p_key: `bienestar:${usuarioId}` }),
+      });
+    } catch (errLimite) {
+      console.error("[registrar-bienestar] No se pudo validar el límite de ritmo:", errLimite?.message);
+      return res.status(503).json({ error: "No pudimos validar el límite de registros. Probá de nuevo." });
+    }
+    if (permitido !== true) {
+      return res.status(429).json({ error: "Registraste muchos datos en poco tiempo. Probá de nuevo en unos minutos." });
+    }
     // fecha_hora conserva el instante real en ISO/UTC (timestamptz). No se debe
     // fabricar un timestamp local sin offset: las consultas de lectura derivan el
     // "Día del Usuario" con America/Argentina/Buenos_Aires a partir de este instante.
@@ -144,7 +140,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, id: creado[0].id });
   } catch (err) {
     console.error("Error en registrar-bienestar:", err);
-    return res.status(500).json({ error: "Error procesando el registro de bienestar", detail: String(err) });
+    return res.status(500).json({ error: "Error procesando el registro de bienestar" });
   }
 }
 // END: /api/registrar-bienestar.js

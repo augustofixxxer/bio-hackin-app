@@ -55,9 +55,9 @@ async function resolverTextoComidaParaProtocolo(texto) {
 
   // No inferir "guiso" por compartir arroz y proteína: si el usuario no lo nombra,
   // conservar la entrada libre para que el protocolo trate el arroz como guarnición.
-  const mencionaGuiso = /\\bguiso\\b/.test(t);
-  const mencionaArroz = /\\barroz\\b/.test(t);
-  const mencionaProteina = /\\b(pollo|pechuga|carne|bife|bifes|churrasco|pescado|atun|salmon|cerdo|ternera|vacuno|pavo)\\b/.test(t);
+  const mencionaGuiso = /\bguiso\b/.test(t);
+  const mencionaArroz = /\barroz\b/.test(t);
+  const mencionaProteina = /\b(pollo|pechuga|carne|bife|bifes|churrasco|pescado|atun|salmon|cerdo|ternera|vacuno|pavo)\b/.test(t);
   if (!mencionaGuiso && mencionaArroz && mencionaProteina) return original;
 
   const ignorados = new Set([
@@ -242,9 +242,17 @@ function construirInvitacionPremium() {
 // BT-02: supabaseFetch/SUPABASE_URL/SUPABASE_KEY ahora vienen de api/_supabase.js (import arriba).
 
 // Blindaje legal: bloquea el uso si no aceptó Términos, o si la cuenta fue suspendida.
+function esPremiumVigente(u) {
+  if (!u || u.cuenta_suspendida === true || u.terminos_aceptados !== true) return false;
+  if (u.nivel_acceso !== "Premium") return false;
+  if (!u.premium_until) return true;
+  const vence = Date.parse(u.premium_until);
+  return Number.isFinite(vence) && vence > Date.now();
+}
+
 async function verificarAcceso(usuarioId) {
   const rows = await supabaseFetch(
-    `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso`
+    `usuarios?id=eq.${usuarioId}&select=cuenta_suspendida,terminos_aceptados,nivel_acceso,premium_until`
   );
   if (!rows.length) return { ok: false, status: 404, error: "Usuario no encontrado." };
   const u = rows[0];
@@ -254,7 +262,7 @@ async function verificarAcceso(usuarioId) {
   if (u.terminos_aceptados !== true) {
     return { ok: false, status: 403, error: "Debés aceptar los Términos y Condiciones para continuar.", requiereTerminos: true };
   }
-  return { ok: true, nivelAcceso: u.nivel_acceso || "gratuito" };
+  return { ok: true, nivelAcceso: esPremiumVigente(u) ? "Premium" : "gratuito" };
 }
 
 export default async function handler(req, res) {
@@ -273,6 +281,18 @@ export default async function handler(req, res) {
     res.status(400).json({ error: "Falta el texto de la comida registrada." });
     return;
   }
+
+  const LIMITE_TEXTO = 500;
+  const MOMENTOS_VALIDOS = ["Desayuno", "Almuerzo", "Merienda", "Cena"];
+  if (texto.length > LIMITE_TEXTO || texto.includes("\u0000")) {
+    res.status(400).json({ error: `El texto no puede superar ${LIMITE_TEXTO} caracteres.` });
+    return;
+  }
+  if (momento !== undefined && momento !== null && momento !== "" && !MOMENTOS_VALIDOS.includes(momento)) {
+    res.status(400).json({ error: "Momento del día inválido." });
+    return;
+  }
+
   // Módulo Combinatorio: lectura pura y determinista; no crea registros ni altera
   // el flujo actual de planificar/registrar comida.
   if (soloCombinacion === true) {
@@ -298,6 +318,10 @@ export default async function handler(req, res) {
   const usuarioId = usuarioIdDesdeRequest(req);
   if (paseProvisto && !usuarioId) {
     res.status(401).json({ error: "Sesión inválida o vencida. Volvé a iniciar sesión." });
+    return;
+  }
+  if (!usuarioId && !soloVista) {
+    res.status(401).json({ error: "Iniciá sesión para registrar tu comida." });
     return;
   }
 
@@ -331,13 +355,29 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!soloVista) {
+      let permitido;
+      try {
+        permitido = await supabaseFetch("rpc/registrar_comida_rate_limit", {
+          method: "POST",
+          body: JSON.stringify({ p_key: usuarioId }),
+        });
+      } catch (errLimite) {
+        console.error("[registrar-comida] No se pudo validar el límite de ritmo:", errLimite?.message);
+        return res.status(503).json({ error: "No pudimos validar el límite de registros. Probá de nuevo." });
+      }
+      if (permitido !== true) {
+        return res.status(429).json({ error: "Alcanzaste el máximo de 30 registros cada 10 minutos. Esperá un momento y probá de nuevo." });
+      }
+    }
+
     const textoNormalizado = normalizar(texto);
     let textoParaMatching = expandirSinonimos(textoNormalizado);
     const versionCasera = esVersionCasera(textoNormalizado);
 
     // Capa de IA (opcional) — si Groq está configurada y responde a tiempo, suma más
     // categorías reconocidas al texto de matching. Si no, sigue igual que hasta ahora.
-    const categoriasIA = await clasificarComidaIA(texto);
+    const categoriasIA = usuarioId ? await clasificarComidaIA(texto) : null;
     if (categoriasIA && categoriasIA.length > 0) {
       textoParaMatching = `${textoParaMatching} ${categoriasIA.join(" ")}`;
     }

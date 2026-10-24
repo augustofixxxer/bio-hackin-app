@@ -36,10 +36,11 @@ const normalizarTexto = (texto) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const tieneEvidenciaLexica = (texto, categoria) => {
   const normalizado = normalizarTexto(texto);
   return (EVIDENCIA_LEXICA[categoria] || []).some((termino) =>
-    normalizado.includes(normalizarTexto(termino))
+    new RegExp(`(^|[^a-z0-9])${escapeRegex(normalizarTexto(termino))}(?:s|es)?(?=$|[^a-z0-9])`).test(normalizado)
   );
 };
 
