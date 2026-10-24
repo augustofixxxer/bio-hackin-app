@@ -19,7 +19,8 @@ async function campoNombre(req, res, usuarioId) {
   if (!nombreAlias || typeof nombreAlias !== "string" || nombreAlias.trim().length === 0) {
     return res.status(400).json({ error: "Falta nombreAlias." });
   }
-  const nombreLimpio = nombreAlias.trim().slice(0, 80);
+  const nombreLimpio = nombreAlias.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 80);
+  if (!nombreLimpio) return res.status(400).json({ error: "Falta nombreAlias." });
 
   try {
     await supabaseFetch(`usuarios?id=eq.${usuarioId}`, {
@@ -38,7 +39,7 @@ async function campoNombre(req, res, usuarioId) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("Error en perfil?campo=nombre:", err);
-    return res.status(500).json({ error: "Error actualizando el nombre", detail: String(err) });
+    return res.status(500).json({ error: "Error actualizando el nombre" });
   }
 }
 
@@ -66,7 +67,7 @@ async function campoObjetivo(req, res, usuarioId) {
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("Error en perfil?campo=objetivo:", err);
-    return res.status(500).json({ error: "Error guardando el objetivo", detail: String(err) });
+    return res.status(500).json({ error: "Error guardando el objetivo" });
   }
 }
 
