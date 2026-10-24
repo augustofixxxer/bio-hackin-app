@@ -377,7 +377,7 @@ export default async function handler(req, res) {
 
     // Capa de IA (opcional) — si Groq está configurada y responde a tiempo, suma más
     // categorías reconocidas al texto de matching. Si no, sigue igual que hasta ahora.
-    const categoriasIA = await clasificarComidaIA(texto);
+    const categoriasIA = usuarioId ? await clasificarComidaIA(texto) : null;
     if (categoriasIA && categoriasIA.length > 0) {
       textoParaMatching = `${textoParaMatching} ${categoriasIA.join(" ")}`;
     }
