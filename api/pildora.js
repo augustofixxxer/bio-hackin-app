@@ -16,17 +16,17 @@ export default async function handler(req,res){
   if(req.method!=='GET'){res.status(405).json({error:'Método no permitido.'});return;}
   if(!SUPABASE_URL||!SUPABASE_KEY){res.status(500).json({error:'Servicio no configurado.'});return;}
   const intent=String(req.query?.intent||'').trim();
-  if(!intent){res.status(400).json({error:'Falta la situación.'});return;}
+  if(!/^[a-z_]{1,40}$/.test(intent)){res.status(400).json({error:'Falta la situación.'});return;}
   try{
     const usuarioId = usuarioIdDesdeRequest(req);
     let esPremium = false;
     if (usuarioId) {
-      const usuarios = await supabaseFetch(`usuarios?id=eq.${encodeURIComponent(usuarioId)}&select=nivel_acceso,cuenta_suspendida,terminos_aceptados`);
+      const usuarios = await supabaseFetch(`usuarios?id=eq.${encodeURIComponent(usuarioId)}&select=nivel_acceso,premium_until,cuenta_suspendida,terminos_aceptados`);
       const u = usuarios?.[0];
       if (!u || u.cuenta_suspendida === true || u.terminos_aceptados !== true) {
         return res.status(403).json({error:'Acceso no disponible.'});
       }
-      esPremium = u.nivel_acceso === 'Premium';
+      esPremium = u.nivel_acceso === 'Premium' && (!u.premium_until || Date.parse(u.premium_until) > Date.now());
     }
     const ints=await supabaseFetch(`intenciones?select=id&clave=eq.${encodeURIComponent(intent)}`);
     const id=ints?.[0]?.id;
@@ -36,7 +36,7 @@ export default async function handler(req,res){
     const activity=all.filter(a=>a.tipo==='Protocolo').sort((a,b)=>score(b)-score(a))[0]||null;
     const preparar = (a) => {
       if (!a) return null;
-      if (esPremium) return a;
+      if (esPremium) { const { rol_comercial, prioridad_busqueda, intencion_principal_id, ...publico } = a; return publico; }
       // Free: hallazgo/estado útil, sin revelar hack, observación ni continuidad.
       return {
         id:a.id, mecanismo:a.mecanismo, descripcion_mecanismo:a.descripcion_mecanismo,
@@ -52,5 +52,5 @@ export default async function handler(req,res){
       food:preparar(food),
       activity:preparar(activity)
     });
-  }catch(err){res.status(500).json({error:'No pudimos cargar esta situación.',detail:String(err)});}
+  }catch(err){console.error('[pildora]',err);res.status(500).json({error:'No pudimos cargar esta situación.'});}
 }
